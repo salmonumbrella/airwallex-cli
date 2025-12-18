@@ -35,6 +35,12 @@ airwallex auth
 
 This opens a browser for you to enter your Airwallex API credentials.
 
+Or via command line:
+
+```bash
+airwallex auth add my-account --client-id <id> --api-key <key>
+```
+
 ### 2. Test Authentication
 
 ```bash
