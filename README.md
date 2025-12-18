@@ -30,19 +30,13 @@ go install github.com/salmonumbrella/airwallex-cli/cmd/airwallex@latest
 ### 1. Authenticate
 
 ```bash
-airwallex auth
-```
-
-Or via command line:
-
-```bash
 airwallex auth add my-account --client-id <id> --api-key <key>
 ```
 
 ### 2. Test Authentication
 
 ```bash
-airwallex auth test
+airwallex auth test --account my-account
 ```
 
 ## Configuration
