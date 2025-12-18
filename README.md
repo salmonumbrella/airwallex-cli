@@ -252,13 +252,6 @@ All commands support these flags:
 - `--color <mode>` - Color mode: `auto`, `always`, or `never` (default: auto)
 - `--help` - Show help for any command
 
-## API Details
-
-- **Environment**: Production only (`api.airwallex.com`)
-- **API Version**: `2025-11-11`
-- **Authentication**: OAuth 2.0 client credentials with auto-refreshing bearer tokens
-- **Retry logic**: Automatic retry for rate limits (429) and server errors (5xx)
-
 ## Development
 
 After cloning, install git hooks:
