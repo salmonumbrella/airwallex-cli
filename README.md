@@ -18,7 +18,7 @@ A CLI for managing Airwallex accounts, cards, transfers, and more from the comma
 ### Homebrew
 
 ```bash
-brew install salmonumbrella/tap/airwallex
+brew install salmonumbrella/tap/airwallex-cli
 ```
 
 ### From Source
