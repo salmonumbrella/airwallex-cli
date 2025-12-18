@@ -5,23 +5,27 @@ import (
 	"io"
 	"os"
 
-	"github.com/muesli/termenv"
+	"golang.org/x/term"
 )
 
 type contextKey string
 
 const uiKey contextKey = "ui"
 
+// ANSI color codes
+const (
+	colorReset = "\033[0m"
+	colorRed   = "\033[31m"
+	colorGreen = "\033[32m"
+)
+
 type UI struct {
-	out   *termenv.Output
-	err   *termenv.Output
+	out   io.Writer
+	err   io.Writer
 	color bool
 }
 
 func New(colorMode string) *UI {
-	out := termenv.NewOutput(os.Stdout)
-	errOut := termenv.NewOutput(os.Stderr)
-
 	var color bool
 	switch colorMode {
 	case "never":
@@ -29,7 +33,7 @@ func New(colorMode string) *UI {
 	case "always":
 		color = true
 	default: // auto
-		color = out.ColorProfile() != termenv.Ascii
+		color = term.IsTerminal(int(os.Stdout.Fd()))
 	}
 
 	if os.Getenv("NO_COLOR") != "" {
@@ -37,8 +41,8 @@ func New(colorMode string) *UI {
 	}
 
 	return &UI{
-		out:   out,
-		err:   errOut,
+		out:   os.Stdout,
+		err:   os.Stderr,
 		color: color,
 	}
 }
@@ -64,18 +68,18 @@ func (u *UI) Err() io.Writer {
 
 func (u *UI) Success(msg string) {
 	if u.color {
-		msg = termenv.String(msg).Foreground(termenv.ANSIGreen).String()
+		msg = colorGreen + msg + colorReset
 	}
-	_, _ = u.err.WriteString(msg + "\n")
+	_, _ = io.WriteString(u.err, msg+"\n")
 }
 
 func (u *UI) Error(msg string) {
 	if u.color {
-		msg = termenv.String(msg).Foreground(termenv.ANSIRed).String()
+		msg = colorRed + msg + colorReset
 	}
-	_, _ = u.err.WriteString(msg + "\n")
+	_, _ = io.WriteString(u.err, msg+"\n")
 }
 
 func (u *UI) Info(msg string) {
-	_, _ = u.err.WriteString(msg + "\n")
+	_, _ = io.WriteString(u.err, msg+"\n")
 }
