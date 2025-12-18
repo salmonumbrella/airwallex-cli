@@ -1,6 +1,6 @@
 # Airwallex CLI
 
-CLI for managing Airwallex accounts, cards, transfers, and more from the command line.
+CLI for managing Airwallex accounts, cards, transfers, and more.
 
 ## Features
 
