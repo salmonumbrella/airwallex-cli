@@ -1,0 +1,466 @@
+package cmd
+
+import (
+	"fmt"
+	"os"
+	"regexp"
+	"strings"
+	"text/tabwriter"
+
+	"github.com/spf13/cobra"
+
+	"github.com/salmonumbrella/airwallex-cli/internal/outfmt"
+	"github.com/salmonumbrella/airwallex-cli/internal/ui"
+)
+
+func newBeneficiariesCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "beneficiaries",
+		Aliases: []string{"benef"},
+		Short:   "Beneficiary management",
+	}
+	cmd.AddCommand(newBeneficiariesListCmd())
+	cmd.AddCommand(newBeneficiariesGetCmd())
+	cmd.AddCommand(newBeneficiariesCreateCmd())
+	cmd.AddCommand(newBeneficiariesUpdateCmd())
+	cmd.AddCommand(newBeneficiariesDeleteCmd())
+	cmd.AddCommand(newBeneficiariesValidateCmd())
+	return cmd
+}
+
+func newBeneficiariesListCmd() *cobra.Command {
+	var pageSize int
+
+	cmd := &cobra.Command{
+		Use:   "list",
+		Short: "List beneficiaries",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			client, err := getClient(cmd.Context())
+			if err != nil {
+				return err
+			}
+
+			// Airwallex API requires minimum page_size of 10
+			if pageSize < 10 {
+				pageSize = 10
+			}
+
+			result, err := client.ListBeneficiaries(0, pageSize)
+			if err != nil {
+				return err
+			}
+
+			if outfmt.IsJSON(cmd.Context()) {
+				return outfmt.WriteJSON(os.Stdout, result)
+			}
+
+			if len(result.Items) == 0 {
+				fmt.Fprintln(os.Stderr, "No beneficiaries found")
+				return nil
+			}
+
+			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
+			fmt.Fprintln(tw, "BENEFICIARY_ID\tTYPE\tNAME\tBANK_COUNTRY\tMETHODS")
+			for _, b := range result.Items {
+				name := b.Nickname
+				if name == "" {
+					name = b.Beneficiary.BankDetails.AccountName
+				}
+				methods := ""
+				if len(b.TransferMethods) > 0 {
+					methods = b.TransferMethods[0]
+				}
+				fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\n",
+					b.BeneficiaryID, b.Beneficiary.EntityType, name, b.Beneficiary.BankDetails.BankCountryCode, methods)
+			}
+			tw.Flush()
+
+			if result.HasMore {
+				fmt.Fprintln(os.Stderr, "# More results available")
+			}
+			return nil
+		},
+	}
+
+	cmd.Flags().IntVar(&pageSize, "limit", 20, "Max results (min 10)")
+	return cmd
+}
+
+func newBeneficiariesGetCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "get <beneficiaryId>",
+		Short: "Get beneficiary details",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			client, err := getClient(cmd.Context())
+			if err != nil {
+				return err
+			}
+
+			b, err := client.GetBeneficiary(args[0])
+			if err != nil {
+				return err
+			}
+
+			if outfmt.IsJSON(cmd.Context()) {
+				return outfmt.WriteJSON(os.Stdout, b)
+			}
+
+			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
+			fmt.Fprintf(tw, "beneficiary_id\t%s\n", b.BeneficiaryID)
+			fmt.Fprintf(tw, "nickname\t%s\n", b.Nickname)
+			fmt.Fprintf(tw, "entity_type\t%s\n", b.Beneficiary.EntityType)
+			if b.Beneficiary.CompanyName != "" {
+				fmt.Fprintf(tw, "company_name\t%s\n", b.Beneficiary.CompanyName)
+			}
+			if b.Beneficiary.FirstName != "" {
+				fmt.Fprintf(tw, "first_name\t%s\n", b.Beneficiary.FirstName)
+				fmt.Fprintf(tw, "last_name\t%s\n", b.Beneficiary.LastName)
+			}
+			fmt.Fprintf(tw, "bank_country\t%s\n", b.Beneficiary.BankDetails.BankCountryCode)
+			fmt.Fprintf(tw, "bank_name\t%s\n", b.Beneficiary.BankDetails.BankName)
+			fmt.Fprintf(tw, "account_name\t%s\n", b.Beneficiary.BankDetails.AccountName)
+			tw.Flush()
+			return nil
+		},
+	}
+}
+
+func newBeneficiariesCreateCmd() *cobra.Command {
+	var entityType string
+	var bankCountry string
+	var companyName string
+	var firstName string
+	var lastName string
+	var nickname string
+	var transferMethod string
+	var accountCurrency string
+	var accountName string
+	var accountNumber string
+	var institutionNumber string
+	var transitNumber string
+	var email string
+	var phone string
+	var localClearingSystem string
+
+	cmd := &cobra.Command{
+		Use:   "create",
+		Short: "Create a new beneficiary",
+		Long: `Create a new beneficiary for payouts.
+
+Examples:
+  # Canada EFT (bank transfer)
+  airwallex beneficiaries create --entity-type PERSONAL --bank-country CA \
+    --first-name John --last-name Doe --account-name "John Doe" \
+    --account-currency CAD --account-number 1234567 \
+    --institution-number 001 --transit-number 12345
+
+  # Canada Interac e-Transfer (email)
+  airwallex beneficiaries create --entity-type PERSONAL --bank-country CA \
+    --first-name John --last-name Doe --account-name "John Doe" \
+    --account-currency CAD --email john@example.com --clearing-system INTERAC`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			u := ui.FromContext(cmd.Context())
+			client, err := getClient(cmd.Context())
+			if err != nil {
+				return err
+			}
+
+			// Validation: Required fields based on entity type
+			if accountName == "" {
+				return fmt.Errorf("--account-name is required")
+			}
+			if accountCurrency == "" {
+				return fmt.Errorf("--account-currency is required")
+			}
+
+			if entityType == "COMPANY" {
+				if companyName == "" {
+					return fmt.Errorf("--company-name is required when entity-type is COMPANY")
+				}
+			} else if entityType == "PERSONAL" {
+				if firstName == "" {
+					return fmt.Errorf("--first-name is required when entity-type is PERSONAL")
+				}
+				if lastName == "" {
+					return fmt.Errorf("--last-name is required when entity-type is PERSONAL")
+				}
+			}
+
+			// Validation: Must provide at least one routing method
+			hasEmail := email != ""
+			hasPhone := phone != ""
+			hasEFT := institutionNumber != ""
+
+			if !hasEmail && !hasPhone && !hasEFT {
+				return fmt.Errorf("must provide at least one routing method: --email, --phone, or --institution-number with --transit-number")
+			}
+
+			// Validation: Canada EFT requires both institution and transit numbers
+			if institutionNumber != "" && transitNumber == "" {
+				return fmt.Errorf("--transit-number is required when --institution-number is provided")
+			}
+
+			// Validation: Phone number format
+			if phone != "" {
+				phoneRegex := regexp.MustCompile(`^\+1-\d{10}$`)
+				if !phoneRegex.MatchString(phone) {
+					return fmt.Errorf("--phone must match format +1-nnnnnnnnnn (e.g., +1-4165551234)")
+				}
+			}
+
+			// Validation: Institution number format
+			if institutionNumber != "" {
+				instRegex := regexp.MustCompile(`^\d{3}$`)
+				if !instRegex.MatchString(institutionNumber) {
+					return fmt.Errorf("--institution-number must be exactly 3 digits")
+				}
+			}
+
+			// Validation: Transit number format
+			if transitNumber != "" {
+				transitRegex := regexp.MustCompile(`^\d{5}$`)
+				if !transitRegex.MatchString(transitNumber) {
+					return fmt.Errorf("--transit-number must be exactly 5 digits")
+				}
+			}
+
+			// Validation: Email format
+			if email != "" {
+				if !strings.Contains(email, "@") {
+					return fmt.Errorf("--email must be a valid email address")
+				}
+				parts := strings.Split(email, "@")
+				if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+					return fmt.Errorf("--email must be a valid email address")
+				}
+			}
+
+			// Build beneficiary object
+			beneficiary := map[string]interface{}{
+				"entity_type": entityType,
+			}
+			if companyName != "" {
+				beneficiary["company_name"] = companyName
+			}
+			if firstName != "" {
+				beneficiary["first_name"] = firstName
+			}
+			if lastName != "" {
+				beneficiary["last_name"] = lastName
+			}
+
+			// Build bank_details
+			bankDetails := map[string]interface{}{
+				"bank_country_code": bankCountry,
+			}
+			if accountCurrency != "" {
+				bankDetails["account_currency"] = accountCurrency
+			}
+			if accountName != "" {
+				bankDetails["account_name"] = accountName
+			}
+			if accountNumber != "" {
+				bankDetails["account_number"] = accountNumber
+			}
+			if localClearingSystem != "" {
+				bankDetails["local_clearing_system"] = localClearingSystem
+			}
+
+			// Handle routing based on type (Canada Interac vs EFT)
+			if email != "" {
+				bankDetails["account_routing_type1"] = "email_address"
+				bankDetails["account_routing_value1"] = email
+			} else if phone != "" {
+				bankDetails["account_routing_type1"] = "phone_number"
+				bankDetails["account_routing_value1"] = phone
+			} else if institutionNumber != "" {
+				// Canada EFT requires institution + transit numbers
+				bankDetails["account_routing_type1"] = "institution_number"
+				bankDetails["account_routing_value1"] = institutionNumber
+				if transitNumber != "" {
+					bankDetails["account_routing_type2"] = "transit_number"
+					bankDetails["account_routing_value2"] = transitNumber
+				}
+			}
+
+			beneficiary["bank_details"] = bankDetails
+
+			// Build request
+			req := map[string]interface{}{
+				"beneficiary":      beneficiary,
+				"transfer_methods": []string{transferMethod},
+			}
+			if nickname != "" {
+				req["nickname"] = nickname
+			}
+
+			b, err := client.CreateBeneficiary(req)
+			if err != nil {
+				return err
+			}
+
+			if outfmt.IsJSON(cmd.Context()) {
+				return outfmt.WriteJSON(os.Stdout, b)
+			}
+
+			u.Success(fmt.Sprintf("Created beneficiary: %s", b.BeneficiaryID))
+			return nil
+		},
+	}
+
+	// Required flags
+	cmd.Flags().StringVar(&entityType, "entity-type", "", "COMPANY or PERSONAL (required)")
+	cmd.Flags().StringVar(&bankCountry, "bank-country", "", "Bank country code e.g. CA, US (required)")
+	cmd.Flags().StringVar(&transferMethod, "transfer-method", "LOCAL", "Transfer method: LOCAL or SWIFT")
+	cmd.Flags().StringVar(&accountCurrency, "account-currency", "", "Currency e.g. CAD, USD (required)")
+	cmd.Flags().StringVar(&accountName, "account-name", "", "Account holder name (required)")
+
+	// Name flags
+	cmd.Flags().StringVar(&companyName, "company-name", "", "Company name (for COMPANY entity)")
+	cmd.Flags().StringVar(&firstName, "first-name", "", "First name (for PERSONAL entity)")
+	cmd.Flags().StringVar(&lastName, "last-name", "", "Last name (for PERSONAL entity)")
+	cmd.Flags().StringVar(&nickname, "nickname", "", "Nickname for the beneficiary")
+
+	// Bank account flags (EFT)
+	cmd.Flags().StringVar(&accountNumber, "account-number", "", "Bank account number")
+	cmd.Flags().StringVar(&institutionNumber, "institution-number", "", "Institution number (Canada: 3 digits)")
+	cmd.Flags().StringVar(&transitNumber, "transit-number", "", "Transit/branch number (Canada: 5 digits)")
+
+	// Interac e-Transfer flags
+	cmd.Flags().StringVar(&email, "email", "", "Email for Interac e-Transfer")
+	cmd.Flags().StringVar(&phone, "phone", "", "Phone for Interac e-Transfer (format: +1-nnnnnnnnnn)")
+	cmd.Flags().StringVar(&localClearingSystem, "clearing-system", "", "Clearing system: EFT, REGULAR_EFT, INTERAC, etc.")
+
+	if err := cmd.MarkFlagRequired("entity-type"); err != nil {
+		panic(fmt.Sprintf("failed to mark entity-type as required: %v", err))
+	}
+	if err := cmd.MarkFlagRequired("bank-country"); err != nil {
+		panic(fmt.Sprintf("failed to mark bank-country as required: %v", err))
+	}
+	return cmd
+}
+
+func newBeneficiariesUpdateCmd() *cobra.Command {
+	var nickname string
+	var companyName string
+	var firstName string
+	var lastName string
+
+	cmd := &cobra.Command{
+		Use:   "update <beneficiaryId>",
+		Short: "Update beneficiary (nickname, names)",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			u := ui.FromContext(cmd.Context())
+			client, err := getClient(cmd.Context())
+			if err != nil {
+				return err
+			}
+
+			update := make(map[string]interface{})
+			if cmd.Flags().Changed("nickname") {
+				update["nickname"] = nickname
+			}
+
+			// Beneficiary object fields
+			beneficiary := make(map[string]interface{})
+			if cmd.Flags().Changed("company-name") {
+				beneficiary["company_name"] = companyName
+			}
+			if cmd.Flags().Changed("first-name") {
+				beneficiary["first_name"] = firstName
+			}
+			if cmd.Flags().Changed("last-name") {
+				beneficiary["last_name"] = lastName
+			}
+
+			if len(beneficiary) > 0 {
+				update["beneficiary"] = beneficiary
+			}
+
+			if len(update) == 0 {
+				return fmt.Errorf("no updates specified")
+			}
+
+			b, err := client.UpdateBeneficiary(args[0], update)
+			if err != nil {
+				return err
+			}
+
+			if outfmt.IsJSON(cmd.Context()) {
+				return outfmt.WriteJSON(os.Stdout, b)
+			}
+
+			u.Success(fmt.Sprintf("Updated beneficiary: %s", b.BeneficiaryID))
+			return nil
+		},
+	}
+
+	cmd.Flags().StringVar(&nickname, "nickname", "", "Beneficiary nickname")
+	cmd.Flags().StringVar(&companyName, "company-name", "", "Company name")
+	cmd.Flags().StringVar(&firstName, "first-name", "", "First name")
+	cmd.Flags().StringVar(&lastName, "last-name", "", "Last name")
+	return cmd
+}
+
+func newBeneficiariesDeleteCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "delete <beneficiaryId>",
+		Short: "Delete a beneficiary",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			u := ui.FromContext(cmd.Context())
+			client, err := getClient(cmd.Context())
+			if err != nil {
+				return err
+			}
+
+			if err := client.DeleteBeneficiary(args[0]); err != nil {
+				return err
+			}
+
+			u.Success(fmt.Sprintf("Deleted beneficiary: %s", args[0]))
+			return nil
+		},
+	}
+}
+
+func newBeneficiariesValidateCmd() *cobra.Command {
+	var entityType string
+	var bankCountry string
+
+	cmd := &cobra.Command{
+		Use:   "validate",
+		Short: "Validate beneficiary details",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			u := ui.FromContext(cmd.Context())
+			client, err := getClient(cmd.Context())
+			if err != nil {
+				return err
+			}
+
+			req := map[string]interface{}{
+				"entity_type":       entityType,
+				"bank_country_code": bankCountry,
+			}
+
+			if err := client.ValidateBeneficiary(req); err != nil {
+				return err
+			}
+
+			u.Success("Beneficiary details are valid")
+			return nil
+		},
+	}
+
+	cmd.Flags().StringVar(&entityType, "entity-type", "", "COMPANY or PERSONAL (required)")
+	cmd.Flags().StringVar(&bankCountry, "bank-country", "", "Bank country code (required)")
+	if err := cmd.MarkFlagRequired("entity-type"); err != nil {
+		panic(fmt.Sprintf("failed to mark entity-type as required: %v", err))
+	}
+	if err := cmd.MarkFlagRequired("bank-country"); err != nil {
+		panic(fmt.Sprintf("failed to mark bank-country as required: %v", err))
+	}
+	return cmd
+}

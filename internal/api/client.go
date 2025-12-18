@@ -1,0 +1,228 @@
+package api
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"fmt"
+	"io"
+	"math/rand"
+	"net/http"
+	"time"
+)
+
+const (
+	BaseURL    = "https://api.airwallex.com"
+	APIVersion = "2025-11-11"
+)
+
+type Client struct {
+	baseURL    string
+	clientID   string
+	apiKey     string
+	accountID  string // Optional: for x-login-as header (multi-account API keys)
+	token      *TokenCache
+	httpClient *http.Client
+	ctx        context.Context
+}
+
+type TokenCache struct {
+	Token     string
+	ExpiresAt time.Time
+}
+
+func NewClient(ctx context.Context, clientID, apiKey string) *Client {
+	return &Client{
+		baseURL:    BaseURL,
+		clientID:   clientID,
+		apiKey:     apiKey,
+		httpClient: &http.Client{Timeout: 30 * time.Second},
+		ctx:        ctx,
+	}
+}
+
+// NewClientWithAccount creates a client with an account ID for x-login-as header.
+// Use this when your API key has access to multiple accounts.
+func NewClientWithAccount(ctx context.Context, clientID, apiKey, accountID string) *Client {
+	return &Client{
+		baseURL:    BaseURL,
+		clientID:   clientID,
+		apiKey:     apiKey,
+		accountID:  accountID,
+		httpClient: &http.Client{Timeout: 30 * time.Second},
+		ctx:        ctx,
+	}
+}
+
+func (c *Client) Do(req *http.Request) (*http.Response, error) {
+	if err := c.ensureValidToken(); err != nil {
+		return nil, fmt.Errorf("auth failed: %w", err)
+	}
+	req.Header.Set("Authorization", "Bearer "+c.token.Token)
+	req.Header.Set("x-api-version", APIVersion)
+	req.Header.Set("Content-Type", "application/json")
+	return c.doWithRetry(req)
+}
+
+// doWithRetry executes the request with retry logic:
+// - 429: exponential backoff with jitter, max 3 retries
+// - 5xx: single retry after 1s
+// - 4xx: no retry
+func (c *Client) doWithRetry(req *http.Request) (*http.Response, error) {
+	var resp *http.Response
+	var err error
+
+	// Separate retry counters for different error types
+	retries429 := 0
+	retries5xx := 0
+	maxRetries := 3
+
+	for {
+		resp, err = c.httpClient.Do(req)
+		if err != nil {
+			return nil, err
+		}
+
+		// 4xx errors (except 429): no retry
+		if resp.StatusCode >= 400 && resp.StatusCode < 500 && resp.StatusCode != 429 {
+			return resp, nil
+		}
+
+		// 429 rate limit: exponential backoff with jitter
+		if resp.StatusCode == 429 {
+			if retries429 >= maxRetries {
+				return resp, nil
+			}
+			// Calculate backoff: 1s, 2s, 4s with jitter
+			baseDelay := time.Duration(1<<retries429) * time.Second
+			jitter := time.Duration(rand.Int63n(int64(baseDelay / 2)))
+			delay := baseDelay + jitter
+
+			resp.Body.Close()
+
+			// Replay request body if available
+			if req.GetBody != nil {
+				req.Body, err = req.GetBody()
+				if err != nil {
+					return nil, fmt.Errorf("failed to replay request body: %w", err)
+				}
+			}
+
+			time.Sleep(delay)
+			retries429++
+			continue
+		}
+
+		// 5xx errors: retry once after 1s
+		if resp.StatusCode >= 500 {
+			// Only retry once
+			if retries5xx > 0 {
+				return resp, nil
+			}
+			resp.Body.Close()
+
+			// Replay request body if available
+			if req.GetBody != nil {
+				req.Body, err = req.GetBody()
+				if err != nil {
+					return nil, fmt.Errorf("failed to replay request body: %w", err)
+				}
+			}
+
+			time.Sleep(1 * time.Second)
+			retries5xx++
+			continue
+		}
+
+		// Success or other status codes
+		return resp, nil
+	}
+}
+
+func (c *Client) ensureValidToken() error {
+	if c.token != nil && time.Now().Add(60*time.Second).Before(c.token.ExpiresAt) {
+		return nil
+	}
+	return c.fetchToken()
+}
+
+func (c *Client) fetchToken() error {
+	url := c.baseURL + "/api/v1/authentication/login"
+
+	req, err := http.NewRequestWithContext(c.ctx, "POST", url, nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("x-client-id", c.clientID)
+	req.Header.Set("x-api-key", c.apiKey)
+	if c.accountID != "" {
+		req.Header.Set("x-login-as", c.accountID)
+	}
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("auth failed: %s - %s", resp.Status, string(body))
+	}
+
+	var result struct {
+		Token     string `json:"token"`
+		ExpiresAt string `json:"expires_at"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return err
+	}
+
+	// Airwallex returns timestamps like "2025-12-17T08:25:19+0000" (no colon in tz)
+	// Try RFC3339 first, then fallback to Airwallex format
+	expiresAt, err := time.Parse(time.RFC3339, result.ExpiresAt)
+	if err != nil {
+		// Airwallex format: "2006-01-02T15:04:05-0700"
+		expiresAt, err = time.Parse("2006-01-02T15:04:05-0700", result.ExpiresAt)
+		if err != nil {
+			return fmt.Errorf("parsing expires_at %q: %w", result.ExpiresAt, err)
+		}
+	}
+
+	c.token = &TokenCache{
+		Token:     result.Token,
+		ExpiresAt: expiresAt,
+	}
+	return nil
+}
+
+func (c *Client) Get(path string) (*http.Response, error) {
+	req, err := http.NewRequestWithContext(c.ctx, "GET", c.baseURL+path, nil)
+	if err != nil {
+		return nil, err
+	}
+	return c.Do(req)
+}
+
+func (c *Client) Post(path string, body interface{}) (*http.Response, error) {
+	var bodyReader io.Reader
+	var getBody func() (io.ReadCloser, error)
+	if body != nil {
+		data, err := json.Marshal(body)
+		if err != nil {
+			return nil, err
+		}
+		bodyReader = bytes.NewReader(data)
+		// Enable body replay for retries
+		getBody = func() (io.ReadCloser, error) {
+			return io.NopCloser(bytes.NewReader(data)), nil
+		}
+	}
+	req, err := http.NewRequestWithContext(c.ctx, "POST", c.baseURL+path, bodyReader)
+	if err != nil {
+		return nil, err
+	}
+	req.GetBody = getBody
+	return c.Do(req)
+}
