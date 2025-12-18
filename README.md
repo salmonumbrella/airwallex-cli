@@ -85,8 +85,6 @@ Credentials are stored securely in your OS keyring:
 - Linux: Secret Service (GNOME Keyring, KWallet)
 - Windows: Credential Manager
 
-Configuration directory: `~/.config/airwallex-cli/` (no sensitive data stored on disk)
-
 ## Commands
 
 ### Authentication
