@@ -1,6 +1,6 @@
 # Airwallex CLI
 
-A Go CLI for managing Airwallex accounts, cards, transfers, and more from the command line.
+A CLI for managing Airwallex accounts, cards, transfers, and more from the command line.
 
 ## Features
 
@@ -15,17 +15,16 @@ A Go CLI for managing Airwallex accounts, cards, transfers, and more from the co
 
 ## Installation
 
+### Homebrew
+
+```bash
+brew install salmonumbrella/tap/airwallex
+```
+
 ### From Source
 
 ```bash
 go install github.com/salmonumbrella/airwallex-cli/cmd/airwallex@latest
-```
-
-### Homebrew (Planned)
-
-```bash
-brew tap salmonumbrella/airwallex-cli
-brew install airwallex-cli
 ```
 
 ## Quick Start
