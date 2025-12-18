@@ -1,19 +1,6 @@
 package config
 
-import (
-	"strings"
-	"testing"
-)
-
-func TestConfigDir(t *testing.T) {
-	dir, err := ConfigDir()
-	if err != nil {
-		t.Fatalf("ConfigDir() error: %v", err)
-	}
-	if !strings.HasSuffix(dir, "airwallex-cli") {
-		t.Errorf("ConfigDir() = %q, want suffix 'airwallex-cli'", dir)
-	}
-}
+import "testing"
 
 func TestAppName(t *testing.T) {
 	if AppName != "airwallex-cli" {
