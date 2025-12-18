@@ -4,14 +4,12 @@ A CLI for managing Airwallex accounts, cards, transfers, and more from the comma
 
 ## Features
 
-- **Secure credential storage** using OS keyring (Keychain on macOS, Secret Service on Linux, Credential Manager on Windows)
-- **Auto-refreshing tokens** - authenticate once, use indefinitely
 - **Multiple account support** - manage multiple Airwallex accounts
 - **Issuing** - create and manage cards, cardholders, and view transactions
 - **Transfers & beneficiaries** - send payouts and manage recipients
 - **Balances & accounts** - view account balances and global accounts
-- **Flexible output** - human-readable tables or JSON for scripting
-- **Color support** - automatic TTY detection with color output
+- **Secure credential storage** using OS keyring (Keychain on macOS, Secret Service on Linux, Credential Manager on Windows)
+- **Auto-refreshing tokens** - authenticate once, use indefinitely
 
 ## Installation
 
@@ -29,31 +27,18 @@ go install github.com/salmonumbrella/airwallex-cli/cmd/airwallex@latest
 
 ## Quick Start
 
-### 1. Add Credentials
-
-Add your Airwallex API credentials (interactive mode prompts for API key):
+### 1. Authenticate
 
 ```bash
-airwallex auth add my-account --client-id <your-client-id>
-API Key: ••••••••••••
+airwallex auth
 ```
 
-Or non-interactive:
-
-```bash
-airwallex auth add my-account --client-id <id> --api-key <key>
-```
+This opens a browser for you to enter your Airwallex API credentials.
 
 ### 2. Test Authentication
 
 ```bash
-airwallex auth test --account my-account
-```
-
-### 3. View Balances
-
-```bash
-airwallex balances --account my-account
+airwallex auth test
 ```
 
 ## Configuration
@@ -153,7 +138,7 @@ airwallex beneficiaries validate --entity-type ... --bank-country ...
 
 ## Output Formats
 
-### Text (Default)
+### Text
 
 Human-readable tables with colors and formatting:
 
