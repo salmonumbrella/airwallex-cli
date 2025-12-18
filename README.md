@@ -33,8 +33,6 @@ go install github.com/salmonumbrella/airwallex-cli/cmd/airwallex@latest
 airwallex auth
 ```
 
-This opens a browser for you to enter your Airwallex API credentials.
-
 Or via command line:
 
 ```bash
