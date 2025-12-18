@@ -19,7 +19,7 @@ A CLI for managing Airwallex accounts, cards, transfers, and more from the comma
 brew install salmonumbrella/tap/airwallex-cli
 ```
 
-### From Source
+or
 
 ```bash
 go install github.com/salmonumbrella/airwallex-cli/cmd/airwallex@latest
