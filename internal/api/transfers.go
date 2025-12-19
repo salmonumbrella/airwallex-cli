@@ -214,6 +214,29 @@ func (c *Client) GetBeneficiary(ctx context.Context, beneficiaryID string) (*Ben
 	return &b, nil
 }
 
+// GetBeneficiaryRaw returns the full beneficiary data as a map for merging with updates
+func (c *Client) GetBeneficiaryRaw(ctx context.Context, beneficiaryID string) (map[string]interface{}, error) {
+	if err := ValidateResourceID(beneficiaryID, "beneficiary"); err != nil {
+		return nil, err
+	}
+	resp, err := c.Get(ctx, "/api/v1/beneficiaries/"+url.PathEscape(beneficiaryID))
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, ParseAPIError(body)
+	}
+
+	var result map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
 // CreateBeneficiary creates a new beneficiary
 func (c *Client) CreateBeneficiary(ctx context.Context, req map[string]interface{}) (*Beneficiary, error) {
 	ctx, cancel := withDefaultTimeout(ctx)

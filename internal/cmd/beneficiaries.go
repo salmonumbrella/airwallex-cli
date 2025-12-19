@@ -395,53 +395,76 @@ func newBeneficiariesUpdateCmd() *cobra.Command {
 				return err
 			}
 
-			update := make(map[string]interface{})
-			if cmd.Flags().Changed("nickname") {
-				update["nickname"] = nickname
-			}
+			// Check if any updates were specified
+			hasUpdates := cmd.Flags().Changed("nickname") ||
+				cmd.Flags().Changed("company-name") ||
+				cmd.Flags().Changed("first-name") ||
+				cmd.Flags().Changed("last-name") ||
+				cmd.Flags().Changed("address-country") ||
+				cmd.Flags().Changed("address-street") ||
+				cmd.Flags().Changed("address-city") ||
+				cmd.Flags().Changed("address-state") ||
+				cmd.Flags().Changed("address-postcode")
 
-			// Beneficiary object fields
-			beneficiary := make(map[string]interface{})
-			if cmd.Flags().Changed("company-name") {
-				beneficiary["company_name"] = companyName
-			}
-			if cmd.Flags().Changed("first-name") {
-				beneficiary["first_name"] = firstName
-			}
-			if cmd.Flags().Changed("last-name") {
-				beneficiary["last_name"] = lastName
-			}
-
-			// Address fields
-			address := make(map[string]interface{})
-			if cmd.Flags().Changed("address-country") {
-				address["country_code"] = addressCountry
-			}
-			if cmd.Flags().Changed("address-street") {
-				address["street_address"] = addressStreet
-			}
-			if cmd.Flags().Changed("address-city") {
-				address["city"] = addressCity
-			}
-			if cmd.Flags().Changed("address-state") {
-				address["state"] = addressState
-			}
-			if cmd.Flags().Changed("address-postcode") {
-				address["postcode"] = addressPostcode
-			}
-			if len(address) > 0 {
-				beneficiary["address"] = address
-			}
-
-			if len(beneficiary) > 0 {
-				update["beneficiary"] = beneficiary
-			}
-
-			if len(update) == 0 {
+			if !hasUpdates {
 				return fmt.Errorf("no updates specified")
 			}
 
-			b, err := client.UpdateBeneficiary(cmd.Context(), args[0], update)
+			// Fetch existing beneficiary data
+			existing, err := client.GetBeneficiaryRaw(cmd.Context(), args[0])
+			if err != nil {
+				return fmt.Errorf("failed to fetch existing beneficiary: %w", err)
+			}
+
+			// Remove id field - API doesn't want it in update request
+			delete(existing, "id")
+
+			// Apply updates to top-level fields
+			if cmd.Flags().Changed("nickname") {
+				existing["nickname"] = nickname
+			}
+
+			// Get or create beneficiary object
+			beneficiaryObj, ok := existing["beneficiary"].(map[string]interface{})
+			if !ok {
+				beneficiaryObj = make(map[string]interface{})
+			}
+
+			// Apply name updates
+			if cmd.Flags().Changed("company-name") {
+				beneficiaryObj["company_name"] = companyName
+			}
+			if cmd.Flags().Changed("first-name") {
+				beneficiaryObj["first_name"] = firstName
+			}
+			if cmd.Flags().Changed("last-name") {
+				beneficiaryObj["last_name"] = lastName
+			}
+
+			// Apply address updates
+			addressObj, ok := beneficiaryObj["address"].(map[string]interface{})
+			if !ok {
+				addressObj = make(map[string]interface{})
+			}
+			if cmd.Flags().Changed("address-country") {
+				addressObj["country_code"] = addressCountry
+			}
+			if cmd.Flags().Changed("address-street") {
+				addressObj["street_address"] = addressStreet
+			}
+			if cmd.Flags().Changed("address-city") {
+				addressObj["city"] = addressCity
+			}
+			if cmd.Flags().Changed("address-state") {
+				addressObj["state"] = addressState
+			}
+			if cmd.Flags().Changed("address-postcode") {
+				addressObj["postcode"] = addressPostcode
+			}
+			beneficiaryObj["address"] = addressObj
+			existing["beneficiary"] = beneficiaryObj
+
+			b, err := client.UpdateBeneficiary(cmd.Context(), args[0], existing)
 			if err != nil {
 				return err
 			}
