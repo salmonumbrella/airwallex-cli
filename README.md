@@ -29,8 +29,17 @@ go install github.com/salmonumbrella/airwallex-cli/cmd/airwallex@latest
 
 ### 1. Authenticate
 
+Choose one of two methods:
+
+**Browser-based (recommended):**
 ```bash
-airwallex auth add my-account --client-id <id> --api-key <key>
+airwallex auth login
+```
+
+**Manual credential entry:**
+```bash
+airwallex auth add my-account
+# You'll be prompted securely for Client ID and API Key
 ```
 
 ### 2. Test Authentication
@@ -61,28 +70,39 @@ airwallex balances
 - `AWX_COLOR` - Color mode: `auto` (default), `always`, or `never`
 - `NO_COLOR` - Set to any value to disable colors (standard convention)
 
+## Security
+
 ### Credential Storage
 
-Credentials are stored securely in your OS keyring:
-- macOS: Keychain
-- Linux: Secret Service (GNOME Keyring, KWallet)
-- Windows: Credential Manager
+Credentials are stored securely in your system's keychain:
+- **macOS**: Keychain Access
+- **Linux**: Secret Service (GNOME Keyring, KWallet)
+- **Windows**: Credential Manager
+
+### Best Practices
+
+- **Never pass `--api-key` on the command line** - it exposes secrets in shell history and process list
+- Use `airwallex auth login` for interactive browser-based setup
+- Use `airwallex auth add <name>` and enter API key when prompted
+- Rotate API keys immediately if exposed in logs or history
 
 ## Commands
 
 ### Authentication
 
 ```bash
-airwallex auth add <name> --client-id <id> [--api-key <key>]    # Add credentials
-airwallex auth list                                               # List configured accounts
-airwallex auth remove <name>                                      # Remove account
-airwallex auth test [--account <name>]                            # Test credentials
+airwallex auth login                     # Authenticate via browser (recommended)
+airwallex auth add <name>                # Add credentials manually (prompts securely)
+airwallex auth list                      # List configured accounts
+airwallex auth remove <name>             # Remove account
+airwallex auth test [--account <name>]   # Test credentials
 ```
 
 ### Balances & Accounts
 
 ```bash
 airwallex balances                              # View current balances
+airwallex balances history [--currency <c>] [--from <date>] [--to <date>]
 airwallex accounts list                         # List global accounts
 airwallex accounts get <accountId>              # Get account details
 ```
@@ -96,6 +116,7 @@ airwallex issuing cards create --cardholder-id <id> --form-factor VIRTUAL|PHYSIC
 airwallex issuing cards update <cardId> [--nickname <name>] [--status ACTIVE|INACTIVE|CLOSED]
 airwallex issuing cards activate <cardId>
 airwallex issuing cards details <cardId>        # Sensitive: full PAN, CVV, expiry
+airwallex issuing cards limits <cardId>         # View spending limits and remaining balance
 ```
 
 ### Issuing - Cardholders
@@ -119,8 +140,9 @@ airwallex issuing transactions get <transactionId>
 ```bash
 airwallex transfers list [--status <status>]
 airwallex transfers get <transferId>
-airwallex transfers create --beneficiary-id <id> --amount <n> --currency <c> ...
+airwallex transfers create --beneficiary-id <id> --transfer-amount <n> --transfer-currency <c> ...
 airwallex transfers cancel <transferId>
+airwallex transfers confirmation <transferId> --output <file.pdf>  # Download confirmation letter
 ```
 
 ### Beneficiaries
@@ -132,6 +154,21 @@ airwallex beneficiaries create --entity-type COMPANY|PERSONAL --bank-country <co
 airwallex beneficiaries update <beneficiaryId> ...
 airwallex beneficiaries delete <beneficiaryId>
 airwallex beneficiaries validate --entity-type ... --bank-country ...
+```
+
+### Reports
+
+```bash
+airwallex reports list [--limit <n>]
+airwallex reports get <reportId>
+airwallex reports account-statement --from-date <YYYY-MM-DD> --to-date <YYYY-MM-DD> \
+  --currencies <CAD,USD> [--output <file>] [--wait]
+airwallex reports balance-activity --from-date <YYYY-MM-DD> --to-date <YYYY-MM-DD> \
+  --format CSV|EXCEL|PDF [--output <file>] [--wait]
+airwallex reports transaction-recon --from-date <YYYY-MM-DD> --to-date <YYYY-MM-DD> \
+  --format CSV|EXCEL [--output <file>] [--wait]
+airwallex reports settlement --from-date <YYYY-MM-DD> --to-date <YYYY-MM-DD> \
+  --format CSV|EXCEL [--output <file>] [--wait]
 ```
 
 ## Output Formats
@@ -196,9 +233,10 @@ airwallex beneficiaries list
 # Create transfer
 airwallex transfers create \
   --beneficiary-id <beneficiaryId> \
-  --amount 1000.00 \
-  --currency USD \
-  --reason "Vendor payment" \
+  --transfer-amount 1000.00 \
+  --transfer-currency USD \
+  --source-currency USD \
+  --reason "payment_to_supplier" \
   --reference "INV-2024-001"
 ```
 
@@ -234,6 +272,7 @@ All commands support these flags:
 - `--output <format>` - Output format: `text` or `json` (default: text)
 - `--color <mode>` - Color mode: `auto`, `always`, or `never` (default: auto)
 - `--help` - Show help for any command
+- `--version` - Show version information (via `airwallex version`)
 
 ## Development
 

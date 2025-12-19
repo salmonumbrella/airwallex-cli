@@ -2,16 +2,20 @@ package cmd
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"os"
+	"os/signal"
 	"strings"
 	"syscall"
 	"text/tabwriter"
+	"time"
 
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 
 	"github.com/salmonumbrella/airwallex-cli/internal/api"
+	"github.com/salmonumbrella/airwallex-cli/internal/auth"
 	"github.com/salmonumbrella/airwallex-cli/internal/outfmt"
 	"github.com/salmonumbrella/airwallex-cli/internal/secrets"
 	"github.com/salmonumbrella/airwallex-cli/internal/ui"
@@ -22,11 +26,64 @@ func newAuthCmd() *cobra.Command {
 		Use:   "auth",
 		Short: "Authentication and account management",
 	}
+	cmd.AddCommand(newAuthLoginCmd())
 	cmd.AddCommand(newAuthAddCmd())
 	cmd.AddCommand(newAuthListCmd())
 	cmd.AddCommand(newAuthRemoveCmd())
 	cmd.AddCommand(newAuthTestCmd())
 	return cmd
+}
+
+func newAuthLoginCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "login",
+		Short: "Authenticate via browser",
+		Long: `Opens a browser window to configure API credentials interactively.
+
+This provides a guided setup experience with:
+  - Links to find your API credentials
+  - Connection testing before saving
+  - Secure credential storage in keychain
+
+Examples:
+  airwallex auth login`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			u := ui.FromContext(cmd.Context())
+
+			store, err := openSecretsStore()
+			if err != nil {
+				return fmt.Errorf("failed to open keyring: %w", err)
+			}
+
+			u.Info("Opening browser for authentication setup...")
+			u.Info("Complete the setup in your browser, then return here.")
+
+			// Create context with timeout and cancellation
+			ctx, cancel := context.WithTimeout(cmd.Context(), 10*time.Minute)
+			defer cancel()
+
+			// Handle interrupt
+			sigChan := make(chan os.Signal, 1)
+			signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+			go func() {
+				<-sigChan
+				cancel()
+			}()
+
+			server := auth.NewSetupServer(store)
+			result, err := server.Start(ctx)
+			if err != nil {
+				return fmt.Errorf("setup failed: %w", err)
+			}
+
+			if result.Error != nil {
+				return result.Error
+			}
+
+			u.Success(fmt.Sprintf("Account '%s' configured successfully!", result.AccountName))
+			return nil
+		},
+	}
 }
 
 func newAuthAddCmd() *cobra.Command {
@@ -44,10 +101,12 @@ It specifies which account the token should be authorized for (sent as x-login-a
 
 Examples:
   # Basic authentication (single account API key)
-  airwallex auth add production --client-id xxx --api-key yyy
+  airwallex auth add production --client-id xxx
+  # You'll be prompted securely for API Key
 
   # Multi-account API key (requires account-id)
-  airwallex auth add production --client-id xxx --api-key yyy --account-id acct_xxx`,
+  airwallex auth add production --client-id xxx --account-id acct_xxx
+  # You'll be prompted securely for API Key`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			u := ui.FromContext(cmd.Context())

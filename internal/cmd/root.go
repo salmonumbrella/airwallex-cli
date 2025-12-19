@@ -81,7 +81,7 @@ func requireAccount(f *rootFlags) (string, error) {
 
 	switch len(accounts) {
 	case 0:
-		return "", fmt.Errorf("no accounts configured. Run: airwallex auth add <name> --client-id <id> --api-key <key>")
+		return "", fmt.Errorf("no accounts configured. Run: airwallex auth login OR airwallex auth add <name> --client-id <id>")
 	case 1:
 		// Auto-select the only account
 		return accounts[0].Name, nil
