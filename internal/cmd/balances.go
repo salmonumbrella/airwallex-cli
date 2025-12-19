@@ -28,7 +28,7 @@ func newBalancesCmd() *cobra.Command {
 			}
 
 			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, balances)
+				return outfmt.WriteJSONFiltered(os.Stdout, balances, outfmt.GetQuery(cmd.Context()))
 			}
 
 			if len(balances.Balances) == 0 {
@@ -132,7 +132,7 @@ Examples:
 			}
 
 			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, result)
+				return outfmt.WriteJSONFiltered(os.Stdout, result, outfmt.GetQuery(cmd.Context()))
 			}
 
 			if len(result.Items) == 0 {
