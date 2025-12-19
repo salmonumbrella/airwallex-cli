@@ -20,10 +20,11 @@ func TestClient_ensureValidToken_fetchesWhenEmpty(t *testing.T) {
 	defer server.Close()
 
 	c := &Client{
-		baseURL:    server.URL,
-		clientID:   "test-id",
-		apiKey:     "test-key",
-		httpClient: http.DefaultClient,
+		baseURL:        server.URL,
+		clientID:       "test-id",
+		apiKey:         "test-key",
+		httpClient:     http.DefaultClient,
+		circuitBreaker: &circuitBreaker{},
 	}
 
 	err := c.ensureValidToken(context.Background())
@@ -48,10 +49,11 @@ func TestClient_ensureValidToken_reusesValidToken(t *testing.T) {
 	defer server.Close()
 
 	c := &Client{
-		baseURL:    server.URL,
-		clientID:   "test-id",
-		apiKey:     "test-key",
-		httpClient: http.DefaultClient,
+		baseURL:        server.URL,
+		clientID:       "test-id",
+		apiKey:         "test-key",
+		httpClient:     http.DefaultClient,
+		circuitBreaker: &circuitBreaker{},
 
 		token: &TokenCache{
 			Token:     "existing-token",
@@ -81,10 +83,11 @@ func TestClient_ensureValidToken_refreshesExpiredToken(t *testing.T) {
 	defer server.Close()
 
 	c := &Client{
-		baseURL:    server.URL,
-		clientID:   "test-id",
-		apiKey:     "test-key",
-		httpClient: http.DefaultClient,
+		baseURL:        server.URL,
+		clientID:       "test-id",
+		apiKey:         "test-key",
+		httpClient:     http.DefaultClient,
+		circuitBreaker: &circuitBreaker{},
 
 		token: &TokenCache{
 			Token:     "old-token",
@@ -114,10 +117,11 @@ func TestClient_doWithRetry_noRetryOn4xx(t *testing.T) {
 	defer server.Close()
 
 	c := &Client{
-		baseURL:    server.URL,
-		clientID:   "test-id",
-		apiKey:     "test-key",
-		httpClient: http.DefaultClient,
+		baseURL:        server.URL,
+		clientID:       "test-id",
+		apiKey:         "test-key",
+		httpClient:     http.DefaultClient,
+		circuitBreaker: &circuitBreaker{},
 
 		token: &TokenCache{
 			Token:     "test-token",
@@ -155,10 +159,11 @@ func TestClient_doWithRetry_retriesOn429WithExponentialBackoff(t *testing.T) {
 	defer server.Close()
 
 	c := &Client{
-		baseURL:    server.URL,
-		clientID:   "test-id",
-		apiKey:     "test-key",
-		httpClient: http.DefaultClient,
+		baseURL:        server.URL,
+		clientID:       "test-id",
+		apiKey:         "test-key",
+		httpClient:     http.DefaultClient,
+		circuitBreaker: &circuitBreaker{},
 
 		token: &TokenCache{
 			Token:     "test-token",
@@ -199,10 +204,11 @@ func TestClient_doWithRetry_maxRetriesOn429(t *testing.T) {
 	defer server.Close()
 
 	c := &Client{
-		baseURL:    server.URL,
-		clientID:   "test-id",
-		apiKey:     "test-key",
-		httpClient: http.DefaultClient,
+		baseURL:        server.URL,
+		clientID:       "test-id",
+		apiKey:         "test-key",
+		httpClient:     http.DefaultClient,
+		circuitBreaker: &circuitBreaker{},
 
 		token: &TokenCache{
 			Token:     "test-token",
@@ -242,10 +248,11 @@ func TestClient_doWithRetry_respectsRetryAfterHeader(t *testing.T) {
 	defer server.Close()
 
 	c := &Client{
-		baseURL:    server.URL,
-		clientID:   "test-id",
-		apiKey:     "test-key",
-		httpClient: http.DefaultClient,
+		baseURL:        server.URL,
+		clientID:       "test-id",
+		apiKey:         "test-key",
+		httpClient:     http.DefaultClient,
+		circuitBreaker: &circuitBreaker{},
 
 		token: &TokenCache{
 			Token:     "test-token",
@@ -290,10 +297,11 @@ func TestClient_doWithRetry_contextCancellationDuringRetry(t *testing.T) {
 	defer server.Close()
 
 	c := &Client{
-		baseURL:    server.URL,
-		clientID:   "test-id",
-		apiKey:     "test-key",
-		httpClient: http.DefaultClient,
+		baseURL:        server.URL,
+		clientID:       "test-id",
+		apiKey:         "test-key",
+		httpClient:     http.DefaultClient,
+		circuitBreaker: &circuitBreaker{},
 
 		token: &TokenCache{
 			Token:     "test-token",
@@ -349,10 +357,11 @@ func TestClient_doWithRetry_retriesOnce5xx(t *testing.T) {
 	defer server.Close()
 
 	c := &Client{
-		baseURL:    server.URL,
-		clientID:   "test-id",
-		apiKey:     "test-key",
-		httpClient: http.DefaultClient,
+		baseURL:        server.URL,
+		clientID:       "test-id",
+		apiKey:         "test-key",
+		httpClient:     http.DefaultClient,
+		circuitBreaker: &circuitBreaker{},
 
 		token: &TokenCache{
 			Token:     "test-token",
@@ -393,10 +402,11 @@ func TestClient_doWithRetry_noSecondRetryOn5xx(t *testing.T) {
 	defer server.Close()
 
 	c := &Client{
-		baseURL:    server.URL,
-		clientID:   "test-id",
-		apiKey:     "test-key",
-		httpClient: http.DefaultClient,
+		baseURL:        server.URL,
+		clientID:       "test-id",
+		apiKey:         "test-key",
+		httpClient:     http.DefaultClient,
+		circuitBreaker: &circuitBreaker{},
 
 		token: &TokenCache{
 			Token:     "test-token",
@@ -430,10 +440,11 @@ func TestClient_doWithRetry_successOnFirstAttempt(t *testing.T) {
 	defer server.Close()
 
 	c := &Client{
-		baseURL:    server.URL,
-		clientID:   "test-id",
-		apiKey:     "test-key",
-		httpClient: http.DefaultClient,
+		baseURL:        server.URL,
+		clientID:       "test-id",
+		apiKey:         "test-key",
+		httpClient:     http.DefaultClient,
+		circuitBreaker: &circuitBreaker{},
 
 		token: &TokenCache{
 			Token:     "test-token",
@@ -479,10 +490,11 @@ func TestClient_Post_retriesOn429WithBodyReplay(t *testing.T) {
 	defer server.Close()
 
 	c := &Client{
-		baseURL:    server.URL,
-		clientID:   "test-id",
-		apiKey:     "test-key",
-		httpClient: http.DefaultClient,
+		baseURL:        server.URL,
+		clientID:       "test-id",
+		apiKey:         "test-key",
+		httpClient:     http.DefaultClient,
+		circuitBreaker: &circuitBreaker{},
 
 		token: &TokenCache{
 			Token:     "test-token",
@@ -538,10 +550,11 @@ func TestClient_doWithRetry_mixedErrors5xxThen429(t *testing.T) {
 	defer server.Close()
 
 	c := &Client{
-		baseURL:    server.URL,
-		clientID:   "test-id",
-		apiKey:     "test-key",
-		httpClient: http.DefaultClient,
+		baseURL:        server.URL,
+		clientID:       "test-id",
+		apiKey:         "test-key",
+		httpClient:     http.DefaultClient,
+		circuitBreaker: &circuitBreaker{},
 
 		token: &TokenCache{
 			Token:     "test-token",
@@ -584,10 +597,11 @@ func TestClient_doWithRetry_mixedErrors429Then5xx(t *testing.T) {
 	defer server.Close()
 
 	c := &Client{
-		baseURL:    server.URL,
-		clientID:   "test-id",
-		apiKey:     "test-key",
-		httpClient: http.DefaultClient,
+		baseURL:        server.URL,
+		clientID:       "test-id",
+		apiKey:         "test-key",
+		httpClient:     http.DefaultClient,
+		circuitBreaker: &circuitBreaker{},
 
 		token: &TokenCache{
 			Token:     "test-token",
@@ -627,10 +641,11 @@ func TestClient_doWithRetry_GET_retriesOn5xx(t *testing.T) {
 	defer server.Close()
 
 	c := &Client{
-		baseURL:    server.URL,
-		clientID:   "test-id",
-		apiKey:     "test-key",
-		httpClient: http.DefaultClient,
+		baseURL:        server.URL,
+		clientID:       "test-id",
+		apiKey:         "test-key",
+		httpClient:     http.DefaultClient,
+		circuitBreaker: &circuitBreaker{},
 
 		token: &TokenCache{
 			Token:     "test-token",
@@ -664,10 +679,11 @@ func TestClient_doWithRetry_POST_noRetryOn5xx(t *testing.T) {
 	defer server.Close()
 
 	c := &Client{
-		baseURL:    server.URL,
-		clientID:   "test-id",
-		apiKey:     "test-key",
-		httpClient: http.DefaultClient,
+		baseURL:        server.URL,
+		clientID:       "test-id",
+		apiKey:         "test-key",
+		httpClient:     http.DefaultClient,
+		circuitBreaker: &circuitBreaker{},
 
 		token: &TokenCache{
 			Token:     "test-token",
@@ -706,10 +722,11 @@ func TestClient_doWithRetry_POST_retriesOn429(t *testing.T) {
 	defer server.Close()
 
 	c := &Client{
-		baseURL:    server.URL,
-		clientID:   "test-id",
-		apiKey:     "test-key",
-		httpClient: http.DefaultClient,
+		baseURL:        server.URL,
+		clientID:       "test-id",
+		apiKey:         "test-key",
+		httpClient:     http.DefaultClient,
+		circuitBreaker: &circuitBreaker{},
 
 		token: &TokenCache{
 			Token:     "test-token",
@@ -743,10 +760,11 @@ func TestClient_doWithRetry_PUT_noRetryOn5xx(t *testing.T) {
 	defer server.Close()
 
 	c := &Client{
-		baseURL:    server.URL,
-		clientID:   "test-id",
-		apiKey:     "test-key",
-		httpClient: http.DefaultClient,
+		baseURL:        server.URL,
+		clientID:       "test-id",
+		apiKey:         "test-key",
+		httpClient:     http.DefaultClient,
+		circuitBreaker: &circuitBreaker{},
 
 		token: &TokenCache{
 			Token:     "test-token",
@@ -780,10 +798,11 @@ func TestClient_doWithRetry_DELETE_noRetryOn5xx(t *testing.T) {
 	defer server.Close()
 
 	c := &Client{
-		baseURL:    server.URL,
-		clientID:   "test-id",
-		apiKey:     "test-key",
-		httpClient: http.DefaultClient,
+		baseURL:        server.URL,
+		clientID:       "test-id",
+		apiKey:         "test-key",
+		httpClient:     http.DefaultClient,
+		circuitBreaker: &circuitBreaker{},
 
 		token: &TokenCache{
 			Token:     "test-token",
@@ -817,10 +836,11 @@ func TestClient_doWithRetry_PATCH_noRetryOn5xx(t *testing.T) {
 	defer server.Close()
 
 	c := &Client{
-		baseURL:    server.URL,
-		clientID:   "test-id",
-		apiKey:     "test-key",
-		httpClient: http.DefaultClient,
+		baseURL:        server.URL,
+		clientID:       "test-id",
+		apiKey:         "test-key",
+		httpClient:     http.DefaultClient,
+		circuitBreaker: &circuitBreaker{},
 
 		token: &TokenCache{
 			Token:     "test-token",
@@ -857,10 +877,11 @@ func TestClient_doWithRetry_HEAD_retriesOn5xx(t *testing.T) {
 	defer server.Close()
 
 	c := &Client{
-		baseURL:    server.URL,
-		clientID:   "test-id",
-		apiKey:     "test-key",
-		httpClient: http.DefaultClient,
+		baseURL:        server.URL,
+		clientID:       "test-id",
+		apiKey:         "test-key",
+		httpClient:     http.DefaultClient,
+		circuitBreaker: &circuitBreaker{},
 
 		token: &TokenCache{
 			Token:     "test-token",
@@ -897,10 +918,11 @@ func TestClient_doWithRetry_OPTIONS_retriesOn5xx(t *testing.T) {
 	defer server.Close()
 
 	c := &Client{
-		baseURL:    server.URL,
-		clientID:   "test-id",
-		apiKey:     "test-key",
-		httpClient: http.DefaultClient,
+		baseURL:        server.URL,
+		clientID:       "test-id",
+		apiKey:         "test-key",
+		httpClient:     http.DefaultClient,
+		circuitBreaker: &circuitBreaker{},
 
 		token: &TokenCache{
 			Token:     "test-token",
@@ -1065,10 +1087,11 @@ func TestClient_Post_addsIdempotencyKeyForFinancialOperations(t *testing.T) {
 	defer server.Close()
 
 	c := &Client{
-		baseURL:    server.URL,
-		clientID:   "test-id",
-		apiKey:     "test-key",
-		httpClient: http.DefaultClient,
+		baseURL:        server.URL,
+		clientID:       "test-id",
+		apiKey:         "test-key",
+		httpClient:     http.DefaultClient,
+		circuitBreaker: &circuitBreaker{},
 		token: &TokenCache{
 			Token:     "test-token",
 			ExpiresAt: time.Now().Add(10 * time.Minute),
@@ -1102,10 +1125,11 @@ func TestClient_Post_noIdempotencyKeyForNonFinancialOperations(t *testing.T) {
 	defer server.Close()
 
 	c := &Client{
-		baseURL:    server.URL,
-		clientID:   "test-id",
-		apiKey:     "test-key",
-		httpClient: http.DefaultClient,
+		baseURL:        server.URL,
+		clientID:       "test-id",
+		apiKey:         "test-key",
+		httpClient:     http.DefaultClient,
+		circuitBreaker: &circuitBreaker{},
 		token: &TokenCache{
 			Token:     "test-token",
 			ExpiresAt: time.Now().Add(10 * time.Minute),
@@ -1122,5 +1146,256 @@ func TestClient_Post_noIdempotencyKeyForNonFinancialOperations(t *testing.T) {
 	idempotencyKey := capturedHeaders.Get("x-idempotency-key")
 	if idempotencyKey != "" {
 		t.Errorf("expected no x-idempotency-key header for non-financial operation, got %q", idempotencyKey)
+	}
+}
+
+// TestCircuitBreaker_opensAfterThreshold tests that the circuit breaker opens after consecutive failures
+func TestCircuitBreaker_opensAfterThreshold(t *testing.T) {
+	callCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte(`{"error": "server error"}`))
+	}))
+	defer server.Close()
+
+	c := &Client{
+		baseURL:        server.URL,
+		clientID:       "test-id",
+		apiKey:         "test-key",
+		httpClient:     http.DefaultClient,
+		circuitBreaker: &circuitBreaker{},
+		token: &TokenCache{
+			Token:     "test-token",
+			ExpiresAt: time.Now().Add(10 * time.Minute),
+		},
+	}
+
+	// Make requests until circuit opens - each GET gets 1 retry, so 2 failures per request
+	// We need 5 failures total, which means 3 requests (3*2=6, but circuit opens at 5)
+	for i := 0; i < 3; i++ {
+		req, _ := http.NewRequest("GET", server.URL+"/test", nil)
+		resp, err := c.doWithRetry(context.Background(), req)
+		// Once circuit opens, we'll get an error
+		if err != nil {
+			if err.Error() == "circuit breaker open: API experiencing issues, retry later" {
+				break
+			}
+			t.Fatalf("request %d: unexpected error: %v", i+1, err)
+		}
+		if resp != nil {
+			resp.Body.Close()
+		}
+	}
+
+	// Circuit should now be open
+	if !c.circuitBreaker.isOpen() {
+		t.Error("expected circuit breaker to be open after threshold failures")
+	}
+
+	// Next request should fail immediately without hitting the server
+	beforeCallCount := callCount
+	req, _ := http.NewRequest("GET", server.URL+"/test", nil)
+	resp, err := c.doWithRetry(context.Background(), req)
+	if err == nil {
+		resp.Body.Close()
+		t.Fatal("expected circuit breaker error, got nil")
+	}
+	if err.Error() != "circuit breaker open: API experiencing issues, retry later" {
+		t.Errorf("expected circuit breaker error, got: %v", err)
+	}
+	if callCount != beforeCallCount {
+		t.Errorf("expected no additional calls when circuit is open, got %d new calls", callCount-beforeCallCount)
+	}
+}
+
+// TestCircuitBreaker_resetsAfterTimeout tests that the circuit breaker closes after reset time
+func TestCircuitBreaker_resetsAfterTimeout(t *testing.T) {
+	cb := &circuitBreaker{}
+
+	// Open the circuit
+	for i := 0; i < CircuitBreakerThreshold; i++ {
+		cb.recordFailure()
+	}
+
+	if !cb.isOpen() {
+		t.Fatal("expected circuit to be open")
+	}
+
+	// Manually set lastFailure to past the reset time
+	cb.mu.Lock()
+	cb.lastFailure = time.Now().Add(-CircuitBreakerResetTime - 1*time.Second)
+	cb.mu.Unlock()
+
+	// Circuit should now be closed
+	if cb.isOpen() {
+		t.Error("expected circuit to be closed after reset time")
+	}
+
+	// Verify failures were reset
+	cb.mu.Lock()
+	if cb.failures != 0 {
+		t.Errorf("expected failures to be reset to 0, got %d", cb.failures)
+	}
+	cb.mu.Unlock()
+}
+
+// TestCircuitBreaker_resetsOnSuccess tests that successful requests reset the circuit breaker
+func TestCircuitBreaker_resetsOnSuccess(t *testing.T) {
+	callCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		callCount++
+		if callCount < 3 {
+			w.WriteHeader(http.StatusInternalServerError)
+			_, _ = w.Write([]byte(`{"error": "server error"}`))
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"data": "success"}`))
+	}))
+	defer server.Close()
+
+	c := &Client{
+		baseURL:        server.URL,
+		clientID:       "test-id",
+		apiKey:         "test-key",
+		httpClient:     http.DefaultClient,
+		circuitBreaker: &circuitBreaker{},
+		token: &TokenCache{
+			Token:     "test-token",
+			ExpiresAt: time.Now().Add(10 * time.Minute),
+		},
+	}
+
+	// Make 2 failing requests
+	for i := 0; i < 2; i++ {
+		req, _ := http.NewRequest("GET", server.URL+"/test", nil)
+		resp, err := c.doWithRetry(context.Background(), req)
+		if err != nil {
+			t.Fatalf("request %d: doWithRetry() error: %v", i+1, err)
+		}
+		resp.Body.Close()
+	}
+
+	// Verify circuit is not yet open (need 5 failures)
+	if c.circuitBreaker.isOpen() {
+		t.Error("circuit should not be open after only 2 failures")
+	}
+
+	// Make a successful request
+	req, _ := http.NewRequest("GET", server.URL+"/test", nil)
+	resp, err := c.doWithRetry(context.Background(), req)
+	if err != nil {
+		t.Fatalf("doWithRetry() error: %v", err)
+	}
+	resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("status = %d, want %d", resp.StatusCode, http.StatusOK)
+	}
+
+	// Verify circuit breaker was reset
+	c.circuitBreaker.mu.Lock()
+	failures := c.circuitBreaker.failures
+	c.circuitBreaker.mu.Unlock()
+
+	if failures != 0 {
+		t.Errorf("expected failures to be reset to 0 after success, got %d", failures)
+	}
+}
+
+// TestCircuitBreaker_tracksOnlyConsecutiveFailures tests that non-consecutive failures don't open circuit
+func TestCircuitBreaker_tracksOnlyConsecutiveFailures(t *testing.T) {
+	callCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		callCount++
+		// Fail on odd requests, succeed on even
+		if callCount%2 == 1 {
+			w.WriteHeader(http.StatusInternalServerError)
+			_, _ = w.Write([]byte(`{"error": "server error"}`))
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"data": "success"}`))
+	}))
+	defer server.Close()
+
+	c := &Client{
+		baseURL:        server.URL,
+		clientID:       "test-id",
+		apiKey:         "test-key",
+		httpClient:     http.DefaultClient,
+		circuitBreaker: &circuitBreaker{},
+		token: &TokenCache{
+			Token:     "test-token",
+			ExpiresAt: time.Now().Add(10 * time.Minute),
+		},
+	}
+
+	// Make 10 requests (5 failures, 5 successes, alternating)
+	for i := 0; i < 10; i++ {
+		req, _ := http.NewRequest("GET", server.URL+"/test", nil)
+		resp, err := c.doWithRetry(context.Background(), req)
+		if err != nil {
+			t.Fatalf("request %d: doWithRetry() error: %v", i+1, err)
+		}
+		resp.Body.Close()
+	}
+
+	// Circuit should still be closed (no consecutive failures)
+	if c.circuitBreaker.isOpen() {
+		t.Error("expected circuit to remain closed with non-consecutive failures")
+	}
+}
+
+// TestCircuitBreaker_onlyTracksServerErrors tests that circuit breaker only tracks 5xx errors
+func TestCircuitBreaker_onlyTracksServerErrors(t *testing.T) {
+	callCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		callCount++
+		if callCount <= 5 {
+			w.WriteHeader(http.StatusNotFound) // 4xx error
+			_, _ = w.Write([]byte(`{"error": "not found"}`))
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"data": "success"}`))
+	}))
+	defer server.Close()
+
+	c := &Client{
+		baseURL:        server.URL,
+		clientID:       "test-id",
+		apiKey:         "test-key",
+		httpClient:     http.DefaultClient,
+		circuitBreaker: &circuitBreaker{},
+		token: &TokenCache{
+			Token:     "test-token",
+			ExpiresAt: time.Now().Add(10 * time.Minute),
+		},
+	}
+
+	// Make 5 requests that return 404 (4xx errors should not increment circuit breaker)
+	for i := 0; i < 5; i++ {
+		req, _ := http.NewRequest("GET", server.URL+"/test", nil)
+		resp, err := c.doWithRetry(context.Background(), req)
+		if err != nil {
+			t.Fatalf("request %d: doWithRetry() error: %v", i+1, err)
+		}
+		resp.Body.Close()
+	}
+
+	// Circuit should still be closed (4xx errors don't count)
+	if c.circuitBreaker.isOpen() {
+		t.Error("expected circuit to remain closed for 4xx errors")
+	}
+
+	// Verify failure count is 0
+	c.circuitBreaker.mu.Lock()
+	failures := c.circuitBreaker.failures
+	c.circuitBreaker.mu.Unlock()
+
+	if failures != 0 {
+		t.Errorf("expected 0 failures for 4xx errors, got %d", failures)
 	}
 }

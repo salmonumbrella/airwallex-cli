@@ -54,6 +54,12 @@ const (
 
 	// IdleConnTimeout is how long to keep idle connections.
 	IdleConnTimeout = 90 * time.Second
+
+	// CircuitBreakerThreshold is the number of consecutive 5xx errors to open the circuit.
+	CircuitBreakerThreshold = 5
+
+	// CircuitBreakerResetTime is how long to wait before attempting to close the circuit.
+	CircuitBreakerResetTime = 30 * time.Second
 )
 
 // withDefaultTimeout adds a timeout to the context if none exists.
@@ -65,14 +71,56 @@ func withDefaultTimeout(ctx context.Context) (context.Context, context.CancelFun
 	return context.WithTimeout(ctx, DefaultOperationTimeout)
 }
 
+type circuitBreaker struct {
+	mu          sync.Mutex
+	failures    int
+	lastFailure time.Time
+	open        bool
+}
+
+func (cb *circuitBreaker) recordSuccess() {
+	cb.mu.Lock()
+	defer cb.mu.Unlock()
+	cb.failures = 0
+	cb.open = false
+}
+
+func (cb *circuitBreaker) recordFailure() bool {
+	cb.mu.Lock()
+	defer cb.mu.Unlock()
+	cb.failures++
+	cb.lastFailure = time.Now()
+	if cb.failures >= CircuitBreakerThreshold {
+		cb.open = true
+		return true // circuit just opened
+	}
+	return false
+}
+
+func (cb *circuitBreaker) isOpen() bool {
+	cb.mu.Lock()
+	defer cb.mu.Unlock()
+	if !cb.open {
+		return false
+	}
+	// Check if reset time has passed
+	if time.Since(cb.lastFailure) > CircuitBreakerResetTime {
+		cb.open = false
+		cb.failures = 0
+		return false
+	}
+	return true
+}
+
 type Client struct {
-	baseURL    string
-	clientID   string
-	apiKey     string
-	accountID  string // Optional: for x-login-as header (multi-account API keys)
-	token      *TokenCache
-	tokenMu    sync.RWMutex
-	httpClient *http.Client
+	baseURL        string
+	clientID       string
+	apiKey         string
+	accountID      string // Optional: for x-login-as header (multi-account API keys)
+	token          *TokenCache
+	tokenMu        sync.RWMutex
+	httpClient     *http.Client
+	circuitBreaker *circuitBreaker
 }
 
 type TokenCache struct {
@@ -100,6 +148,7 @@ func NewClient(clientID, apiKey string) (*Client, error) {
 				},
 			},
 		},
+		circuitBreaker: &circuitBreaker{},
 	}, nil
 }
 
@@ -126,6 +175,7 @@ func NewClientWithAccount(clientID, apiKey, accountID string) (*Client, error) {
 				},
 			},
 		},
+		circuitBreaker: &circuitBreaker{},
 	}, nil
 }
 
@@ -149,7 +199,13 @@ func (c *Client) Do(ctx context.Context, req *http.Request) (*http.Response, err
 //     Respects Retry-After header if present
 //   - 5xx: single retry after 1s, ONLY for idempotent methods (GET, HEAD, OPTIONS)
 //   - 4xx: no retry
+//   - Circuit breaker: stops requests after 5 consecutive 5xx errors
 func (c *Client) doWithRetry(ctx context.Context, req *http.Request) (*http.Response, error) {
+	// Check circuit breaker before making request
+	if c.circuitBreaker.isOpen() {
+		return nil, fmt.Errorf("circuit breaker open: API experiencing issues, retry later")
+	}
+
 	var resp *http.Response
 	var err error
 
@@ -219,6 +275,12 @@ func (c *Client) doWithRetry(ctx context.Context, req *http.Request) (*http.Resp
 		// Non-idempotent operations (POST, PUT, DELETE, PATCH) could have been partially
 		// processed, so retrying could cause duplicates (e.g., duplicate transfers)
 		if resp.StatusCode >= 500 {
+			// Record failure for circuit breaker
+			circuitOpened := c.circuitBreaker.recordFailure()
+			if circuitOpened {
+				slog.Warn("circuit breaker opened", "consecutive_failures", CircuitBreakerThreshold)
+			}
+
 			// Don't retry non-idempotent operations on 5xx
 			if !isIdempotent {
 				return resp, nil
@@ -243,7 +305,11 @@ func (c *Client) doWithRetry(ctx context.Context, req *http.Request) (*http.Resp
 			continue
 		}
 
-		// Success or other status codes
+		// Success: record for circuit breaker (2xx status codes)
+		if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+			c.circuitBreaker.recordSuccess()
+		}
+
 		return resp, nil
 	}
 }

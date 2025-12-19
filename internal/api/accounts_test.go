@@ -43,11 +43,12 @@ func TestListGlobalAccounts_WithPagination(t *testing.T) {
 	defer server.Close()
 
 	c := &Client{
-		baseURL:    server.URL,
-		clientID:   "test-id",
-		apiKey:     "test-key",
-		httpClient: http.DefaultClient,
-		
+		baseURL:        server.URL,
+		clientID:       "test-id",
+		apiKey:         "test-key",
+		httpClient:     http.DefaultClient,
+		circuitBreaker: &circuitBreaker{},
+
 		token: &TokenCache{
 			Token:     "test-token",
 			ExpiresAt: time.Now().Add(10 * time.Minute),
@@ -92,11 +93,12 @@ func TestListGlobalAccounts_WithoutPagination(t *testing.T) {
 	defer server.Close()
 
 	c := &Client{
-		baseURL:    server.URL,
-		clientID:   "test-id",
-		apiKey:     "test-key",
-		httpClient: http.DefaultClient,
-		
+		baseURL:        server.URL,
+		clientID:       "test-id",
+		apiKey:         "test-key",
+		httpClient:     http.DefaultClient,
+		circuitBreaker: &circuitBreaker{},
+
 		token: &TokenCache{
 			Token:     "test-token",
 			ExpiresAt: time.Now().Add(10 * time.Minute),
@@ -131,11 +133,12 @@ func TestListGlobalAccounts_PartialPagination(t *testing.T) {
 	defer server.Close()
 
 	c := &Client{
-		baseURL:    server.URL,
-		clientID:   "test-id",
-		apiKey:     "test-key",
-		httpClient: http.DefaultClient,
-		
+		baseURL:        server.URL,
+		clientID:       "test-id",
+		apiKey:         "test-key",
+		httpClient:     http.DefaultClient,
+		circuitBreaker: &circuitBreaker{},
+
 		token: &TokenCache{
 			Token:     "test-token",
 			ExpiresAt: time.Now().Add(10 * time.Minute),
@@ -169,11 +172,12 @@ func TestGetGlobalAccount_Success(t *testing.T) {
 	defer server.Close()
 
 	c := &Client{
-		baseURL:    server.URL,
-		clientID:   "test-id",
-		apiKey:     "test-key",
-		httpClient: http.DefaultClient,
-		
+		baseURL:        server.URL,
+		clientID:       "test-id",
+		apiKey:         "test-key",
+		httpClient:     http.DefaultClient,
+		circuitBreaker: &circuitBreaker{},
+
 		token: &TokenCache{
 			Token:     "test-token",
 			ExpiresAt: time.Now().Add(10 * time.Minute),
