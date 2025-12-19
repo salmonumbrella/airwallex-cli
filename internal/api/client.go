@@ -3,6 +3,7 @@ package api
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -10,6 +11,7 @@ import (
 	"math/rand"
 	"net/http"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -35,23 +37,43 @@ type TokenCache struct {
 }
 
 func NewClient(clientID, apiKey string) *Client {
+	if !strings.HasPrefix(BaseURL, "https://") {
+		panic("API base URL must use HTTPS")
+	}
 	return &Client{
-		baseURL:    BaseURL,
-		clientID:   clientID,
-		apiKey:     apiKey,
-		httpClient: &http.Client{Timeout: 30 * time.Second},
+		baseURL:  BaseURL,
+		clientID: clientID,
+		apiKey:   apiKey,
+		httpClient: &http.Client{
+			Timeout: 30 * time.Second,
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{
+					MinVersion: tls.VersionTLS12,
+				},
+			},
+		},
 	}
 }
 
 // NewClientWithAccount creates a client with an account ID for x-login-as header.
 // Use this when your API key has access to multiple accounts.
 func NewClientWithAccount(clientID, apiKey, accountID string) *Client {
+	if !strings.HasPrefix(BaseURL, "https://") {
+		panic("API base URL must use HTTPS")
+	}
 	return &Client{
-		baseURL:    BaseURL,
-		clientID:   clientID,
-		apiKey:     apiKey,
-		accountID:  accountID,
-		httpClient: &http.Client{Timeout: 30 * time.Second},
+		baseURL:   BaseURL,
+		clientID:  clientID,
+		apiKey:    apiKey,
+		accountID: accountID,
+		httpClient: &http.Client{
+			Timeout: 30 * time.Second,
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{
+					MinVersion: tls.VersionTLS12,
+				},
+			},
+		},
 	}
 }
 
@@ -71,10 +93,10 @@ func (c *Client) Do(ctx context.Context, req *http.Request) (*http.Response, err
 }
 
 // doWithRetry executes the request with retry logic:
-// - 429: exponential backoff with jitter, max 3 retries (safe for all methods)
-//   Respects Retry-After header if present
-// - 5xx: single retry after 1s, ONLY for idempotent methods (GET, HEAD, OPTIONS)
-// - 4xx: no retry
+//   - 429: exponential backoff with jitter, max 3 retries (safe for all methods)
+//     Respects Retry-After header if present
+//   - 5xx: single retry after 1s, ONLY for idempotent methods (GET, HEAD, OPTIONS)
+//   - 4xx: no retry
 func (c *Client) doWithRetry(ctx context.Context, req *http.Request) (*http.Response, error) {
 	var resp *http.Response
 	var err error

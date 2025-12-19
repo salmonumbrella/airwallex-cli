@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"crypto/tls"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -23,7 +24,6 @@ func TestClient_ensureValidToken_fetchesWhenEmpty(t *testing.T) {
 		clientID:   "test-id",
 		apiKey:     "test-key",
 		httpClient: http.DefaultClient,
-		
 	}
 
 	err := c.ensureValidToken(context.Background())
@@ -52,7 +52,7 @@ func TestClient_ensureValidToken_reusesValidToken(t *testing.T) {
 		clientID:   "test-id",
 		apiKey:     "test-key",
 		httpClient: http.DefaultClient,
-		
+
 		token: &TokenCache{
 			Token:     "existing-token",
 			ExpiresAt: time.Now().Add(10 * time.Minute),
@@ -85,7 +85,7 @@ func TestClient_ensureValidToken_refreshesExpiredToken(t *testing.T) {
 		clientID:   "test-id",
 		apiKey:     "test-key",
 		httpClient: http.DefaultClient,
-		
+
 		token: &TokenCache{
 			Token:     "old-token",
 			ExpiresAt: time.Now().Add(30 * time.Second), // Within 60s threshold
@@ -159,7 +159,7 @@ func TestClient_doWithRetry_retriesOn429WithExponentialBackoff(t *testing.T) {
 		clientID:   "test-id",
 		apiKey:     "test-key",
 		httpClient: http.DefaultClient,
-		
+
 		token: &TokenCache{
 			Token:     "test-token",
 			ExpiresAt: time.Now().Add(10 * time.Minute),
@@ -353,7 +353,7 @@ func TestClient_doWithRetry_retriesOnce5xx(t *testing.T) {
 		clientID:   "test-id",
 		apiKey:     "test-key",
 		httpClient: http.DefaultClient,
-		
+
 		token: &TokenCache{
 			Token:     "test-token",
 			ExpiresAt: time.Now().Add(10 * time.Minute),
@@ -397,7 +397,7 @@ func TestClient_doWithRetry_noSecondRetryOn5xx(t *testing.T) {
 		clientID:   "test-id",
 		apiKey:     "test-key",
 		httpClient: http.DefaultClient,
-		
+
 		token: &TokenCache{
 			Token:     "test-token",
 			ExpiresAt: time.Now().Add(10 * time.Minute),
@@ -434,7 +434,7 @@ func TestClient_doWithRetry_successOnFirstAttempt(t *testing.T) {
 		clientID:   "test-id",
 		apiKey:     "test-key",
 		httpClient: http.DefaultClient,
-		
+
 		token: &TokenCache{
 			Token:     "test-token",
 			ExpiresAt: time.Now().Add(10 * time.Minute),
@@ -483,7 +483,7 @@ func TestClient_Post_retriesOn429WithBodyReplay(t *testing.T) {
 		clientID:   "test-id",
 		apiKey:     "test-key",
 		httpClient: http.DefaultClient,
-		
+
 		token: &TokenCache{
 			Token:     "test-token",
 			ExpiresAt: time.Now().Add(10 * time.Minute),
@@ -542,7 +542,7 @@ func TestClient_doWithRetry_mixedErrors5xxThen429(t *testing.T) {
 		clientID:   "test-id",
 		apiKey:     "test-key",
 		httpClient: http.DefaultClient,
-		
+
 		token: &TokenCache{
 			Token:     "test-token",
 			ExpiresAt: time.Now().Add(10 * time.Minute),
@@ -588,7 +588,7 @@ func TestClient_doWithRetry_mixedErrors429Then5xx(t *testing.T) {
 		clientID:   "test-id",
 		apiKey:     "test-key",
 		httpClient: http.DefaultClient,
-		
+
 		token: &TokenCache{
 			Token:     "test-token",
 			ExpiresAt: time.Now().Add(10 * time.Minute),
@@ -631,7 +631,7 @@ func TestClient_doWithRetry_GET_retriesOn5xx(t *testing.T) {
 		clientID:   "test-id",
 		apiKey:     "test-key",
 		httpClient: http.DefaultClient,
-		
+
 		token: &TokenCache{
 			Token:     "test-token",
 			ExpiresAt: time.Now().Add(10 * time.Minute),
@@ -668,7 +668,7 @@ func TestClient_doWithRetry_POST_noRetryOn5xx(t *testing.T) {
 		clientID:   "test-id",
 		apiKey:     "test-key",
 		httpClient: http.DefaultClient,
-		
+
 		token: &TokenCache{
 			Token:     "test-token",
 			ExpiresAt: time.Now().Add(10 * time.Minute),
@@ -710,7 +710,7 @@ func TestClient_doWithRetry_POST_retriesOn429(t *testing.T) {
 		clientID:   "test-id",
 		apiKey:     "test-key",
 		httpClient: http.DefaultClient,
-		
+
 		token: &TokenCache{
 			Token:     "test-token",
 			ExpiresAt: time.Now().Add(10 * time.Minute),
@@ -747,7 +747,7 @@ func TestClient_doWithRetry_PUT_noRetryOn5xx(t *testing.T) {
 		clientID:   "test-id",
 		apiKey:     "test-key",
 		httpClient: http.DefaultClient,
-		
+
 		token: &TokenCache{
 			Token:     "test-token",
 			ExpiresAt: time.Now().Add(10 * time.Minute),
@@ -784,7 +784,7 @@ func TestClient_doWithRetry_DELETE_noRetryOn5xx(t *testing.T) {
 		clientID:   "test-id",
 		apiKey:     "test-key",
 		httpClient: http.DefaultClient,
-		
+
 		token: &TokenCache{
 			Token:     "test-token",
 			ExpiresAt: time.Now().Add(10 * time.Minute),
@@ -821,7 +821,7 @@ func TestClient_doWithRetry_PATCH_noRetryOn5xx(t *testing.T) {
 		clientID:   "test-id",
 		apiKey:     "test-key",
 		httpClient: http.DefaultClient,
-		
+
 		token: &TokenCache{
 			Token:     "test-token",
 			ExpiresAt: time.Now().Add(10 * time.Minute),
@@ -861,7 +861,7 @@ func TestClient_doWithRetry_HEAD_retriesOn5xx(t *testing.T) {
 		clientID:   "test-id",
 		apiKey:     "test-key",
 		httpClient: http.DefaultClient,
-		
+
 		token: &TokenCache{
 			Token:     "test-token",
 			ExpiresAt: time.Now().Add(10 * time.Minute),
@@ -901,7 +901,7 @@ func TestClient_doWithRetry_OPTIONS_retriesOn5xx(t *testing.T) {
 		clientID:   "test-id",
 		apiKey:     "test-key",
 		httpClient: http.DefaultClient,
-		
+
 		token: &TokenCache{
 			Token:     "test-token",
 			ExpiresAt: time.Now().Add(10 * time.Minute),
@@ -920,5 +920,39 @@ func TestClient_doWithRetry_OPTIONS_retriesOn5xx(t *testing.T) {
 	}
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("status = %d, want %d", resp.StatusCode, http.StatusOK)
+	}
+}
+
+func TestNewClient_enforcesTLS12(t *testing.T) {
+	client := NewClient("test-id", "test-key")
+
+	transport, ok := client.httpClient.Transport.(*http.Transport)
+	if !ok {
+		t.Fatal("expected *http.Transport")
+	}
+
+	if transport.TLSClientConfig == nil {
+		t.Fatal("TLSClientConfig is nil")
+	}
+
+	if transport.TLSClientConfig.MinVersion != tls.VersionTLS12 {
+		t.Errorf("MinVersion = %d, want %d (TLS 1.2)", transport.TLSClientConfig.MinVersion, tls.VersionTLS12)
+	}
+}
+
+func TestNewClientWithAccount_enforcesTLS12(t *testing.T) {
+	client := NewClientWithAccount("test-id", "test-key", "account-id")
+
+	transport, ok := client.httpClient.Transport.(*http.Transport)
+	if !ok {
+		t.Fatal("expected *http.Transport")
+	}
+
+	if transport.TLSClientConfig == nil {
+		t.Fatal("TLSClientConfig is nil")
+	}
+
+	if transport.TLSClientConfig.MinVersion != tls.VersionTLS12 {
+		t.Errorf("MinVersion = %d, want %d (TLS 1.2)", transport.TLSClientConfig.MinVersion, tls.VersionTLS12)
 	}
 }
