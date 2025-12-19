@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -104,4 +105,18 @@ func IsAuthError(err error) bool {
 func IsCircuitBreakerError(err error) bool {
 	var e *CircuitBreakerError
 	return errors.As(err, &e)
+}
+
+// IsNotFoundError checks if the error indicates a resource was not found.
+func IsNotFoundError(err error) bool {
+	if err == nil {
+		return false
+	}
+	var apiErr *APIError
+	if errors.As(err, &apiErr) {
+		return apiErr.Code == "not_found" ||
+			apiErr.Code == "resource_not_found" ||
+			strings.Contains(strings.ToLower(apiErr.Message), "not found")
+	}
+	return strings.Contains(strings.ToLower(err.Error()), "not found")
 }
