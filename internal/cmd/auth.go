@@ -242,11 +242,11 @@ func newAuthTestCmd() *cobra.Command {
 			// Actually test the credentials by fetching a token
 			var client *api.Client
 			if creds.AccountID != "" {
-				client = api.NewClientWithAccount(cmd.Context(), creds.ClientID, creds.APIKey, creds.AccountID)
+				client = api.NewClientWithAccount(creds.ClientID, creds.APIKey, creds.AccountID)
 			} else {
-				client = api.NewClient(cmd.Context(), creds.ClientID, creds.APIKey)
+				client = api.NewClient(creds.ClientID, creds.APIKey)
 			}
-			_, err = client.Get("/api/v1/balances/current")
+			_, err = client.Get(cmd.Context(), "/api/v1/balances/current")
 			if err != nil {
 				u.Error(fmt.Sprintf("Authentication failed: %v", err))
 				return err

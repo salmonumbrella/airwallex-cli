@@ -23,10 +23,10 @@ func TestClient_ensureValidToken_fetchesWhenEmpty(t *testing.T) {
 		clientID:   "test-id",
 		apiKey:     "test-key",
 		httpClient: http.DefaultClient,
-		ctx:        context.Background(),
+		
 	}
 
-	err := c.ensureValidToken()
+	err := c.ensureValidToken(context.Background())
 	if err != nil {
 		t.Fatalf("ensureValidToken() error: %v", err)
 	}
@@ -52,14 +52,14 @@ func TestClient_ensureValidToken_reusesValidToken(t *testing.T) {
 		clientID:   "test-id",
 		apiKey:     "test-key",
 		httpClient: http.DefaultClient,
-		ctx:        context.Background(),
+		
 		token: &TokenCache{
 			Token:     "existing-token",
 			ExpiresAt: time.Now().Add(10 * time.Minute),
 		},
 	}
 
-	err := c.ensureValidToken()
+	err := c.ensureValidToken(context.Background())
 	if err != nil {
 		t.Fatalf("ensureValidToken() error: %v", err)
 	}
@@ -85,14 +85,14 @@ func TestClient_ensureValidToken_refreshesExpiredToken(t *testing.T) {
 		clientID:   "test-id",
 		apiKey:     "test-key",
 		httpClient: http.DefaultClient,
-		ctx:        context.Background(),
+		
 		token: &TokenCache{
 			Token:     "old-token",
 			ExpiresAt: time.Now().Add(30 * time.Second), // Within 60s threshold
 		},
 	}
 
-	err := c.ensureValidToken()
+	err := c.ensureValidToken(context.Background())
 	if err != nil {
 		t.Fatalf("ensureValidToken() error: %v", err)
 	}
@@ -118,7 +118,7 @@ func TestClient_doWithRetry_noRetryOn4xx(t *testing.T) {
 		clientID:   "test-id",
 		apiKey:     "test-key",
 		httpClient: http.DefaultClient,
-		ctx:        context.Background(),
+		
 		token: &TokenCache{
 			Token:     "test-token",
 			ExpiresAt: time.Now().Add(10 * time.Minute),
@@ -159,7 +159,7 @@ func TestClient_doWithRetry_retriesOn429WithExponentialBackoff(t *testing.T) {
 		clientID:   "test-id",
 		apiKey:     "test-key",
 		httpClient: http.DefaultClient,
-		ctx:        context.Background(),
+		
 		token: &TokenCache{
 			Token:     "test-token",
 			ExpiresAt: time.Now().Add(10 * time.Minute),
@@ -203,7 +203,7 @@ func TestClient_doWithRetry_maxRetriesOn429(t *testing.T) {
 		clientID:   "test-id",
 		apiKey:     "test-key",
 		httpClient: http.DefaultClient,
-		ctx:        context.Background(),
+		
 		token: &TokenCache{
 			Token:     "test-token",
 			ExpiresAt: time.Now().Add(10 * time.Minute),
@@ -245,7 +245,7 @@ func TestClient_doWithRetry_retriesOnce5xx(t *testing.T) {
 		clientID:   "test-id",
 		apiKey:     "test-key",
 		httpClient: http.DefaultClient,
-		ctx:        context.Background(),
+		
 		token: &TokenCache{
 			Token:     "test-token",
 			ExpiresAt: time.Now().Add(10 * time.Minute),
@@ -289,7 +289,7 @@ func TestClient_doWithRetry_noSecondRetryOn5xx(t *testing.T) {
 		clientID:   "test-id",
 		apiKey:     "test-key",
 		httpClient: http.DefaultClient,
-		ctx:        context.Background(),
+		
 		token: &TokenCache{
 			Token:     "test-token",
 			ExpiresAt: time.Now().Add(10 * time.Minute),
@@ -326,7 +326,7 @@ func TestClient_doWithRetry_successOnFirstAttempt(t *testing.T) {
 		clientID:   "test-id",
 		apiKey:     "test-key",
 		httpClient: http.DefaultClient,
-		ctx:        context.Background(),
+		
 		token: &TokenCache{
 			Token:     "test-token",
 			ExpiresAt: time.Now().Add(10 * time.Minute),
@@ -375,7 +375,7 @@ func TestClient_Post_retriesOn429WithBodyReplay(t *testing.T) {
 		clientID:   "test-id",
 		apiKey:     "test-key",
 		httpClient: http.DefaultClient,
-		ctx:        context.Background(),
+		
 		token: &TokenCache{
 			Token:     "test-token",
 			ExpiresAt: time.Now().Add(10 * time.Minute),
@@ -383,7 +383,7 @@ func TestClient_Post_retriesOn429WithBodyReplay(t *testing.T) {
 	}
 
 	requestBody := map[string]string{"test": "data", "field": "value"}
-	resp, err := c.Post("/test", requestBody)
+	resp, err := c.Post(context.Background(), "/test", requestBody)
 	if err != nil {
 		t.Fatalf("Post() error: %v", err)
 	}
@@ -434,7 +434,7 @@ func TestClient_doWithRetry_mixedErrors5xxThen429(t *testing.T) {
 		clientID:   "test-id",
 		apiKey:     "test-key",
 		httpClient: http.DefaultClient,
-		ctx:        context.Background(),
+		
 		token: &TokenCache{
 			Token:     "test-token",
 			ExpiresAt: time.Now().Add(10 * time.Minute),
@@ -480,7 +480,7 @@ func TestClient_doWithRetry_mixedErrors429Then5xx(t *testing.T) {
 		clientID:   "test-id",
 		apiKey:     "test-key",
 		httpClient: http.DefaultClient,
-		ctx:        context.Background(),
+		
 		token: &TokenCache{
 			Token:     "test-token",
 			ExpiresAt: time.Now().Add(10 * time.Minute),
@@ -523,7 +523,7 @@ func TestClient_doWithRetry_GET_retriesOn5xx(t *testing.T) {
 		clientID:   "test-id",
 		apiKey:     "test-key",
 		httpClient: http.DefaultClient,
-		ctx:        context.Background(),
+		
 		token: &TokenCache{
 			Token:     "test-token",
 			ExpiresAt: time.Now().Add(10 * time.Minute),
@@ -560,7 +560,7 @@ func TestClient_doWithRetry_POST_noRetryOn5xx(t *testing.T) {
 		clientID:   "test-id",
 		apiKey:     "test-key",
 		httpClient: http.DefaultClient,
-		ctx:        context.Background(),
+		
 		token: &TokenCache{
 			Token:     "test-token",
 			ExpiresAt: time.Now().Add(10 * time.Minute),
@@ -602,7 +602,7 @@ func TestClient_doWithRetry_POST_retriesOn429(t *testing.T) {
 		clientID:   "test-id",
 		apiKey:     "test-key",
 		httpClient: http.DefaultClient,
-		ctx:        context.Background(),
+		
 		token: &TokenCache{
 			Token:     "test-token",
 			ExpiresAt: time.Now().Add(10 * time.Minute),
@@ -639,7 +639,7 @@ func TestClient_doWithRetry_PUT_noRetryOn5xx(t *testing.T) {
 		clientID:   "test-id",
 		apiKey:     "test-key",
 		httpClient: http.DefaultClient,
-		ctx:        context.Background(),
+		
 		token: &TokenCache{
 			Token:     "test-token",
 			ExpiresAt: time.Now().Add(10 * time.Minute),
@@ -676,7 +676,7 @@ func TestClient_doWithRetry_DELETE_noRetryOn5xx(t *testing.T) {
 		clientID:   "test-id",
 		apiKey:     "test-key",
 		httpClient: http.DefaultClient,
-		ctx:        context.Background(),
+		
 		token: &TokenCache{
 			Token:     "test-token",
 			ExpiresAt: time.Now().Add(10 * time.Minute),
@@ -698,6 +698,43 @@ func TestClient_doWithRetry_DELETE_noRetryOn5xx(t *testing.T) {
 	}
 }
 
+// TestClient_doWithRetry_PATCH_noRetryOn5xx verifies that PATCH requests are NOT retried on 5xx errors
+func TestClient_doWithRetry_PATCH_noRetryOn5xx(t *testing.T) {
+	callCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte(`{"error": "server error"}`))
+	}))
+	defer server.Close()
+
+	c := &Client{
+		baseURL:    server.URL,
+		clientID:   "test-id",
+		apiKey:     "test-key",
+		httpClient: http.DefaultClient,
+		
+		token: &TokenCache{
+			Token:     "test-token",
+			ExpiresAt: time.Now().Add(10 * time.Minute),
+		},
+	}
+
+	req, _ := http.NewRequest("PATCH", server.URL+"/test", nil)
+	resp, err := c.doWithRetry(req)
+	if err != nil {
+		t.Fatalf("doWithRetry() error: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if callCount != 1 {
+		t.Errorf("expected 1 call (no retry on 5xx for PATCH), got %d", callCount)
+	}
+	if resp.StatusCode != http.StatusInternalServerError {
+		t.Errorf("status = %d, want %d", resp.StatusCode, http.StatusInternalServerError)
+	}
+}
+
 // TestClient_doWithRetry_HEAD_retriesOn5xx verifies that HEAD requests ARE retried on 5xx errors
 func TestClient_doWithRetry_HEAD_retriesOn5xx(t *testing.T) {
 	callCount := 0
@@ -716,7 +753,7 @@ func TestClient_doWithRetry_HEAD_retriesOn5xx(t *testing.T) {
 		clientID:   "test-id",
 		apiKey:     "test-key",
 		httpClient: http.DefaultClient,
-		ctx:        context.Background(),
+		
 		token: &TokenCache{
 			Token:     "test-token",
 			ExpiresAt: time.Now().Add(10 * time.Minute),
@@ -756,7 +793,7 @@ func TestClient_doWithRetry_OPTIONS_retriesOn5xx(t *testing.T) {
 		clientID:   "test-id",
 		apiKey:     "test-key",
 		httpClient: http.DefaultClient,
-		ctx:        context.Background(),
+		
 		token: &TokenCache{
 			Token:     "test-token",
 			ExpiresAt: time.Now().Add(10 * time.Minute),

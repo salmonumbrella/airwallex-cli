@@ -47,14 +47,14 @@ func TestListGlobalAccounts_WithPagination(t *testing.T) {
 		clientID:   "test-id",
 		apiKey:     "test-key",
 		httpClient: http.DefaultClient,
-		ctx:        context.Background(),
+		
 		token: &TokenCache{
 			Token:     "test-token",
 			ExpiresAt: time.Now().Add(10 * time.Minute),
 		},
 	}
 
-	result, err := c.ListGlobalAccounts(2, 10)
+	result, err := c.ListGlobalAccounts(context.Background(), 2, 10)
 	if err != nil {
 		t.Fatalf("ListGlobalAccounts() error: %v", err)
 	}
@@ -96,14 +96,14 @@ func TestListGlobalAccounts_WithoutPagination(t *testing.T) {
 		clientID:   "test-id",
 		apiKey:     "test-key",
 		httpClient: http.DefaultClient,
-		ctx:        context.Background(),
+		
 		token: &TokenCache{
 			Token:     "test-token",
 			ExpiresAt: time.Now().Add(10 * time.Minute),
 		},
 	}
 
-	result, err := c.ListGlobalAccounts(0, 0)
+	result, err := c.ListGlobalAccounts(context.Background(), 0, 0)
 	if err != nil {
 		t.Fatalf("ListGlobalAccounts() error: %v", err)
 	}
@@ -135,14 +135,14 @@ func TestListGlobalAccounts_PartialPagination(t *testing.T) {
 		clientID:   "test-id",
 		apiKey:     "test-key",
 		httpClient: http.DefaultClient,
-		ctx:        context.Background(),
+		
 		token: &TokenCache{
 			Token:     "test-token",
 			ExpiresAt: time.Now().Add(10 * time.Minute),
 		},
 	}
 
-	_, err := c.ListGlobalAccounts(0, 5)
+	_, err := c.ListGlobalAccounts(context.Background(), 0, 5)
 	if err != nil {
 		t.Fatalf("ListGlobalAccounts() error: %v", err)
 	}
@@ -173,14 +173,14 @@ func TestGetGlobalAccount_Success(t *testing.T) {
 		clientID:   "test-id",
 		apiKey:     "test-key",
 		httpClient: http.DefaultClient,
-		ctx:        context.Background(),
+		
 		token: &TokenCache{
 			Token:     "test-token",
 			ExpiresAt: time.Now().Add(10 * time.Minute),
 		},
 	}
 
-	account, err := c.GetGlobalAccount("ga_123")
+	account, err := c.GetGlobalAccount(context.Background(), "ga_123")
 	if err != nil {
 		t.Fatalf("GetGlobalAccount() error: %v", err)
 	}

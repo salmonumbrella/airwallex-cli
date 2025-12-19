@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -53,7 +54,7 @@ type BeneficiariesResponse struct {
 }
 
 // ListTransfers lists all transfers
-func (c *Client) ListTransfers(status string, pageNum, pageSize int) (*TransfersResponse, error) {
+func (c *Client) ListTransfers(ctx context.Context, status string, pageNum, pageSize int) (*TransfersResponse, error) {
 	params := url.Values{}
 	if status != "" {
 		params.Set("status", status)
@@ -70,7 +71,7 @@ func (c *Client) ListTransfers(status string, pageNum, pageSize int) (*Transfers
 		path += "?" + params.Encode()
 	}
 
-	resp, err := c.Get(path)
+	resp, err := c.Get(ctx, path)
 	if err != nil {
 		return nil, err
 	}
@@ -89,8 +90,8 @@ func (c *Client) ListTransfers(status string, pageNum, pageSize int) (*Transfers
 }
 
 // GetTransfer retrieves a single transfer by ID
-func (c *Client) GetTransfer(transferID string) (*Transfer, error) {
-	resp, err := c.Get("/api/v1/transfers/" + url.PathEscape(transferID))
+func (c *Client) GetTransfer(ctx context.Context, transferID string) (*Transfer, error) {
+	resp, err := c.Get(ctx, "/api/v1/transfers/"+url.PathEscape(transferID))
 	if err != nil {
 		return nil, err
 	}
@@ -109,8 +110,8 @@ func (c *Client) GetTransfer(transferID string) (*Transfer, error) {
 }
 
 // CreateTransfer creates a new transfer
-func (c *Client) CreateTransfer(req map[string]interface{}) (*Transfer, error) {
-	resp, err := c.Post("/api/v1/transfers/create", req)
+func (c *Client) CreateTransfer(ctx context.Context, req map[string]interface{}) (*Transfer, error) {
+	resp, err := c.Post(ctx, "/api/v1/transfers/create", req)
 	if err != nil {
 		return nil, err
 	}
@@ -129,8 +130,8 @@ func (c *Client) CreateTransfer(req map[string]interface{}) (*Transfer, error) {
 }
 
 // CancelTransfer cancels a transfer
-func (c *Client) CancelTransfer(transferID string) (*Transfer, error) {
-	resp, err := c.Post("/api/v1/transfers/"+url.PathEscape(transferID)+"/cancel", nil)
+func (c *Client) CancelTransfer(ctx context.Context, transferID string) (*Transfer, error) {
+	resp, err := c.Post(ctx, "/api/v1/transfers/"+url.PathEscape(transferID)+"/cancel", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -149,7 +150,7 @@ func (c *Client) CancelTransfer(transferID string) (*Transfer, error) {
 }
 
 // ListBeneficiaries lists all beneficiaries
-func (c *Client) ListBeneficiaries(pageNum, pageSize int) (*BeneficiariesResponse, error) {
+func (c *Client) ListBeneficiaries(ctx context.Context, pageNum, pageSize int) (*BeneficiariesResponse, error) {
 	params := url.Values{}
 	if pageNum > 0 {
 		params.Set("page_num", fmt.Sprintf("%d", pageNum))
@@ -163,7 +164,7 @@ func (c *Client) ListBeneficiaries(pageNum, pageSize int) (*BeneficiariesRespons
 		path += "?" + params.Encode()
 	}
 
-	resp, err := c.Get(path)
+	resp, err := c.Get(ctx, path)
 	if err != nil {
 		return nil, err
 	}
@@ -182,8 +183,8 @@ func (c *Client) ListBeneficiaries(pageNum, pageSize int) (*BeneficiariesRespons
 }
 
 // GetBeneficiary retrieves a single beneficiary by ID
-func (c *Client) GetBeneficiary(beneficiaryID string) (*Beneficiary, error) {
-	resp, err := c.Get("/api/v1/beneficiaries/" + url.PathEscape(beneficiaryID))
+func (c *Client) GetBeneficiary(ctx context.Context, beneficiaryID string) (*Beneficiary, error) {
+	resp, err := c.Get(ctx, "/api/v1/beneficiaries/"+url.PathEscape(beneficiaryID))
 	if err != nil {
 		return nil, err
 	}
@@ -202,8 +203,8 @@ func (c *Client) GetBeneficiary(beneficiaryID string) (*Beneficiary, error) {
 }
 
 // CreateBeneficiary creates a new beneficiary
-func (c *Client) CreateBeneficiary(req map[string]interface{}) (*Beneficiary, error) {
-	resp, err := c.Post("/api/v1/beneficiaries/create", req)
+func (c *Client) CreateBeneficiary(ctx context.Context, req map[string]interface{}) (*Beneficiary, error) {
+	resp, err := c.Post(ctx, "/api/v1/beneficiaries/create", req)
 	if err != nil {
 		return nil, err
 	}
@@ -222,8 +223,8 @@ func (c *Client) CreateBeneficiary(req map[string]interface{}) (*Beneficiary, er
 }
 
 // UpdateBeneficiary updates a beneficiary
-func (c *Client) UpdateBeneficiary(beneficiaryID string, update map[string]interface{}) (*Beneficiary, error) {
-	resp, err := c.Post("/api/v1/beneficiaries/"+url.PathEscape(beneficiaryID)+"/update", update)
+func (c *Client) UpdateBeneficiary(ctx context.Context, beneficiaryID string, update map[string]interface{}) (*Beneficiary, error) {
+	resp, err := c.Post(ctx, "/api/v1/beneficiaries/"+url.PathEscape(beneficiaryID)+"/update", update)
 	if err != nil {
 		return nil, err
 	}
@@ -242,8 +243,8 @@ func (c *Client) UpdateBeneficiary(beneficiaryID string, update map[string]inter
 }
 
 // DeleteBeneficiary deletes a beneficiary
-func (c *Client) DeleteBeneficiary(beneficiaryID string) error {
-	resp, err := c.Post("/api/v1/beneficiaries/"+url.PathEscape(beneficiaryID)+"/delete", nil)
+func (c *Client) DeleteBeneficiary(ctx context.Context, beneficiaryID string) error {
+	resp, err := c.Post(ctx, "/api/v1/beneficiaries/"+url.PathEscape(beneficiaryID)+"/delete", nil)
 	if err != nil {
 		return err
 	}
@@ -257,8 +258,8 @@ func (c *Client) DeleteBeneficiary(beneficiaryID string) error {
 }
 
 // ValidateBeneficiary validates beneficiary details without creating
-func (c *Client) ValidateBeneficiary(req map[string]interface{}) error {
-	resp, err := c.Post("/api/v1/beneficiaries/validate", req)
+func (c *Client) ValidateBeneficiary(ctx context.Context, req map[string]interface{}) error {
+	resp, err := c.Post(ctx, "/api/v1/beneficiaries/validate", req)
 	if err != nil {
 		return err
 	}
@@ -272,13 +273,13 @@ func (c *Client) ValidateBeneficiary(req map[string]interface{}) error {
 }
 
 // GetConfirmationLetter retrieves a transfer confirmation letter as PDF
-func (c *Client) GetConfirmationLetter(transferID string, format string) ([]byte, error) {
+func (c *Client) GetConfirmationLetter(ctx context.Context, transferID string, format string) ([]byte, error) {
 	req := map[string]interface{}{
 		"transaction_id": transferID,
 		"format":         format,
 	}
 
-	resp, err := c.Post("/api/v1/confirmation_letters/create", req)
+	resp, err := c.Post(ctx, "/api/v1/confirmation_letters/create", req)
 	if err != nil {
 		return nil, err
 	}

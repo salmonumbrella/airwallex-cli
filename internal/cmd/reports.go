@@ -51,7 +51,7 @@ func newReportsListCmd() *cobra.Command {
 				return err
 			}
 
-			result, err := client.ListFinancialReports(0, pageSize)
+			result, err := client.ListFinancialReports(cmd.Context(), 0, pageSize)
 			if err != nil {
 				return err
 			}
@@ -100,7 +100,7 @@ func newReportsGetCmd() *cobra.Command {
 				return err
 			}
 
-			r, err := client.GetFinancialReport(args[0])
+			r, err := client.GetFinancialReport(cmd.Context(), args[0])
 			if err != nil {
 				return err
 			}
@@ -182,7 +182,7 @@ Examples:
 
 			u.Info("Creating settlement report...")
 
-			report, err := client.CreateFinancialReport(req)
+			report, err := client.CreateFinancialReport(cmd.Context(), req)
 			if err != nil {
 				return err
 			}
@@ -196,7 +196,7 @@ Examples:
 
 			// Wait
 			u.Info("Waiting for report to complete...")
-			report, err = client.WaitForReport(report.ID, time.Duration(timeout)*time.Second)
+			report, err = client.WaitForReport(cmd.Context(), report.ID, time.Duration(timeout)*time.Second)
 			if err != nil {
 				return err
 			}
@@ -207,7 +207,7 @@ Examples:
 
 			// Download
 			u.Info("Downloading report...")
-			content, contentType, err := client.DownloadFinancialReport(report.ID)
+			content, contentType, err := client.DownloadFinancialReport(cmd.Context(), report.ID)
 			if err != nil {
 				return err
 			}
@@ -217,7 +217,7 @@ Examples:
 				output = "settlement" + ext[fileFormat]
 			}
 
-			if err := os.WriteFile(output, content, 0644); err != nil {
+			if err := os.WriteFile(output, content, 0o644); err != nil {
 				return fmt.Errorf("failed to write file: %w", err)
 			}
 
@@ -233,8 +233,8 @@ Examples:
 	cmd.Flags().BoolVar(&wait, "wait", false, "Wait for report and download")
 	cmd.Flags().IntVar(&timeout, "timeout", 300, "Timeout in seconds when waiting")
 
-	cmd.MarkFlagRequired("from-date")
-	cmd.MarkFlagRequired("to-date")
+	mustMarkRequired(cmd, "from-date")
+	mustMarkRequired(cmd, "to-date")
 
 	return cmd
 }
@@ -283,7 +283,7 @@ Note: Multi-currency requests return a ZIP file containing individual PDF statem
 
 			u.Info(fmt.Sprintf("Creating account statement report for %v...", currencies))
 
-			report, err := client.CreateFinancialReport(req)
+			report, err := client.CreateFinancialReport(cmd.Context(), req)
 			if err != nil {
 				return err
 			}
@@ -297,7 +297,7 @@ Note: Multi-currency requests return a ZIP file containing individual PDF statem
 
 			// Wait for completion
 			u.Info("Waiting for report to complete...")
-			report, err = client.WaitForReport(report.ID, time.Duration(timeout)*time.Second)
+			report, err = client.WaitForReport(cmd.Context(), report.ID, time.Duration(timeout)*time.Second)
 			if err != nil {
 				return err
 			}
@@ -308,7 +308,7 @@ Note: Multi-currency requests return a ZIP file containing individual PDF statem
 
 			// Download the report
 			u.Info("Downloading report...")
-			content, contentType, err := client.DownloadFinancialReport(report.ID)
+			content, contentType, err := client.DownloadFinancialReport(cmd.Context(), report.ID)
 			if err != nil {
 				return err
 			}
@@ -322,7 +322,7 @@ Note: Multi-currency requests return a ZIP file containing individual PDF statem
 				}
 			}
 
-			if err := os.WriteFile(output, content, 0644); err != nil {
+			if err := os.WriteFile(output, content, 0o644); err != nil {
 				return fmt.Errorf("failed to write file: %w", err)
 			}
 
@@ -338,13 +338,12 @@ Note: Multi-currency requests return a ZIP file containing individual PDF statem
 	cmd.Flags().BoolVar(&wait, "wait", false, "Wait for report and download")
 	cmd.Flags().IntVar(&timeout, "timeout", 300, "Timeout in seconds when waiting")
 
-	cmd.MarkFlagRequired("from-date")
-	cmd.MarkFlagRequired("to-date")
-	cmd.MarkFlagRequired("currencies")
+	mustMarkRequired(cmd, "from-date")
+	mustMarkRequired(cmd, "to-date")
+	mustMarkRequired(cmd, "currencies")
 
 	return cmd
 }
-
 
 func newReportsBalanceActivityCmd() *cobra.Command {
 	var fromDate, toDate string
@@ -393,7 +392,7 @@ Examples:
 
 			u.Info("Creating balance activity report...")
 
-			report, err := client.CreateFinancialReport(req)
+			report, err := client.CreateFinancialReport(cmd.Context(), req)
 			if err != nil {
 				return err
 			}
@@ -407,7 +406,7 @@ Examples:
 
 			// Wait for completion
 			u.Info("Waiting for report to complete...")
-			report, err = client.WaitForReport(report.ID, time.Duration(timeout)*time.Second)
+			report, err = client.WaitForReport(cmd.Context(), report.ID, time.Duration(timeout)*time.Second)
 			if err != nil {
 				return err
 			}
@@ -418,7 +417,7 @@ Examples:
 
 			// Download
 			u.Info("Downloading report...")
-			content, contentType, err := client.DownloadFinancialReport(report.ID)
+			content, contentType, err := client.DownloadFinancialReport(cmd.Context(), report.ID)
 			if err != nil {
 				return err
 			}
@@ -429,7 +428,7 @@ Examples:
 				output = "balance-activity" + ext[fileFormat]
 			}
 
-			if err := os.WriteFile(output, content, 0644); err != nil {
+			if err := os.WriteFile(output, content, 0o644); err != nil {
 				return fmt.Errorf("failed to write file: %w", err)
 			}
 
@@ -446,8 +445,8 @@ Examples:
 	cmd.Flags().BoolVar(&wait, "wait", false, "Wait for report and download")
 	cmd.Flags().IntVar(&timeout, "timeout", 300, "Timeout in seconds when waiting")
 
-	cmd.MarkFlagRequired("from-date")
-	cmd.MarkFlagRequired("to-date")
+	mustMarkRequired(cmd, "from-date")
+	mustMarkRequired(cmd, "to-date")
 
 	return cmd
 }
@@ -499,7 +498,7 @@ Examples:
 
 			u.Info("Creating transaction reconciliation report...")
 
-			report, err := client.CreateFinancialReport(req)
+			report, err := client.CreateFinancialReport(cmd.Context(), req)
 			if err != nil {
 				return err
 			}
@@ -513,7 +512,7 @@ Examples:
 
 			// Wait
 			u.Info("Waiting for report to complete...")
-			report, err = client.WaitForReport(report.ID, time.Duration(timeout)*time.Second)
+			report, err = client.WaitForReport(cmd.Context(), report.ID, time.Duration(timeout)*time.Second)
 			if err != nil {
 				return err
 			}
@@ -524,7 +523,7 @@ Examples:
 
 			// Download
 			u.Info("Downloading report...")
-			content, contentType, err := client.DownloadFinancialReport(report.ID)
+			content, contentType, err := client.DownloadFinancialReport(cmd.Context(), report.ID)
 			if err != nil {
 				return err
 			}
@@ -534,7 +533,7 @@ Examples:
 				output = "transaction-recon" + ext[fileFormat]
 			}
 
-			if err := os.WriteFile(output, content, 0644); err != nil {
+			if err := os.WriteFile(output, content, 0o644); err != nil {
 				return fmt.Errorf("failed to write file: %w", err)
 			}
 
@@ -551,8 +550,8 @@ Examples:
 	cmd.Flags().BoolVar(&wait, "wait", false, "Wait for report and download")
 	cmd.Flags().IntVar(&timeout, "timeout", 300, "Timeout in seconds when waiting")
 
-	cmd.MarkFlagRequired("from-date")
-	cmd.MarkFlagRequired("to-date")
+	mustMarkRequired(cmd, "from-date")
+	mustMarkRequired(cmd, "to-date")
 
 	return cmd
 }

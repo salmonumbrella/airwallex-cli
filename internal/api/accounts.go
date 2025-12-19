@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"net/url"
@@ -27,7 +28,7 @@ type GlobalAccountsResponse struct {
 }
 
 // ListGlobalAccounts lists all global accounts
-func (c *Client) ListGlobalAccounts(pageNum, pageSize int) (*GlobalAccountsResponse, error) {
+func (c *Client) ListGlobalAccounts(ctx context.Context, pageNum, pageSize int) (*GlobalAccountsResponse, error) {
 	params := url.Values{}
 	if pageNum > 0 {
 		params.Set("page_num", strconv.Itoa(pageNum))
@@ -41,7 +42,7 @@ func (c *Client) ListGlobalAccounts(pageNum, pageSize int) (*GlobalAccountsRespo
 		path += "?" + params.Encode()
 	}
 
-	resp, err := c.Get(path)
+	resp, err := c.Get(ctx, path)
 	if err != nil {
 		return nil, err
 	}
@@ -60,8 +61,8 @@ func (c *Client) ListGlobalAccounts(pageNum, pageSize int) (*GlobalAccountsRespo
 }
 
 // GetGlobalAccount retrieves a single global account by ID
-func (c *Client) GetGlobalAccount(accountID string) (*GlobalAccount, error) {
-	resp, err := c.Get("/api/v1/global_accounts/" + url.PathEscape(accountID))
+func (c *Client) GetGlobalAccount(ctx context.Context, accountID string) (*GlobalAccount, error) {
+	resp, err := c.Get(ctx, "/api/v1/global_accounts/"+url.PathEscape(accountID))
 	if err != nil {
 		return nil, err
 	}

@@ -143,12 +143,12 @@ func (s *SetupServer) validateCredentials(ctx context.Context, accountName, clie
 
 	var client *api.Client
 	if accountID != "" {
-		client = api.NewClientWithAccount(ctx, clientID, apiKey, accountID)
+		client = api.NewClientWithAccount(clientID, apiKey, accountID)
 	} else {
-		client = api.NewClient(ctx, clientID, apiKey)
+		client = api.NewClient(clientID, apiKey)
 	}
 
-	if _, err := client.Get("/api/v1/balances/current"); err != nil {
+	if _, err := client.Get(ctx, "/api/v1/balances/current"); err != nil {
 		return fmt.Errorf("Connection failed: %v", err)
 	}
 

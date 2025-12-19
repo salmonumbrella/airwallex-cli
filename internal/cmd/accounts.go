@@ -32,7 +32,7 @@ func newAccountsListCmd() *cobra.Command {
 				return err
 			}
 
-			result, err := client.ListGlobalAccounts(0, pageSize)
+			result, err := client.ListGlobalAccounts(cmd.Context(), 0, pageSize)
 			if err != nil {
 				return err
 			}
@@ -76,7 +76,7 @@ func newAccountsGetCmd() *cobra.Command {
 				return err
 			}
 
-			a, err := client.GetGlobalAccount(args[0])
+			a, err := client.GetGlobalAccount(cmd.Context(), args[0])
 			if err != nil {
 				return err
 			}

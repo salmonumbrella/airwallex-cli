@@ -45,7 +45,7 @@ func newBeneficiariesListCmd() *cobra.Command {
 				pageSize = 10
 			}
 
-			result, err := client.ListBeneficiaries(0, pageSize)
+			result, err := client.ListBeneficiaries(cmd.Context(), 0, pageSize)
 			if err != nil {
 				return err
 			}
@@ -97,7 +97,7 @@ func newBeneficiariesGetCmd() *cobra.Command {
 				return err
 			}
 
-			b, err := client.GetBeneficiary(args[0])
+			b, err := client.GetBeneficiary(cmd.Context(), args[0])
 			if err != nil {
 				return err
 			}
@@ -295,7 +295,7 @@ Examples:
 				req["nickname"] = nickname
 			}
 
-			b, err := client.CreateBeneficiary(req)
+			b, err := client.CreateBeneficiary(cmd.Context(), req)
 			if err != nil {
 				return err
 			}
@@ -332,12 +332,8 @@ Examples:
 	cmd.Flags().StringVar(&phone, "phone", "", "Phone for Interac e-Transfer (format: +1-nnnnnnnnnn)")
 	cmd.Flags().StringVar(&localClearingSystem, "clearing-system", "", "Clearing system: EFT, REGULAR_EFT, INTERAC, etc.")
 
-	if err := cmd.MarkFlagRequired("entity-type"); err != nil {
-		panic(fmt.Sprintf("failed to mark entity-type as required: %v", err))
-	}
-	if err := cmd.MarkFlagRequired("bank-country"); err != nil {
-		panic(fmt.Sprintf("failed to mark bank-country as required: %v", err))
-	}
+	mustMarkRequired(cmd, "entity-type")
+	mustMarkRequired(cmd, "bank-country")
 	return cmd
 }
 
@@ -383,7 +379,7 @@ func newBeneficiariesUpdateCmd() *cobra.Command {
 				return fmt.Errorf("no updates specified")
 			}
 
-			b, err := client.UpdateBeneficiary(args[0], update)
+			b, err := client.UpdateBeneficiary(cmd.Context(), args[0], update)
 			if err != nil {
 				return err
 			}
@@ -416,7 +412,7 @@ func newBeneficiariesDeleteCmd() *cobra.Command {
 				return err
 			}
 
-			if err := client.DeleteBeneficiary(args[0]); err != nil {
+			if err := client.DeleteBeneficiary(cmd.Context(), args[0]); err != nil {
 				return err
 			}
 
@@ -445,7 +441,7 @@ func newBeneficiariesValidateCmd() *cobra.Command {
 				"bank_country_code": bankCountry,
 			}
 
-			if err := client.ValidateBeneficiary(req); err != nil {
+			if err := client.ValidateBeneficiary(cmd.Context(), req); err != nil {
 				return err
 			}
 
@@ -456,11 +452,7 @@ func newBeneficiariesValidateCmd() *cobra.Command {
 
 	cmd.Flags().StringVar(&entityType, "entity-type", "", "COMPANY or PERSONAL (required)")
 	cmd.Flags().StringVar(&bankCountry, "bank-country", "", "Bank country code (required)")
-	if err := cmd.MarkFlagRequired("entity-type"); err != nil {
-		panic(fmt.Sprintf("failed to mark entity-type as required: %v", err))
-	}
-	if err := cmd.MarkFlagRequired("bank-country"); err != nil {
-		panic(fmt.Sprintf("failed to mark bank-country as required: %v", err))
-	}
+	mustMarkRequired(cmd, "entity-type")
+	mustMarkRequired(cmd, "bank-country")
 	return cmd
 }

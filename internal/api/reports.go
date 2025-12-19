@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -62,8 +63,8 @@ type CreateReportRequest struct {
 }
 
 // CreateFinancialReport creates a new financial report (async)
-func (c *Client) CreateFinancialReport(req *CreateReportRequest) (*FinancialReport, error) {
-	resp, err := c.Post("/api/v1/finance/financial_reports/create", req)
+func (c *Client) CreateFinancialReport(ctx context.Context, req *CreateReportRequest) (*FinancialReport, error) {
+	resp, err := c.Post(ctx, "/api/v1/finance/financial_reports/create", req)
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +83,7 @@ func (c *Client) CreateFinancialReport(req *CreateReportRequest) (*FinancialRepo
 }
 
 // ListFinancialReports lists all financial reports
-func (c *Client) ListFinancialReports(pageNum, pageSize int) (*FinancialReportsResponse, error) {
+func (c *Client) ListFinancialReports(ctx context.Context, pageNum, pageSize int) (*FinancialReportsResponse, error) {
 	params := url.Values{}
 	if pageNum > 0 {
 		params.Set("page_num", fmt.Sprintf("%d", pageNum))
@@ -96,7 +97,7 @@ func (c *Client) ListFinancialReports(pageNum, pageSize int) (*FinancialReportsR
 		path += "?" + params.Encode()
 	}
 
-	resp, err := c.Get(path)
+	resp, err := c.Get(ctx, path)
 	if err != nil {
 		return nil, err
 	}
@@ -115,8 +116,8 @@ func (c *Client) ListFinancialReports(pageNum, pageSize int) (*FinancialReportsR
 }
 
 // GetFinancialReport gets a single report by ID
-func (c *Client) GetFinancialReport(reportID string) (*FinancialReport, error) {
-	resp, err := c.Get("/api/v1/finance/financial_reports/" + url.PathEscape(reportID))
+func (c *Client) GetFinancialReport(ctx context.Context, reportID string) (*FinancialReport, error) {
+	resp, err := c.Get(ctx, "/api/v1/finance/financial_reports/"+url.PathEscape(reportID))
 	if err != nil {
 		return nil, err
 	}
@@ -136,8 +137,8 @@ func (c *Client) GetFinancialReport(reportID string) (*FinancialReport, error) {
 
 // DownloadFinancialReport downloads report content as bytes
 // Returns: (content bytes, content-type header, error)
-func (c *Client) DownloadFinancialReport(reportID string) ([]byte, string, error) {
-	resp, err := c.Get("/api/v1/finance/financial_reports/" + url.PathEscape(reportID) + "/content")
+func (c *Client) DownloadFinancialReport(ctx context.Context, reportID string) ([]byte, string, error) {
+	resp, err := c.Get(ctx, "/api/v1/finance/financial_reports/"+url.PathEscape(reportID)+"/content")
 	if err != nil {
 		return nil, "", err
 	}
@@ -158,13 +159,13 @@ func (c *Client) DownloadFinancialReport(reportID string) ([]byte, string, error
 }
 
 // WaitForReport polls until report is complete or failed (helper method)
-func (c *Client) WaitForReport(reportID string, timeout time.Duration) (*FinancialReport, error) {
+func (c *Client) WaitForReport(ctx context.Context, reportID string, timeout time.Duration) (*FinancialReport, error) {
 	deadline := time.Now().Add(timeout)
 	attempt := 0
 	maxAttempts := int(timeout / (2 * time.Second))
 
 	for time.Now().Before(deadline) {
-		report, err := c.GetFinancialReport(reportID)
+		report, err := c.GetFinancialReport(ctx, reportID)
 		if err != nil {
 			return nil, err
 		}

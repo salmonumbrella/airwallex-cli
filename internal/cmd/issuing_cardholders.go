@@ -35,7 +35,7 @@ func newCardholdersListCmd() *cobra.Command {
 				return err
 			}
 
-			result, err := client.ListCardholders(0, pageSize)
+			result, err := client.ListCardholders(cmd.Context(), 0, pageSize)
 			if err != nil {
 				return err
 			}
@@ -80,7 +80,7 @@ func newCardholdersGetCmd() *cobra.Command {
 				return err
 			}
 
-			ch, err := client.GetCardholder(args[0])
+			ch, err := client.GetCardholder(cmd.Context(), args[0])
 			if err != nil {
 				return err
 			}
@@ -126,7 +126,7 @@ func newCardholdersCreateCmd() *cobra.Command {
 				"last_name":  lastName,
 			}
 
-			ch, err := client.CreateCardholder(req)
+			ch, err := client.CreateCardholder(cmd.Context(), req)
 			if err != nil {
 				return err
 			}
@@ -144,15 +144,9 @@ func newCardholdersCreateCmd() *cobra.Command {
 	cmd.Flags().StringVar(&email, "email", "", "Email address (required)")
 	cmd.Flags().StringVar(&firstName, "first-name", "", "First name (required)")
 	cmd.Flags().StringVar(&lastName, "last-name", "", "Last name (required)")
-	if err := cmd.MarkFlagRequired("email"); err != nil {
-		panic(fmt.Sprintf("failed to mark email as required: %v", err))
-	}
-	if err := cmd.MarkFlagRequired("first-name"); err != nil {
-		panic(fmt.Sprintf("failed to mark first-name as required: %v", err))
-	}
-	if err := cmd.MarkFlagRequired("last-name"); err != nil {
-		panic(fmt.Sprintf("failed to mark last-name as required: %v", err))
-	}
+	mustMarkRequired(cmd, "email")
+	mustMarkRequired(cmd, "first-name")
+	mustMarkRequired(cmd, "last-name")
 	return cmd
 }
 
@@ -179,7 +173,7 @@ func newCardholdersUpdateCmd() *cobra.Command {
 				return fmt.Errorf("no updates specified")
 			}
 
-			ch, err := client.UpdateCardholder(args[0], update)
+			ch, err := client.UpdateCardholder(cmd.Context(), args[0], update)
 			if err != nil {
 				return err
 			}

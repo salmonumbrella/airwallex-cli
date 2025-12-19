@@ -25,7 +25,6 @@ type Client struct {
 	token      *TokenCache
 	tokenMu    sync.RWMutex
 	httpClient *http.Client
-	ctx        context.Context
 }
 
 type TokenCache struct {
@@ -33,31 +32,29 @@ type TokenCache struct {
 	ExpiresAt time.Time
 }
 
-func NewClient(ctx context.Context, clientID, apiKey string) *Client {
+func NewClient(clientID, apiKey string) *Client {
 	return &Client{
 		baseURL:    BaseURL,
 		clientID:   clientID,
 		apiKey:     apiKey,
 		httpClient: &http.Client{Timeout: 30 * time.Second},
-		ctx:        ctx,
 	}
 }
 
 // NewClientWithAccount creates a client with an account ID for x-login-as header.
 // Use this when your API key has access to multiple accounts.
-func NewClientWithAccount(ctx context.Context, clientID, apiKey, accountID string) *Client {
+func NewClientWithAccount(clientID, apiKey, accountID string) *Client {
 	return &Client{
 		baseURL:    BaseURL,
 		clientID:   clientID,
 		apiKey:     apiKey,
 		accountID:  accountID,
 		httpClient: &http.Client{Timeout: 30 * time.Second},
-		ctx:        ctx,
 	}
 }
 
-func (c *Client) Do(req *http.Request) (*http.Response, error) {
-	if err := c.ensureValidToken(); err != nil {
+func (c *Client) Do(ctx context.Context, req *http.Request) (*http.Response, error) {
+	if err := c.ensureValidToken(ctx); err != nil {
 		return nil, fmt.Errorf("auth failed: %w", err)
 	}
 
@@ -157,7 +154,7 @@ func (c *Client) doWithRetry(req *http.Request) (*http.Response, error) {
 	}
 }
 
-func (c *Client) ensureValidToken() error {
+func (c *Client) ensureValidToken(ctx context.Context) error {
 	c.tokenMu.RLock()
 	valid := c.token != nil && time.Now().Add(60*time.Second).Before(c.token.ExpiresAt)
 	c.tokenMu.RUnlock()
@@ -165,10 +162,10 @@ func (c *Client) ensureValidToken() error {
 	if valid {
 		return nil
 	}
-	return c.fetchToken()
+	return c.fetchToken(ctx)
 }
 
-func (c *Client) fetchToken() error {
+func (c *Client) fetchToken(ctx context.Context) error {
 	c.tokenMu.Lock()
 	defer c.tokenMu.Unlock()
 
@@ -179,7 +176,7 @@ func (c *Client) fetchToken() error {
 
 	url := c.baseURL + "/api/v1/authentication/login"
 
-	req, err := http.NewRequestWithContext(c.ctx, "POST", url, nil)
+	req, err := http.NewRequestWithContext(ctx, "POST", url, nil)
 	if err != nil {
 		return err
 	}
@@ -227,15 +224,15 @@ func (c *Client) fetchToken() error {
 	return nil
 }
 
-func (c *Client) Get(path string) (*http.Response, error) {
-	req, err := http.NewRequestWithContext(c.ctx, "GET", c.baseURL+path, nil)
+func (c *Client) Get(ctx context.Context, path string) (*http.Response, error) {
+	req, err := http.NewRequestWithContext(ctx, "GET", c.baseURL+path, nil)
 	if err != nil {
 		return nil, err
 	}
-	return c.Do(req)
+	return c.Do(ctx, req)
 }
 
-func (c *Client) Post(path string, body interface{}) (*http.Response, error) {
+func (c *Client) Post(ctx context.Context, path string, body interface{}) (*http.Response, error) {
 	var bodyReader io.Reader
 	var getBody func() (io.ReadCloser, error)
 	if body != nil {
@@ -249,10 +246,10 @@ func (c *Client) Post(path string, body interface{}) (*http.Response, error) {
 			return io.NopCloser(bytes.NewReader(data)), nil
 		}
 	}
-	req, err := http.NewRequestWithContext(c.ctx, "POST", c.baseURL+path, bodyReader)
+	req, err := http.NewRequestWithContext(ctx, "POST", c.baseURL+path, bodyReader)
 	if err != nil {
 		return nil, err
 	}
 	req.GetBody = getBody
-	return c.Do(req)
+	return c.Do(ctx, req)
 }

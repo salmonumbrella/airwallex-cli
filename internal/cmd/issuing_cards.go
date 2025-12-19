@@ -40,7 +40,7 @@ func newCardsListCmd() *cobra.Command {
 				return err
 			}
 
-			cards, err := client.ListCards(status, cardholderID, 0, pageSize)
+			cards, err := client.ListCards(cmd.Context(), status, cardholderID, 0, pageSize)
 			if err != nil {
 				return err
 			}
@@ -90,7 +90,7 @@ func newCardsGetCmd() *cobra.Command {
 				return err
 			}
 
-			card, err := client.GetCard(args[0])
+			card, err := client.GetCard(cmd.Context(), args[0])
 			if err != nil {
 				return err
 			}
@@ -229,7 +229,7 @@ Program types: PREPAID, DEBIT, CREDIT, DEFERRED_DEBIT`,
 
 			req["authorization_controls"] = authControls
 
-			card, err := client.CreateCard(req)
+			card, err := client.CreateCard(cmd.Context(), req)
 			if err != nil {
 				return err
 			}
@@ -259,7 +259,7 @@ Program types: PREPAID, DEBIT, CREDIT, DEFERRED_DEBIT`,
 
 			// For company cards, fetch and display card details (PAN, CVV, expiry)
 			if companyCard {
-				details, err := client.GetCardDetails(card.CardID)
+				details, err := client.GetCardDetails(cmd.Context(), card.CardID)
 				if err != nil {
 					u.Error(fmt.Sprintf("Card created but could not fetch details: %v", err))
 					u.Info("Use 'airwallex issuing cards details " + card.CardID + "' to retrieve them later")
@@ -289,9 +289,7 @@ Program types: PREPAID, DEBIT, CREDIT, DEFERRED_DEBIT`,
 	cmd.Flags().StringVar(&programType, "program-type", "PREPAID", "Program type: PREPAID, DEBIT, CREDIT, DEFERRED_DEBIT")
 	cmd.Flags().BoolVar(&companyCard, "company", false, "Create a company card (shared, not personalized)")
 	cmd.Flags().StringSliceVar(&additionalCardholders, "additional-cardholders", nil, "Additional cardholder IDs for company cards (max 3)")
-	if err := cmd.MarkFlagRequired("cardholder-id"); err != nil {
-		panic(fmt.Sprintf("failed to mark cardholder-id as required: %v", err))
-	}
+	mustMarkRequired(cmd, "cardholder-id")
 	return cmd
 }
 
@@ -322,7 +320,7 @@ func newCardsUpdateCmd() *cobra.Command {
 				return fmt.Errorf("no updates specified")
 			}
 
-			card, err := client.UpdateCard(args[0], update)
+			card, err := client.UpdateCard(cmd.Context(), args[0], update)
 			if err != nil {
 				return err
 			}
@@ -353,7 +351,7 @@ func newCardsActivateCmd() *cobra.Command {
 				return err
 			}
 
-			card, err := client.ActivateCard(args[0])
+			card, err := client.ActivateCard(cmd.Context(), args[0])
 			if err != nil {
 				return err
 			}
@@ -379,7 +377,7 @@ func newCardsDetailsCmd() *cobra.Command {
 				return err
 			}
 
-			details, err := client.GetCardDetails(args[0])
+			details, err := client.GetCardDetails(cmd.Context(), args[0])
 			if err != nil {
 				return err
 			}
@@ -410,7 +408,7 @@ func newCardsLimitsCmd() *cobra.Command {
 				return err
 			}
 
-			limits, err := client.GetCardLimits(args[0])
+			limits, err := client.GetCardLimits(cmd.Context(), args[0])
 			if err != nil {
 				return err
 			}

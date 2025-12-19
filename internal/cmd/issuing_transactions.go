@@ -35,7 +35,24 @@ func newTransactionsListCmd() *cobra.Command {
 				return err
 			}
 
-			result, err := client.ListTransactions(cardID, from, to, 0, pageSize)
+			// Convert YYYY-MM-DD dates to RFC3339 format
+			var fromRFC3339, toRFC3339 string
+
+			if from != "" {
+				fromRFC3339, err = convertDateToRFC3339(from)
+				if err != nil {
+					return fmt.Errorf("invalid --from date: %w", err)
+				}
+			}
+
+			if to != "" {
+				toRFC3339, err = convertDateToRFC3339(to)
+				if err != nil {
+					return fmt.Errorf("invalid --to date: %w", err)
+				}
+			}
+
+			result, err := client.ListTransactions(cmd.Context(), cardID, fromRFC3339, toRFC3339, 0, pageSize)
 			if err != nil {
 				return err
 			}
@@ -65,8 +82,8 @@ func newTransactionsListCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&cardID, "card-id", "", "Filter by card ID")
-	cmd.Flags().StringVar(&from, "from", "", "From date (RFC3339)")
-	cmd.Flags().StringVar(&to, "to", "", "To date (RFC3339)")
+	cmd.Flags().StringVar(&from, "from", "", "From date (YYYY-MM-DD)")
+	cmd.Flags().StringVar(&to, "to", "", "To date (YYYY-MM-DD)")
 	cmd.Flags().IntVar(&pageSize, "limit", 20, "Max results")
 	return cmd
 }
@@ -82,7 +99,7 @@ func newTransactionsGetCmd() *cobra.Command {
 				return err
 			}
 
-			txn, err := client.GetTransaction(args[0])
+			txn, err := client.GetTransaction(cmd.Context(), args[0])
 			if err != nil {
 				return err
 			}

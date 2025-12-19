@@ -44,7 +44,7 @@ func newTransfersListCmd() *cobra.Command {
 				return err
 			}
 
-			result, err := client.ListTransfers(status, 0, pageSize)
+			result, err := client.ListTransfers(cmd.Context(), status, 0, pageSize)
 			if err != nil {
 				return err
 			}
@@ -89,7 +89,7 @@ func newTransfersGetCmd() *cobra.Command {
 				return err
 			}
 
-			t, err := client.GetTransfer(args[0])
+			t, err := client.GetTransfer(cmd.Context(), args[0])
 			if err != nil {
 				return err
 			}
@@ -232,7 +232,7 @@ Interac e-Transfer notes:
 				req["security_answer"] = securityAnswer
 			}
 
-			t, err := client.CreateTransfer(req)
+			t, err := client.CreateTransfer(cmd.Context(), req)
 			if err != nil {
 				return err
 			}
@@ -257,21 +257,11 @@ Interac e-Transfer notes:
 	cmd.Flags().StringVar(&reason, "reason", "", "Transfer reason (required)")
 	cmd.Flags().StringVar(&securityQuestion, "security-question", "", "Interac security question (1-40 chars)")
 	cmd.Flags().StringVar(&securityAnswer, "security-answer", "", "Interac security answer (3-25 alphanumeric)")
-	if err := cmd.MarkFlagRequired("beneficiary-id"); err != nil {
-		panic(fmt.Sprintf("failed to mark beneficiary-id as required: %v", err))
-	}
-	if err := cmd.MarkFlagRequired("transfer-currency"); err != nil {
-		panic(fmt.Sprintf("failed to mark transfer-currency as required: %v", err))
-	}
-	if err := cmd.MarkFlagRequired("source-currency"); err != nil {
-		panic(fmt.Sprintf("failed to mark source-currency as required: %v", err))
-	}
-	if err := cmd.MarkFlagRequired("reference"); err != nil {
-		panic(fmt.Sprintf("failed to mark reference as required: %v", err))
-	}
-	if err := cmd.MarkFlagRequired("reason"); err != nil {
-		panic(fmt.Sprintf("failed to mark reason as required: %v", err))
-	}
+	mustMarkRequired(cmd, "beneficiary-id")
+	mustMarkRequired(cmd, "transfer-currency")
+	mustMarkRequired(cmd, "source-currency")
+	mustMarkRequired(cmd, "reference")
+	mustMarkRequired(cmd, "reason")
 	return cmd
 }
 
@@ -287,7 +277,7 @@ func newTransfersCancelCmd() *cobra.Command {
 				return err
 			}
 
-			t, err := client.CancelTransfer(args[0])
+			t, err := client.CancelTransfer(cmd.Context(), args[0])
 			if err != nil {
 				return err
 			}
@@ -335,12 +325,12 @@ Format options:
 				return err
 			}
 
-			pdfData, err := client.GetConfirmationLetter(transferID, format)
+			pdfData, err := client.GetConfirmationLetter(cmd.Context(), transferID, format)
 			if err != nil {
 				return err
 			}
 
-			if err := os.WriteFile(output, pdfData, 0644); err != nil {
+			if err := os.WriteFile(output, pdfData, 0o644); err != nil {
 				return fmt.Errorf("failed to write PDF file: %w", err)
 			}
 
@@ -351,8 +341,6 @@ Format options:
 
 	cmd.Flags().StringVar(&format, "format", "STANDARD", "Format type (STANDARD or NO_FEE_DISPLAY)")
 	cmd.Flags().StringVar(&output, "output", "", "Output filename (required)")
-	if err := cmd.MarkFlagRequired("output"); err != nil {
-		panic(fmt.Sprintf("failed to mark output as required: %v", err))
-	}
+	mustMarkRequired(cmd, "output")
 	return cmd
 }

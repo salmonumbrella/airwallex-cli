@@ -22,7 +22,7 @@ func newBalancesCmd() *cobra.Command {
 				return err
 			}
 
-			balances, err := client.GetBalances()
+			balances, err := client.GetBalances(cmd.Context())
 			if err != nil {
 				return err
 			}
@@ -114,7 +114,7 @@ Examples:
 				return err
 			}
 
-			result, err := client.GetBalanceHistory(currency, fromRFC3339, toRFC3339, 0, pageSize)
+			result, err := client.GetBalanceHistory(cmd.Context(), currency, fromRFC3339, toRFC3339, 0, pageSize)
 			if err != nil {
 				return err
 			}
@@ -150,15 +150,4 @@ Examples:
 	cmd.Flags().IntVar(&pageSize, "limit", 20, "Max results per page (min 10)")
 
 	return cmd
-}
-
-// convertDateToRFC3339 converts a date string in YYYY-MM-DD format to RFC3339 format
-// with time set to 00:00:00 UTC
-func convertDateToRFC3339(dateStr string) (string, error) {
-	t, err := time.Parse("2006-01-02", dateStr)
-	if err != nil {
-		return "", fmt.Errorf("expected format YYYY-MM-DD, got %q", dateStr)
-	}
-	// Convert to RFC3339 format with UTC timezone
-	return t.UTC().Format(time.RFC3339), nil
 }

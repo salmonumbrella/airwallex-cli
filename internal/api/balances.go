@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -34,8 +35,8 @@ type BalanceHistoryResponse struct {
 	HasMore bool                 `json:"has_more"`
 }
 
-func (c *Client) GetBalances() (*BalancesResponse, error) {
-	resp, err := c.Get("/api/v1/balances/current")
+func (c *Client) GetBalances(ctx context.Context) (*BalancesResponse, error) {
+	resp, err := c.Get(ctx, "/api/v1/balances/current")
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +55,7 @@ func (c *Client) GetBalances() (*BalancesResponse, error) {
 	return &BalancesResponse{Balances: balances}, nil
 }
 
-func (c *Client) GetBalanceHistory(currency string, from, to string, pageNum, pageSize int) (*BalanceHistoryResponse, error) {
+func (c *Client) GetBalanceHistory(ctx context.Context, currency string, from, to string, pageNum, pageSize int) (*BalanceHistoryResponse, error) {
 	params := url.Values{}
 	if currency != "" {
 		params.Set("currency", currency)
@@ -77,7 +78,7 @@ func (c *Client) GetBalanceHistory(currency string, from, to string, pageNum, pa
 		path += "?" + params.Encode()
 	}
 
-	resp, err := c.Get(path)
+	resp, err := c.Get(ctx, path)
 	if err != nil {
 		return nil, err
 	}
