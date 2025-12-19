@@ -3,12 +3,21 @@ package secrets
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/99designs/keyring"
 	"github.com/salmonumbrella/airwallex-cli/internal/config"
 )
+
+const (
+	// CredentialRotationThreshold is the age after which credentials should be rotated
+	CredentialRotationThreshold = 90 * 24 * time.Hour
+)
+
+var warnedAccounts sync.Map
 
 type Store interface {
 	Keys() ([]string, error)
@@ -95,13 +104,24 @@ func (s *KeyringStore) Get(name string) (Credentials, error) {
 	if err := json.Unmarshal(item.Data, &stored); err != nil {
 		return Credentials{}, err
 	}
-	return Credentials{
+
+	creds := Credentials{
 		Name:      name,
 		ClientID:  stored.ClientID,
 		APIKey:    stored.APIKey,
 		AccountID: stored.AccountID,
 		CreatedAt: stored.CreatedAt,
-	}, nil
+	}
+
+	// Warn if credentials are older than 90 days (backwards compatible with zero time)
+	// Only warn once per session per account to avoid spam
+	if !creds.CreatedAt.IsZero() && time.Since(creds.CreatedAt) > CredentialRotationThreshold {
+		if _, warned := warnedAccounts.LoadOrStore(name, true); !warned {
+			log.Printf("Warning: credentials for account %q are over 90 days old, consider rotating", name)
+		}
+	}
+
+	return creds, nil
 }
 
 func (s *KeyringStore) Delete(name string) error {

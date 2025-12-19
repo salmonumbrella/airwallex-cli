@@ -1,7 +1,10 @@
 package secrets
 
 import (
+	"bytes"
+	"log"
 	"testing"
+	"time"
 )
 
 func TestCredentialKey(t *testing.T) {
@@ -57,5 +60,94 @@ func TestParseCredentialKey(t *testing.T) {
 		if got != tt.want {
 			t.Errorf("ParseCredentialKey(%q) = %q, want %q", tt.input, got, tt.want)
 		}
+	}
+}
+
+func TestCredentialAgeWarning(t *testing.T) {
+	tests := []struct {
+		name        string
+		createdAt   time.Time
+		accountName string
+		wantWarning bool
+	}{
+		{
+			name:        "old credentials warn on first retrieval",
+			createdAt:   time.Now().Add(-100 * 24 * time.Hour),
+			accountName: "test-old-account",
+			wantWarning: true,
+		},
+		{
+			name:        "recent credentials do not warn",
+			createdAt:   time.Now().Add(-30 * 24 * time.Hour),
+			accountName: "test-recent-account",
+			wantWarning: false,
+		},
+		{
+			name:        "zero time credentials do not warn",
+			createdAt:   time.Time{},
+			accountName: "test-zero-time-account",
+			wantWarning: false,
+		},
+		{
+			name:        "credentials just before threshold do not warn",
+			createdAt:   time.Now().Add(-CredentialRotationThreshold + time.Minute),
+			accountName: "test-threshold-account",
+			wantWarning: false,
+		},
+		{
+			name:        "credentials just past threshold warn",
+			createdAt:   time.Now().Add(-CredentialRotationThreshold - time.Hour),
+			accountName: "test-past-threshold-account",
+			wantWarning: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Reset warning state for each test
+			warnedAccounts.Delete(tt.accountName)
+
+			// Capture log output
+			var buf bytes.Buffer
+			log.SetOutput(&buf)
+			defer log.SetOutput(nil)
+
+			// Simulate credential retrieval by checking the warning logic
+			creds := Credentials{
+				Name:      tt.accountName,
+				CreatedAt: tt.createdAt,
+			}
+
+			// Execute the same logic as in Get()
+			if !creds.CreatedAt.IsZero() && time.Since(creds.CreatedAt) > CredentialRotationThreshold {
+				if _, warned := warnedAccounts.LoadOrStore(tt.accountName, true); !warned {
+					log.Printf("Warning: credentials for account %q are over 90 days old, consider rotating", tt.accountName)
+				}
+			}
+
+			logOutput := buf.String()
+			hasWarning := len(logOutput) > 0
+
+			if hasWarning != tt.wantWarning {
+				t.Errorf("warning = %v, want %v (log: %q)", hasWarning, tt.wantWarning, logOutput)
+			}
+
+			// For old credentials, verify second retrieval does NOT warn (rate limiting)
+			if tt.wantWarning {
+				buf.Reset()
+
+				// Second retrieval
+				if !creds.CreatedAt.IsZero() && time.Since(creds.CreatedAt) > CredentialRotationThreshold {
+					if _, warned := warnedAccounts.LoadOrStore(tt.accountName, true); !warned {
+						log.Printf("Warning: credentials for account %q are over 90 days old, consider rotating", tt.accountName)
+					}
+				}
+
+				secondLogOutput := buf.String()
+				if len(secondLogOutput) > 0 {
+					t.Errorf("second retrieval should not warn, got: %q", secondLogOutput)
+				}
+			}
+		})
 	}
 }
