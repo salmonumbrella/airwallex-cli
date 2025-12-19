@@ -25,6 +25,9 @@ const (
 	// DefaultHTTPTimeout is the default timeout for HTTP requests.
 	DefaultHTTPTimeout = 30 * time.Second
 
+	// DefaultOperationTimeout is the default timeout for API operations.
+	DefaultOperationTimeout = 45 * time.Second
+
 	// TokenRefreshBuffer is how long before expiry to refresh the token.
 	TokenRefreshBuffer = 60 * time.Second
 
@@ -52,6 +55,15 @@ const (
 	// IdleConnTimeout is how long to keep idle connections.
 	IdleConnTimeout = 90 * time.Second
 )
+
+// withDefaultTimeout adds a timeout to the context if none exists.
+func withDefaultTimeout(ctx context.Context) (context.Context, context.CancelFunc) {
+	// Check if context already has a deadline
+	if _, ok := ctx.Deadline(); ok {
+		return ctx, func() {}
+	}
+	return context.WithTimeout(ctx, DefaultOperationTimeout)
+}
 
 type Client struct {
 	baseURL    string

@@ -114,6 +114,9 @@ func (c *Client) GetTransfer(ctx context.Context, transferID string) (*Transfer,
 
 // CreateTransfer creates a new transfer
 func (c *Client) CreateTransfer(ctx context.Context, req map[string]interface{}) (*Transfer, error) {
+	ctx, cancel := withDefaultTimeout(ctx)
+	defer cancel()
+
 	resp, err := c.Post(ctx, "/api/v1/transfers/create", req)
 	if err != nil {
 		return nil, err
@@ -213,6 +216,9 @@ func (c *Client) GetBeneficiary(ctx context.Context, beneficiaryID string) (*Ben
 
 // CreateBeneficiary creates a new beneficiary
 func (c *Client) CreateBeneficiary(ctx context.Context, req map[string]interface{}) (*Beneficiary, error) {
+	ctx, cancel := withDefaultTimeout(ctx)
+	defer cancel()
+
 	resp, err := c.Post(ctx, "/api/v1/beneficiaries/create", req)
 	if err != nil {
 		return nil, err

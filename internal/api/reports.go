@@ -64,6 +64,9 @@ type CreateReportRequest struct {
 
 // CreateFinancialReport creates a new financial report (async)
 func (c *Client) CreateFinancialReport(ctx context.Context, req *CreateReportRequest) (*FinancialReport, error) {
+	ctx, cancel := withDefaultTimeout(ctx)
+	defer cancel()
+
 	resp, err := c.Post(ctx, "/api/v1/finance/financial_reports/create", req)
 	if err != nil {
 		return nil, err
@@ -166,6 +169,9 @@ func (c *Client) DownloadFinancialReport(ctx context.Context, reportID string) (
 
 // WaitForReport polls until report is complete or failed (helper method)
 func (c *Client) WaitForReport(ctx context.Context, reportID string, timeout time.Duration) (*FinancialReport, error) {
+	ctx, cancel := withDefaultTimeout(ctx)
+	defer cancel()
+
 	if err := ValidateResourceID(reportID, "report"); err != nil {
 		return nil, err
 	}

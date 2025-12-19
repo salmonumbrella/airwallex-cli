@@ -243,6 +243,9 @@ func (c *Client) UpdateCard(ctx context.Context, cardID string, update map[strin
 
 // ActivateCard activates a physical card
 func (c *Client) ActivateCard(ctx context.Context, cardID string) (*Card, error) {
+	ctx, cancel := withDefaultTimeout(ctx)
+	defer cancel()
+
 	if err := ValidateResourceID(cardID, "card"); err != nil {
 		return nil, err
 	}
@@ -266,6 +269,9 @@ func (c *Client) ActivateCard(ctx context.Context, cardID string) (*Card, error)
 
 // CreateCard creates a new card
 func (c *Client) CreateCard(ctx context.Context, req map[string]interface{}) (*Card, error) {
+	ctx, cancel := withDefaultTimeout(ctx)
+	defer cancel()
+
 	resp, err := c.Post(ctx, "/api/v1/issuing/cards/create", req)
 	if err != nil {
 		return nil, err
