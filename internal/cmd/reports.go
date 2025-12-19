@@ -217,7 +217,7 @@ Examples:
 				output = "settlement" + ext[fileFormat]
 			}
 
-			if err := os.WriteFile(output, content, 0o644); err != nil {
+			if err := os.WriteFile(output, content, 0o600); err != nil {
 				return fmt.Errorf("failed to write file: %w", err)
 			}
 
@@ -322,7 +322,7 @@ Note: Multi-currency requests return a ZIP file containing individual PDF statem
 				}
 			}
 
-			if err := os.WriteFile(output, content, 0o644); err != nil {
+			if err := os.WriteFile(output, content, 0o600); err != nil {
 				return fmt.Errorf("failed to write file: %w", err)
 			}
 
@@ -428,7 +428,7 @@ Examples:
 				output = "balance-activity" + ext[fileFormat]
 			}
 
-			if err := os.WriteFile(output, content, 0o644); err != nil {
+			if err := os.WriteFile(output, content, 0o600); err != nil {
 				return fmt.Errorf("failed to write file: %w", err)
 			}
 
@@ -533,7 +533,7 @@ Examples:
 				output = "transaction-recon" + ext[fileFormat]
 			}
 
-			if err := os.WriteFile(output, content, 0o644); err != nil {
+			if err := os.WriteFile(output, content, 0o600); err != nil {
 				return fmt.Errorf("failed to write file: %w", err)
 			}
 

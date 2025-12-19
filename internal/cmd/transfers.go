@@ -330,7 +330,7 @@ Format options:
 				return err
 			}
 
-			if err := os.WriteFile(output, pdfData, 0o644); err != nil {
+			if err := os.WriteFile(output, pdfData, 0o600); err != nil {
 				return fmt.Errorf("failed to write PDF file: %w", err)
 			}
 
