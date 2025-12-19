@@ -23,13 +23,27 @@ func (e *APIError) Error() string {
 func ParseAPIError(body []byte) *APIError {
 	var e APIError
 	if err := json.Unmarshal(body, &e); err != nil {
-		// Don't leak raw response body - return generic error
 		return &APIError{
 			Code:    "unknown_error",
 			Message: "An error occurred processing the API response",
 		}
 	}
-	// Only return sanitized fields from the API error structure
+
+	// Sanitize and limit field lengths to prevent information disclosure
+	const maxMessageLength = 500
+	const maxCodeLength = 100
+	const maxSourceLength = 200
+
+	if len(e.Message) > maxMessageLength {
+		e.Message = e.Message[:maxMessageLength] + "..."
+	}
+	if len(e.Code) > maxCodeLength {
+		e.Code = e.Code[:maxCodeLength]
+	}
+	if len(e.Source) > maxSourceLength {
+		e.Source = e.Source[:maxSourceLength]
+	}
+
 	if e.Code == "" && e.Message == "" {
 		return &APIError{
 			Code:    "unknown_error",

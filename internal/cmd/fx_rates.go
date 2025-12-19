@@ -16,12 +16,26 @@ func newFXRatesCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "rates",
 		Short: "Get current exchange rates",
-		Long: `Get current exchange rates between currency pairs.
+		Long: `Get current exchange rate between a currency pair.
+
+Both --sell and --buy currencies are required.
 
 Examples:
   airwallex fx rates --sell USD --buy EUR
-  airwallex fx rates --sell USD`,
+  airwallex fx rates --sell CAD --buy USD`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Both currencies are required
+			if sellCurrency == "" || buyCurrency == "" {
+				return fmt.Errorf("both --sell and --buy currencies are required")
+			}
+			// Validate currencies
+			if err := validateCurrency(sellCurrency); err != nil {
+				return fmt.Errorf("--sell: %w", err)
+			}
+			if err := validateCurrency(buyCurrency); err != nil {
+				return fmt.Errorf("--buy: %w", err)
+			}
+
 			client, err := getClient(cmd.Context())
 			if err != nil {
 				return err

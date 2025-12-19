@@ -23,9 +23,10 @@ func newDepositsCmd() *cobra.Command {
 
 func newDepositsListCmd() *cobra.Command {
 	var status, fromDate, toDate string
+	var page int
 	var pageSize int
 
-	cmd := &cobra.Command{
+	cmd := &cobra.Command {
 		Use:   "list",
 		Short: "List deposits",
 		Long: `List inbound deposits with optional filters.
@@ -35,6 +36,17 @@ Examples:
   airwallex deposits list --status SETTLED
   airwallex deposits list --from 2024-01-01 --to 2024-01-31`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Validate date inputs
+			if err := validateDate(fromDate); err != nil {
+				return fmt.Errorf("--from: %w", err)
+			}
+			if err := validateDate(toDate); err != nil {
+				return fmt.Errorf("--to: %w", err)
+			}
+			if err := validateDateRange(fromDate, toDate); err != nil {
+				return err
+			}
+
 			if pageSize < 10 {
 				pageSize = 10
 			}
@@ -44,7 +56,7 @@ Examples:
 				return err
 			}
 
-			result, err := client.ListDeposits(cmd.Context(), status, fromDate, toDate, 0, pageSize)
+			result, err := client.ListDeposits(cmd.Context(), status, fromDate, toDate, page, pageSize)
 			if err != nil {
 				return err
 			}
@@ -76,6 +88,7 @@ Examples:
 	cmd.Flags().StringVar(&status, "status", "", "Filter by status (PENDING, SETTLED, FAILED)")
 	cmd.Flags().StringVar(&fromDate, "from", "", "From date (YYYY-MM-DD)")
 	cmd.Flags().StringVar(&toDate, "to", "", "To date (YYYY-MM-DD)")
+	cmd.Flags().IntVar(&page, "page", 0, "Page number (0 = first page)")
 	cmd.Flags().IntVar(&pageSize, "limit", 20, "Max results (min 10)")
 	return cmd
 }

@@ -29,6 +29,7 @@ func newCardsCmd() *cobra.Command {
 func newCardsListCmd() *cobra.Command {
 	var status string
 	var cardholderID string
+	var page int
 	var pageSize int
 
 	cmd := &cobra.Command{
@@ -40,7 +41,7 @@ func newCardsListCmd() *cobra.Command {
 				return err
 			}
 
-			cards, err := client.ListCards(cmd.Context(), status, cardholderID, 0, pageSize)
+			cards, err := client.ListCards(cmd.Context(), status, cardholderID, page, pageSize)
 			if err != nil {
 				return err
 			}
@@ -75,6 +76,7 @@ func newCardsListCmd() *cobra.Command {
 
 	cmd.Flags().StringVar(&status, "status", "", "Filter by status (ACTIVE, INACTIVE, CLOSED)")
 	cmd.Flags().StringVar(&cardholderID, "cardholder-id", "", "Filter by cardholder")
+	cmd.Flags().IntVar(&page, "page", 0, "Page number (0 = first page)")
 	cmd.Flags().IntVar(&pageSize, "limit", 20, "Max results")
 	return cmd
 }

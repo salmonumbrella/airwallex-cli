@@ -4,6 +4,8 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+
+	"github.com/salmonumbrella/airwallex-cli/internal/outfmt"
 )
 
 var (
@@ -15,15 +17,31 @@ var (
 	BuildDate = "unknown"
 )
 
+// versionInfo holds structured version information for JSON output
+type versionInfo struct {
+	Version   string `json:"version"`
+	Commit    string `json:"commit"`
+	BuildDate string `json:"build_date"`
+}
+
 func newVersionCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "version",
 		Short: "Print version information",
 		Long:  "Display version, commit hash, and build date for this binary.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			fmt.Printf("airwallex-cli %s\n", Version)
-			fmt.Printf("  commit:     %s\n", Commit)
-			fmt.Printf("  build date: %s\n", BuildDate)
+			if outfmt.IsJSON(cmd.Context()) {
+				info := versionInfo{
+					Version:   Version,
+					Commit:    Commit,
+					BuildDate: BuildDate,
+				}
+				return outfmt.WriteJSON(cmd.OutOrStdout(), info)
+			}
+
+			fmt.Fprintf(cmd.OutOrStdout(), "airwallex-cli %s\n", Version)
+			fmt.Fprintf(cmd.OutOrStdout(), "  commit:     %s\n", Commit)
+			fmt.Fprintf(cmd.OutOrStdout(), "  build date: %s\n", BuildDate)
 			return nil
 		},
 	}

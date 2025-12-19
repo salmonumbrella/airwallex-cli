@@ -4,13 +4,84 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"syscall"
 	"text/tabwriter"
 
 	"github.com/spf13/cobra"
+	"golang.org/x/term"
 
 	"github.com/salmonumbrella/airwallex-cli/internal/outfmt"
 	"github.com/salmonumbrella/airwallex-cli/internal/ui"
 )
+
+// validWebhookEvents contains all valid Airwallex webhook event types
+var validWebhookEvents = map[string]bool{
+	// Transfer events
+	"transfer.completed":  true,
+	"transfer.failed":     true,
+	"transfer.cancelled":  true,
+	"transfer.created":    true,
+	"transfer.updated":    true,
+	"transfer.processing": true,
+
+	// Payment events
+	"payment.completed":              true,
+	"payment.failed":                 true,
+	"payment.created":                true,
+	"payment.updated":                true,
+	"payment.cancelled":              true,
+	"payment.authorization_failed":   true,
+	"payment.capture_failed":         true,
+	"payment.refund_completed":       true,
+	"payment.refund_failed":          true,
+	"payment.chargeback_received":    true,
+	"payment.chargeback_reversed":    true,
+	"payment.dispute_opened":         true,
+	"payment.dispute_resolved":       true,
+
+	// Deposit events
+	"deposit.settled":    true,
+	"deposit.failed":     true,
+	"deposit.created":    true,
+	"deposit.processing": true,
+
+	// Beneficiary events
+	"beneficiary.created":  true,
+	"beneficiary.updated":  true,
+	"beneficiary.deleted":  true,
+	"beneficiary.verified": true,
+
+	// Card events
+	"card.activated":              true,
+	"card.deactivated":            true,
+	"card.transaction.completed":  true,
+	"card.transaction.declined":   true,
+	"card.transaction.reversed":   true,
+	"card.created":                true,
+	"card.updated":                true,
+
+	// Payout events
+	"payout.completed":  true,
+	"payout.failed":     true,
+	"payout.created":    true,
+	"payout.processing": true,
+	"payout.cancelled":  true,
+
+	// Account events
+	"account.updated":         true,
+	"account.balance.updated": true,
+
+	// Invoice events
+	"invoice.created":  true,
+	"invoice.paid":     true,
+	"invoice.overdue":  true,
+	"invoice.voided":   true,
+
+	// Verification events
+	"verification.completed": true,
+	"verification.failed":    true,
+	"verification.required":  true,
+}
 
 func newWebhooksCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -32,6 +103,7 @@ Common events:
 }
 
 func newWebhooksListCmd() *cobra.Command {
+	var page int
 	var pageSize int
 
 	cmd := &cobra.Command{
@@ -47,7 +119,7 @@ func newWebhooksListCmd() *cobra.Command {
 				return err
 			}
 
-			result, err := client.ListWebhooks(cmd.Context(), 0, pageSize)
+			result, err := client.ListWebhooks(cmd.Context(), page, pageSize)
 			if err != nil {
 				return err
 			}
@@ -80,6 +152,7 @@ func newWebhooksListCmd() *cobra.Command {
 		},
 	}
 
+	cmd.Flags().IntVar(&page, "page", 0, "Page number (0 = first page)")
 	cmd.Flags().IntVar(&pageSize, "limit", 20, "Max results (min 10)")
 	return cmd
 }
@@ -141,19 +214,40 @@ Common events:
 				return err
 			}
 
-			// Parse comma-separated events
+			// Parse comma-separated events with deduplication
+			seen := make(map[string]bool)
 			var allEvents []string
+			var invalidEvents []string
+
 			for _, e := range events {
 				for _, ev := range strings.Split(e, ",") {
 					ev = strings.TrimSpace(ev)
-					if ev != "" {
-						allEvents = append(allEvents, ev)
+					if ev == "" {
+						continue
 					}
+
+					// Check for duplicates
+					if seen[ev] {
+						continue
+					}
+					seen[ev] = true
+
+					// Validate event type
+					if !validWebhookEvents[ev] {
+						invalidEvents = append(invalidEvents, ev)
+						continue
+					}
+
+					allEvents = append(allEvents, ev)
 				}
 			}
 
+			if len(invalidEvents) > 0 {
+				return fmt.Errorf("invalid event types: %s", strings.Join(invalidEvents, ", "))
+			}
+
 			if len(allEvents) == 0 {
-				return fmt.Errorf("at least one event is required")
+				return fmt.Errorf("at least one valid event is required")
 			}
 
 			wh, err := client.CreateWebhook(cmd.Context(), webhookURL, allEvents)
@@ -166,8 +260,8 @@ Common events:
 			}
 
 			u.Success(fmt.Sprintf("Created webhook: %s", wh.ID))
-			fmt.Printf("URL: %s\n", wh.URL)
-			fmt.Printf("Events: %s\n", strings.Join(wh.Events, ", "))
+			fmt.Fprintf(os.Stdout, "URL: %s\n", wh.URL)
+			fmt.Fprintf(os.Stdout, "Events: %s\n", strings.Join(wh.Events, ", "))
 			return nil
 		},
 	}
@@ -190,10 +284,21 @@ func newWebhooksDeleteCmd() *cobra.Command {
 			u := ui.FromContext(cmd.Context())
 			webhookID := args[0]
 
-			if !skipConfirm {
+			// Skip confirmation prompt if JSON output mode is enabled
+			isJSON := outfmt.IsJSON(cmd.Context())
+
+			if !skipConfirm && !isJSON {
+				// Check if stdin is a terminal
+				if !term.IsTerminal(int(syscall.Stdin)) {
+					return fmt.Errorf("cannot prompt for confirmation: stdin is not a terminal (use -y to skip confirmation)")
+				}
+
 				fmt.Printf("Are you sure you want to delete webhook %s? [y/N]: ", webhookID)
 				var response string
-				fmt.Scanln(&response)
+				_, err := fmt.Scanln(&response)
+				if err != nil && err.Error() != "unexpected newline" {
+					return fmt.Errorf("failed to read confirmation: %w", err)
+				}
 				response = strings.ToLower(strings.TrimSpace(response))
 				if response != "y" && response != "yes" {
 					fmt.Println("Deletion aborted.")
@@ -208,6 +313,13 @@ func newWebhooksDeleteCmd() *cobra.Command {
 
 			if err := client.DeleteWebhook(cmd.Context(), webhookID); err != nil {
 				return err
+			}
+
+			if isJSON {
+				return outfmt.WriteJSON(os.Stdout, map[string]string{
+					"id":     webhookID,
+					"status": "deleted",
+				})
 			}
 
 			u.Success(fmt.Sprintf("Deleted webhook: %s", webhookID))

@@ -62,7 +62,7 @@ func (c *Client) GetRates(ctx context.Context, sellCurrency, buyCurrency string)
 		params.Set("buy_currency", buyCurrency)
 	}
 
-	path := "/api/v1/fx/rates"
+	path := "/api/v1/fx/rates/current"
 	if len(params) > 0 {
 		path += "?" + params.Encode()
 	}
@@ -73,14 +73,25 @@ func (c *Client) GetRates(ctx context.Context, sellCurrency, buyCurrency string)
 	}
 	defer resp.Body.Close()
 
+	body, _ := io.ReadAll(resp.Body)
 	if resp.StatusCode != 200 {
-		body, _ := io.ReadAll(resp.Body)
 		return nil, ParseAPIError(body)
 	}
 
+	// Try parsing as array response first (RatesResponse)
 	var result RatesResponse
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, err
+	if err := json.Unmarshal(body, &result); err == nil && len(result.Rates) > 0 {
+		return &result, nil
+	}
+
+	// The API returns a single rate object for /rates/current
+	var singleRate Rate
+	if err := json.Unmarshal(body, &singleRate); err != nil {
+		return nil, fmt.Errorf("failed to parse rates response: %w", err)
+	}
+	// Only wrap if we got actual data
+	if singleRate.SellCurrency != "" {
+		return &RatesResponse{Rates: []Rate{singleRate}}, nil
 	}
 	return &result, nil
 }

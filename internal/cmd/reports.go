@@ -35,6 +35,7 @@ Report types:
 }
 
 func newReportsListCmd() *cobra.Command {
+	var page int
 	var pageSize int
 
 	cmd := &cobra.Command{
@@ -51,7 +52,7 @@ func newReportsListCmd() *cobra.Command {
 				return err
 			}
 
-			result, err := client.ListFinancialReports(cmd.Context(), 0, pageSize)
+			result, err := client.ListFinancialReports(cmd.Context(), page, pageSize)
 			if err != nil {
 				return err
 			}
@@ -85,6 +86,7 @@ func newReportsListCmd() *cobra.Command {
 		},
 	}
 
+	cmd.Flags().IntVar(&page, "page", 0, "Page number (0 = first page)")
 	cmd.Flags().IntVar(&pageSize, "limit", 20, "Max results (min 10)")
 	return cmd
 }
@@ -161,6 +163,17 @@ Examples:
   airwallex reports settlement --from-date 2024-01-01 --to-date 2024-01-31 \
     --format EXCEL --output settlement.xlsx --wait`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Validate date inputs
+			if err := validateDate(fromDate); err != nil {
+				return fmt.Errorf("--from-date: %w", err)
+			}
+			if err := validateDate(toDate); err != nil {
+				return fmt.Errorf("--to-date: %w", err)
+			}
+			if err := validateDateRange(fromDate, toDate); err != nil {
+				return err
+			}
+
 			u := ui.FromContext(cmd.Context())
 			client, err := getClient(cmd.Context())
 			if err != nil {
@@ -262,6 +275,17 @@ Examples:
 
 Note: Multi-currency requests return a ZIP file containing individual PDF statements.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Validate date inputs
+			if err := validateDate(fromDate); err != nil {
+				return fmt.Errorf("--from-date: %w", err)
+			}
+			if err := validateDate(toDate); err != nil {
+				return fmt.Errorf("--to-date: %w", err)
+			}
+			if err := validateDateRange(fromDate, toDate); err != nil {
+				return err
+			}
+
 			u := ui.FromContext(cmd.Context())
 			client, err := getClient(cmd.Context())
 			if err != nil {
@@ -271,6 +295,11 @@ Note: Multi-currency requests return a ZIP file containing individual PDF statem
 			// Validate currencies
 			if len(currencies) == 0 {
 				return fmt.Errorf("--currencies is required")
+			}
+			for _, curr := range currencies {
+				if err := validateCurrency(curr); err != nil {
+					return fmt.Errorf("invalid currency %q: %w", curr, err)
+				}
 			}
 
 			req := &api.CreateReportRequest{
@@ -369,6 +398,17 @@ Examples:
   airwallex reports balance-activity --from-date 2024-01-01 --to-date 2024-03-31 \
     --format EXCEL --transaction-types PAYOUT,DEPOSIT --output activity.xlsx --wait`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Validate date inputs
+			if err := validateDate(fromDate); err != nil {
+				return fmt.Errorf("--from-date: %w", err)
+			}
+			if err := validateDate(toDate); err != nil {
+				return fmt.Errorf("--to-date: %w", err)
+			}
+			if err := validateDateRange(fromDate, toDate); err != nil {
+				return err
+			}
+
 			u := ui.FromContext(cmd.Context())
 			client, err := getClient(cmd.Context())
 			if err != nil {
@@ -475,6 +515,17 @@ Examples:
   airwallex reports transaction-recon --from-date 2024-01-01 --to-date 2024-01-31 \
     --format EXCEL --transaction-types PAYOUT --output recon.xlsx --wait`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Validate date inputs
+			if err := validateDate(fromDate); err != nil {
+				return fmt.Errorf("--from-date: %w", err)
+			}
+			if err := validateDate(toDate); err != nil {
+				return fmt.Errorf("--to-date: %w", err)
+			}
+			if err := validateDateRange(fromDate, toDate); err != nil {
+				return err
+			}
+
 			u := ui.FromContext(cmd.Context())
 			client, err := getClient(cmd.Context())
 			if err != nil {

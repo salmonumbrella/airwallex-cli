@@ -25,6 +25,7 @@ func newPaymentLinksCmd() *cobra.Command {
 }
 
 func newPaymentLinksListCmd() *cobra.Command {
+	var page int
 	var pageSize int
 
 	cmd := &cobra.Command{
@@ -40,7 +41,7 @@ func newPaymentLinksListCmd() *cobra.Command {
 				return err
 			}
 
-			result, err := client.ListPaymentLinks(cmd.Context(), 0, pageSize)
+			result, err := client.ListPaymentLinks(cmd.Context(), page, pageSize)
 			if err != nil {
 				return err
 			}
@@ -73,6 +74,7 @@ func newPaymentLinksListCmd() *cobra.Command {
 		},
 	}
 
+	cmd.Flags().IntVar(&page, "page", 0, "Page number (0 = first page)")
 	cmd.Flags().IntVar(&pageSize, "limit", 20, "Max results (min 10)")
 	return cmd
 }
@@ -130,6 +132,14 @@ Examples:
   airwallex payment-links create --amount 100 --currency USD
   airwallex payment-links create --amount 50 --currency EUR --description "Invoice #123" --expires-in 7d`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Validate inputs
+			if err := validateAmount(amount); err != nil {
+				return err
+			}
+			if err := validateCurrency(currency); err != nil {
+				return err
+			}
+
 			u := ui.FromContext(cmd.Context())
 			client, err := getClient(cmd.Context())
 			if err != nil {
@@ -157,7 +167,7 @@ Examples:
 			}
 
 			u.Success(fmt.Sprintf("Created payment link: %s", pl.ID))
-			fmt.Printf("URL: %s\n", pl.URL)
+			fmt.Fprintf(os.Stdout, "URL: %s\n", pl.URL)
 			return nil
 		},
 	}

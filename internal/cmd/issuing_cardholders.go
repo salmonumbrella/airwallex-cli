@@ -24,6 +24,7 @@ func newCardholdersCmd() *cobra.Command {
 }
 
 func newCardholdersListCmd() *cobra.Command {
+	var page int
 	var pageSize int
 
 	cmd := &cobra.Command{
@@ -35,7 +36,7 @@ func newCardholdersListCmd() *cobra.Command {
 				return err
 			}
 
-			result, err := client.ListCardholders(cmd.Context(), 0, pageSize)
+			result, err := client.ListCardholders(cmd.Context(), page, pageSize)
 			if err != nil {
 				return err
 			}
@@ -65,6 +66,7 @@ func newCardholdersListCmd() *cobra.Command {
 		},
 	}
 
+	cmd.Flags().IntVar(&page, "page", 0, "Page number (0 = first page)")
 	cmd.Flags().IntVar(&pageSize, "limit", 20, "Max results")
 	return cmd
 }

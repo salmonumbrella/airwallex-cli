@@ -24,6 +24,7 @@ func newTransactionsListCmd() *cobra.Command {
 	var cardID string
 	var from string
 	var to string
+	var page int
 	var pageSize int
 
 	cmd := &cobra.Command{
@@ -52,7 +53,7 @@ func newTransactionsListCmd() *cobra.Command {
 				}
 			}
 
-			result, err := client.ListTransactions(cmd.Context(), cardID, fromRFC3339, toRFC3339, 0, pageSize)
+			result, err := client.ListTransactions(cmd.Context(), cardID, fromRFC3339, toRFC3339, page, pageSize)
 			if err != nil {
 				return err
 			}
@@ -84,6 +85,7 @@ func newTransactionsListCmd() *cobra.Command {
 	cmd.Flags().StringVar(&cardID, "card-id", "", "Filter by card ID")
 	cmd.Flags().StringVar(&from, "from", "", "From date (YYYY-MM-DD)")
 	cmd.Flags().StringVar(&to, "to", "", "To date (YYYY-MM-DD)")
+	cmd.Flags().IntVar(&page, "page", 0, "Page number (0 = first page)")
 	cmd.Flags().IntVar(&pageSize, "limit", 20, "Max results")
 	return cmd
 }

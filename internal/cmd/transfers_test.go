@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"testing"
 
@@ -435,12 +434,4 @@ func setRequiredTransferFlagsNoAmount(t *testing.T, cmd *cobra.Command) {
 			t.Fatalf("failed to set required flag %s: %v", name, err)
 		}
 	}
-}
-
-func intToString(i int) string {
-	return fmt.Sprintf("%d", i)
-}
-
-func floatToString(f float64) string {
-	return fmt.Sprintf("%.2f", f)
 }

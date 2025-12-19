@@ -54,6 +54,7 @@ func newBalancesHistoryCmd() *cobra.Command {
 	var currency string
 	var from string
 	var to string
+	var page int
 	var pageSize int
 
 	cmd := &cobra.Command{
@@ -77,6 +78,17 @@ Examples:
   # Combine filters with custom limit
   airwallex balances history --currency USD --from 2024-01-01 --to 2024-01-07 --limit 50`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Validate date inputs
+			if err := validateDate(from); err != nil {
+				return fmt.Errorf("--from: %w", err)
+			}
+			if err := validateDate(to); err != nil {
+				return fmt.Errorf("--to: %w", err)
+			}
+			if err := validateDateRange(from, to); err != nil {
+				return err
+			}
+
 			// Validate page size (minimum 10)
 			if pageSize < 10 {
 				pageSize = 10
@@ -114,7 +126,7 @@ Examples:
 				return err
 			}
 
-			result, err := client.GetBalanceHistory(cmd.Context(), currency, fromRFC3339, toRFC3339, 0, pageSize)
+			result, err := client.GetBalanceHistory(cmd.Context(), currency, fromRFC3339, toRFC3339, page, pageSize)
 			if err != nil {
 				return err
 			}
@@ -147,6 +159,7 @@ Examples:
 	cmd.Flags().StringVar(&currency, "currency", "", "Filter by currency (e.g., CAD, USD)")
 	cmd.Flags().StringVar(&from, "from", "", "Start date (YYYY-MM-DD)")
 	cmd.Flags().StringVar(&to, "to", "", "End date (YYYY-MM-DD)")
+	cmd.Flags().IntVar(&page, "page", 0, "Page number (0 = first page)")
 	cmd.Flags().IntVar(&pageSize, "limit", 20, "Max results per page (min 10)")
 
 	return cmd

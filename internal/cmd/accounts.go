@@ -21,6 +21,7 @@ func newAccountsCmd() *cobra.Command {
 }
 
 func newAccountsListCmd() *cobra.Command {
+	var page int
 	var pageSize int
 
 	cmd := &cobra.Command{
@@ -32,7 +33,7 @@ func newAccountsListCmd() *cobra.Command {
 				return err
 			}
 
-			result, err := client.ListGlobalAccounts(cmd.Context(), 0, pageSize)
+			result, err := client.ListGlobalAccounts(cmd.Context(), page, pageSize)
 			if err != nil {
 				return err
 			}
@@ -61,6 +62,7 @@ func newAccountsListCmd() *cobra.Command {
 		},
 	}
 
+	cmd.Flags().IntVar(&page, "page", 0, "Page number (0 = first page)")
 	cmd.Flags().IntVar(&pageSize, "limit", 20, "Max results")
 	return cmd
 }

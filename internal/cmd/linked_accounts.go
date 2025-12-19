@@ -26,6 +26,7 @@ func newLinkedAccountsCmd() *cobra.Command {
 }
 
 func newLinkedAccountsListCmd() *cobra.Command {
+	var page int
 	var pageSize int
 
 	cmd := &cobra.Command{
@@ -41,7 +42,7 @@ func newLinkedAccountsListCmd() *cobra.Command {
 				return err
 			}
 
-			result, err := client.ListLinkedAccounts(cmd.Context(), 0, pageSize)
+			result, err := client.ListLinkedAccounts(cmd.Context(), page, pageSize)
 			if err != nil {
 				return err
 			}
@@ -70,6 +71,7 @@ func newLinkedAccountsListCmd() *cobra.Command {
 		},
 	}
 
+	cmd.Flags().IntVar(&page, "page", 0, "Page number (0 = first page)")
 	cmd.Flags().IntVar(&pageSize, "limit", 20, "Max results (min 10)")
 	return cmd
 }
@@ -133,6 +135,11 @@ Examples:
 
 Account types: AU_BANK, US_BANK, CA_BANK, GB_BANK, SG_BANK, HK_BANK`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Validate currency
+			if err := validateCurrency(currency); err != nil {
+				return err
+			}
+
 			u := ui.FromContext(cmd.Context())
 			client, err := getClient(cmd.Context())
 			if err != nil {
@@ -194,6 +201,14 @@ Examples:
   airwallex linked-accounts deposit la_xxx --amount 5000 --currency AUD`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Validate inputs
+			if err := validateAmount(amount); err != nil {
+				return err
+			}
+			if err := validateCurrency(currency); err != nil {
+				return err
+			}
+
 			u := ui.FromContext(cmd.Context())
 			client, err := getClient(cmd.Context())
 			if err != nil {

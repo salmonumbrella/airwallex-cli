@@ -32,7 +32,7 @@ func TestBalancesHistoryValidation(t *testing.T) {
 				"--from", "01-01-2024",
 			},
 			wantErr:     true,
-			errContains: "invalid --from date",
+			errContains: "--from:",
 		},
 		{
 			name: "invalid to date format",
@@ -40,7 +40,7 @@ func TestBalancesHistoryValidation(t *testing.T) {
 				"--to", "2024/01/01",
 			},
 			wantErr:     true,
-			errContains: "invalid --to date",
+			errContains: "--to:",
 		},
 		{
 			name: "date range exceeds 7 days",

@@ -29,6 +29,7 @@ func newTransfersCmd() *cobra.Command {
 
 func newTransfersListCmd() *cobra.Command {
 	var status string
+	var page int
 	var pageSize int
 
 	cmd := &cobra.Command{
@@ -45,7 +46,7 @@ func newTransfersListCmd() *cobra.Command {
 				return err
 			}
 
-			result, err := client.ListTransfers(cmd.Context(), status, 0, pageSize)
+			result, err := client.ListTransfers(cmd.Context(), status, page, pageSize)
 			if err != nil {
 				return err
 			}
@@ -75,6 +76,7 @@ func newTransfersListCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&status, "status", "", "Filter by status")
+	cmd.Flags().IntVar(&page, "page", 0, "Page number (0 = first page)")
 	cmd.Flags().IntVar(&pageSize, "limit", 20, "Max results (min 10)")
 	return cmd
 }

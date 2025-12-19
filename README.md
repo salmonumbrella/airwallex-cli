@@ -86,6 +86,16 @@ Credentials are stored securely in your system's keychain:
 - Use `airwallex auth add <name>` and enter API key when prompted
 - Rotate API keys immediately if exposed in logs or history
 
+## Rate Limiting
+
+The Airwallex API enforces rate limits to ensure service stability. The CLI automatically handles rate limiting with:
+
+- **Exponential backoff** - Retries with increasing delays (1s, 2s, 4s) plus jitter to avoid thundering herd
+- **Retry-After header respect** - Honors the API's suggested retry timing when provided
+- **Maximum retry attempts** - Up to 3 retries on 429 (Too Many Requests) responses
+
+For bulk operations (creating multiple cards, sending many transfers, etc.), consider adding delays between requests to stay well under rate limits and avoid triggering backoff logic.
+
 ## Commands
 
 ### Authentication
@@ -213,6 +223,16 @@ airwallex webhooks create --url https://example.com/hook \
   --events transfer.completed,deposit.settled
 airwallex webhooks delete <webhookId>
 ```
+
+#### Webhook Security
+
+When implementing webhook endpoints to receive Airwallex events, follow these security best practices:
+
+1. **Verify signatures** - Always validate the signature header on incoming webhook requests to ensure they originated from Airwallex
+2. **Use HTTPS URLs** - Only register webhook endpoints using HTTPS to prevent man-in-the-middle attacks
+3. **Validate payload structure** - Check that the webhook payload matches the expected schema before processing
+4. **Implement idempotency** - Store processed event IDs to prevent duplicate processing if Airwallex retries delivery
+5. **Rate limit your endpoint** - Protect your webhook handler from excessive requests using rate limiting or throttling
 
 ### Reports
 

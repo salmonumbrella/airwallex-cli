@@ -5,6 +5,7 @@ import (
 	"os"
 	"text/tabwriter"
 
+	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 
 	"github.com/salmonumbrella/airwallex-cli/internal/outfmt"
@@ -40,6 +41,14 @@ Examples:
 
 Validity periods: 1m, 5m, 15m, 30m, 1h, 2h, 4h, 12h, 24h`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Validate currencies
+			if err := validateCurrency(sellCurrency); err != nil {
+				return fmt.Errorf("--sell-currency: %w", err)
+			}
+			if err := validateCurrency(buyCurrency); err != nil {
+				return fmt.Errorf("--buy-currency: %w", err)
+			}
+
 			// Validate: exactly one of sell_amount or buy_amount
 			hasSellAmount := sellAmount > 0
 			hasBuyAmount := buyAmount > 0
@@ -50,16 +59,48 @@ Validity periods: 1m, 5m, 15m, 30m, 1h, 2h, 4h, 12h, 24h`,
 				return fmt.Errorf("cannot provide both --sell-amount and --buy-amount")
 			}
 
+			// Validate the provided amount
+			if hasSellAmount {
+				if err := validateAmount(sellAmount); err != nil {
+					return fmt.Errorf("--sell-amount: %w", err)
+				}
+			}
+			if hasBuyAmount {
+				if err := validateAmount(buyAmount); err != nil {
+					return fmt.Errorf("--buy-amount: %w", err)
+				}
+			}
+
 			u := ui.FromContext(cmd.Context())
 			client, err := getClient(cmd.Context())
 			if err != nil {
 				return err
 			}
 
+			// Convert user-friendly validity to API format (MIN_X, HOUR_X)
+			validityMap := map[string]string{
+				"1m":  "MIN_1",
+				"5m":  "MIN_5",
+				"15m": "MIN_15",
+				"30m": "MIN_30",
+				"1h":  "HOUR_1",
+				"2h":  "HOUR_2",
+				"4h":  "HOUR_4",
+				"8h":  "HOUR_8",
+				"12h": "HOUR_12",
+				"24h": "HOUR_24",
+			}
+			apiValidity, ok := validityMap[validity]
+			if !ok {
+				// Allow pass-through for raw API formats like MIN_15, HOUR_1
+				apiValidity = validity
+			}
+
 			req := map[string]interface{}{
-				"sell_currency":   sellCurrency,
-				"buy_currency":    buyCurrency,
-				"validity_period": validity,
+				"request_id":    uuid.New().String(),
+				"sell_currency": sellCurrency,
+				"buy_currency":  buyCurrency,
+				"validity":      apiValidity,
 			}
 			if sellAmount > 0 {
 				req["sell_amount"] = sellAmount

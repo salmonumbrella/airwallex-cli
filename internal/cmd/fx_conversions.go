@@ -5,6 +5,7 @@ import (
 	"os"
 	"text/tabwriter"
 
+	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 
 	"github.com/salmonumbrella/airwallex-cli/internal/outfmt"
@@ -24,12 +25,24 @@ func newFXConversionsCmd() *cobra.Command {
 
 func newFXConversionsListCmd() *cobra.Command {
 	var status, fromDate, toDate string
+	var page int
 	var pageSize int
 
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List conversions",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Validate date inputs
+			if err := validateDate(fromDate); err != nil {
+				return fmt.Errorf("--from: %w", err)
+			}
+			if err := validateDate(toDate); err != nil {
+				return fmt.Errorf("--to: %w", err)
+			}
+			if err := validateDateRange(fromDate, toDate); err != nil {
+				return err
+			}
+
 			if pageSize < 10 {
 				pageSize = 10
 			}
@@ -39,7 +52,7 @@ func newFXConversionsListCmd() *cobra.Command {
 				return err
 			}
 
-			result, err := client.ListConversions(cmd.Context(), status, fromDate, toDate, 0, pageSize)
+			result, err := client.ListConversions(cmd.Context(), status, fromDate, toDate, page, pageSize)
 			if err != nil {
 				return err
 			}
@@ -71,6 +84,7 @@ func newFXConversionsListCmd() *cobra.Command {
 	cmd.Flags().StringVar(&status, "status", "", "Filter by status")
 	cmd.Flags().StringVar(&fromDate, "from", "", "From date (YYYY-MM-DD)")
 	cmd.Flags().StringVar(&toDate, "to", "", "To date (YYYY-MM-DD)")
+	cmd.Flags().IntVar(&page, "page", 0, "Page number (0 = first page)")
 	cmd.Flags().IntVar(&pageSize, "limit", 20, "Max results (min 10)")
 	return cmd
 }
@@ -136,13 +150,22 @@ Examples:
 				return err
 			}
 
-			req := map[string]interface{}{}
+			req := map[string]interface{}{
+				"request_id": uuid.New().String(),
+			}
 
 			if quoteID != "" {
 				// Using a quote - just need the quote ID
 				req["quote_id"] = quoteID
 			} else {
-				// Market rate conversion
+				// Market rate conversion - validate currencies
+				if err := validateCurrency(sellCurrency); err != nil {
+					return fmt.Errorf("--sell-currency: %w", err)
+				}
+				if err := validateCurrency(buyCurrency); err != nil {
+					return fmt.Errorf("--buy-currency: %w", err)
+				}
+
 				hasSellAmount := sellAmount > 0
 				hasBuyAmount := buyAmount > 0
 				if hasSellAmount == hasBuyAmount {
@@ -150,6 +173,18 @@ Examples:
 						return fmt.Errorf("must provide --quote-id OR (--sell-currency, --buy-currency, and one of --sell-amount/--buy-amount)")
 					}
 					return fmt.Errorf("cannot provide both --sell-amount and --buy-amount")
+				}
+
+				// Validate the provided amount
+				if hasSellAmount {
+					if err := validateAmount(sellAmount); err != nil {
+						return fmt.Errorf("--sell-amount: %w", err)
+					}
+				}
+				if hasBuyAmount {
+					if err := validateAmount(buyAmount); err != nil {
+						return fmt.Errorf("--buy-amount: %w", err)
+					}
 				}
 
 				req["sell_currency"] = sellCurrency

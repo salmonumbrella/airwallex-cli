@@ -29,6 +29,7 @@ func newBeneficiariesCmd() *cobra.Command {
 }
 
 func newBeneficiariesListCmd() *cobra.Command {
+	var page int
 	var pageSize int
 
 	cmd := &cobra.Command{
@@ -45,7 +46,7 @@ func newBeneficiariesListCmd() *cobra.Command {
 				pageSize = 10
 			}
 
-			result, err := client.ListBeneficiaries(cmd.Context(), 0, pageSize)
+			result, err := client.ListBeneficiaries(cmd.Context(), page, pageSize)
 			if err != nil {
 				return err
 			}
@@ -82,6 +83,7 @@ func newBeneficiariesListCmd() *cobra.Command {
 		},
 	}
 
+	cmd.Flags().IntVar(&page, "page", 0, "Page number (0 = first page)")
 	cmd.Flags().IntVar(&pageSize, "limit", 20, "Max results (min 10)")
 	return cmd
 }

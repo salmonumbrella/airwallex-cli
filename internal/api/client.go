@@ -419,7 +419,9 @@ func isFinancialOperation(path string) bool {
 		"/api/v1/pa/payment_links/create",
 	}
 	for _, fp := range financialPaths {
-		if strings.Contains(path, fp) {
+		// Use exact match or suffix match to avoid false positives
+		// (e.g., /api/v1/transfers/create-preview shouldn't match /api/v1/transfers/create)
+		if path == fp || strings.HasSuffix(path, fp) {
 			return true
 		}
 	}

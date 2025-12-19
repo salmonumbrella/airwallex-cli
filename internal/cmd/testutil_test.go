@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -77,4 +78,14 @@ func setupTestEnvironment(t *testing.T) func() {
 		os.Unsetenv("AWX_ACCOUNT")
 		openSecretsStore = original
 	}
+}
+
+// intToString converts an integer to a string (used for flag values)
+func intToString(i int) string {
+	return fmt.Sprintf("%d", i)
+}
+
+// floatToString converts a float to a string (used for flag values)
+func floatToString(f float64) string {
+	return fmt.Sprintf("%.2f", f)
 }
