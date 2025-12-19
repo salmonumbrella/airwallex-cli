@@ -1399,3 +1399,53 @@ func TestCircuitBreaker_onlyTracksServerErrors(t *testing.T) {
 		t.Errorf("expected 0 failures for 4xx errors, got %d", failures)
 	}
 }
+
+// TestNewClient_configuresConnectionPooling verifies that connection pooling settings are configured
+func TestNewClient_configuresConnectionPooling(t *testing.T) {
+	client, err := NewClient("test-id", "test-key")
+	if err != nil {
+		t.Fatalf("NewClient failed: %v", err)
+	}
+
+	transport, ok := client.httpClient.Transport.(*http.Transport)
+	if !ok {
+		t.Fatal("expected *http.Transport")
+	}
+
+	if transport.MaxIdleConns != MaxIdleConns {
+		t.Errorf("MaxIdleConns = %d, want %d", transport.MaxIdleConns, MaxIdleConns)
+	}
+
+	if transport.MaxConnsPerHost != MaxConnsPerHost {
+		t.Errorf("MaxConnsPerHost = %d, want %d", transport.MaxConnsPerHost, MaxConnsPerHost)
+	}
+
+	if transport.IdleConnTimeout != IdleConnTimeout {
+		t.Errorf("IdleConnTimeout = %v, want %v", transport.IdleConnTimeout, IdleConnTimeout)
+	}
+}
+
+// TestNewClientWithAccount_configuresConnectionPooling verifies that connection pooling settings are configured
+func TestNewClientWithAccount_configuresConnectionPooling(t *testing.T) {
+	client, err := NewClientWithAccount("test-id", "test-key", "account-id")
+	if err != nil {
+		t.Fatalf("NewClientWithAccount failed: %v", err)
+	}
+
+	transport, ok := client.httpClient.Transport.(*http.Transport)
+	if !ok {
+		t.Fatal("expected *http.Transport")
+	}
+
+	if transport.MaxIdleConns != MaxIdleConns {
+		t.Errorf("MaxIdleConns = %d, want %d", transport.MaxIdleConns, MaxIdleConns)
+	}
+
+	if transport.MaxConnsPerHost != MaxConnsPerHost {
+		t.Errorf("MaxConnsPerHost = %d, want %d", transport.MaxConnsPerHost, MaxConnsPerHost)
+	}
+
+	if transport.IdleConnTimeout != IdleConnTimeout {
+		t.Errorf("IdleConnTimeout = %v, want %v", transport.IdleConnTimeout, IdleConnTimeout)
+	}
+}
