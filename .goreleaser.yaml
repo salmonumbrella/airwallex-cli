@@ -17,9 +17,9 @@ builds:
       - arm64
     ldflags:
       - -s -w
-      - -X main.version={{.Version}}
-      - -X main.commit={{.ShortCommit}}
-      - -X main.date={{.Date}}
+      - -X github.com/salmonumbrella/airwallex-cli/internal/cmd.Version={{.Version}}
+      - -X github.com/salmonumbrella/airwallex-cli/internal/cmd.Commit={{.ShortCommit}}
+      - -X github.com/salmonumbrella/airwallex-cli/internal/cmd.BuildDate={{.Date}}
 
 archives:
   - id: default
@@ -34,8 +34,60 @@ archives:
       - README.md
       - LICENSE
 
+# Binary checksums for integrity verification
+# SHA256 ensures binaries haven't been tampered with during distribution
 checksum:
   name_template: "checksums.txt"
+  algorithm: sha256
+
+# Code signing for supply chain security
+# Signs checksums with cosign/sigstore for verifiable provenance
+# Requires: COSIGN_PRIVATE_KEY environment variable in CI/CD
+# Verify signatures with: cosign verify-blob --signature checksums.txt.sig checksums.txt
+signs:
+  - cmd: cosign
+    signature: "${artifact}.sig"
+    certificate: "${artifact}.pem"
+    args:
+      - sign-blob
+      - "--yes"
+      - "--output-signature=${signature}"
+      - "--output-certificate=${certificate}"
+      - "${artifact}"
+    artifacts: checksum
+    output: true
+
+# Software Bill of Materials (SBOM)
+# Generates SBOM for dependency tracking and vulnerability scanning
+# Format: SPDX (industry standard for SBOM)
+# Consumers can use this to audit dependencies and check for CVEs
+sboms:
+  - artifacts: archive
+    documents:
+      - "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}.sbom"
+
+# Additional signing options for future implementation:
+#
+# macOS Code Signing & Notarization:
+# - Requires: Apple Developer account ($99/year)
+# - Requires: Developer ID Application certificate
+# - Tool: gon (https://github.com/mitchellh/gon)
+# - Purpose: Bypass macOS Gatekeeper warnings
+# - Config would go in: gon.hcl
+# - Add to builds ldflags: -X main.AppleSigningIdentity="Developer ID Application: Your Name (TEAM_ID)"
+#
+# Windows Code Signing:
+# - Requires: Code signing certificate from trusted CA (e.g., DigiCert, Sectigo)
+# - Tool: osslsigncode or signtool.exe
+# - Purpose: Bypass Windows SmartScreen warnings
+# - Certificate cost: ~$100-400/year
+# - Can be added via signs section targeting .exe artifacts
+#
+# To enable full platform signing, set these environment variables in CI:
+# - COSIGN_PRIVATE_KEY: For checksum signing (required for current config)
+# - APPLE_DEVELOPER_ID: For macOS notarization (future)
+# - WINDOWS_CERT_PATH: For Windows Authenticode (future)
+# - WINDOWS_CERT_PASSWORD: For Windows certificate (future)
 
 changelog:
   sort: asc
