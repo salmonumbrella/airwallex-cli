@@ -3,12 +3,14 @@ package api
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
 	"crypto/tls"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
-	"math/rand"
+	mathrand "math/rand"
 	"net/http"
 	"strconv"
 	"strings"
@@ -129,7 +131,7 @@ func (c *Client) doWithRetry(ctx context.Context, req *http.Request) (*http.Resp
 
 			// Calculate backoff: 1s, 2s, 4s with jitter
 			baseDelay := time.Duration(1<<retries429) * time.Second
-			jitter := time.Duration(rand.Int63n(int64(baseDelay / 2)))
+			jitter := time.Duration(mathrand.Int63n(int64(baseDelay / 2)))
 			delay := baseDelay + jitter
 
 			// Check for Retry-After header (can be seconds or HTTP date)
@@ -267,6 +269,30 @@ func (c *Client) fetchToken(ctx context.Context) error {
 	return nil
 }
 
+// generateIdempotencyKey creates a unique key for idempotent operations.
+func generateIdempotencyKey() string {
+	b := make([]byte, 16)
+	if _, err := rand.Read(b); err != nil {
+		panic(fmt.Sprintf("crypto/rand failed: %v", err))
+	}
+	return hex.EncodeToString(b)
+}
+
+// isFinancialOperation checks if the path is a financial operation that needs idempotency.
+func isFinancialOperation(path string) bool {
+	financialPaths := []string{
+		"/api/v1/transfers/create",
+		"/api/v1/issuing/cards/create",
+		"/api/v1/beneficiaries/create",
+	}
+	for _, fp := range financialPaths {
+		if strings.Contains(path, fp) {
+			return true
+		}
+	}
+	return false
+}
+
 func (c *Client) Get(ctx context.Context, path string) (*http.Response, error) {
 	req, err := http.NewRequestWithContext(ctx, "GET", c.baseURL+path, nil)
 	if err != nil {
@@ -293,6 +319,12 @@ func (c *Client) Post(ctx context.Context, path string, body interface{}) (*http
 	if err != nil {
 		return nil, err
 	}
+
+	// Add idempotency key for financial operations
+	if isFinancialOperation(path) {
+		req.Header.Set("x-idempotency-key", generateIdempotencyKey())
+	}
+
 	req.GetBody = getBody
 	return c.Do(ctx, req)
 }

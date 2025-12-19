@@ -956,3 +956,119 @@ func TestNewClientWithAccount_enforcesTLS12(t *testing.T) {
 		t.Errorf("MinVersion = %d, want %d (TLS 1.2)", transport.TLSClientConfig.MinVersion, tls.VersionTLS12)
 	}
 }
+
+// TestGenerateIdempotencyKey verifies that idempotency keys are unique
+func TestGenerateIdempotencyKey(t *testing.T) {
+	key1 := generateIdempotencyKey()
+	key2 := generateIdempotencyKey()
+
+	if key1 == "" {
+		t.Error("expected non-empty key")
+	}
+	if key2 == "" {
+		t.Error("expected non-empty key")
+	}
+	if key1 == key2 {
+		t.Errorf("expected unique keys, got duplicate: %s", key1)
+	}
+
+	// Verify key is hex encoded (32 chars for 16 bytes)
+	if len(key1) != 32 {
+		t.Errorf("expected 32 character hex string, got %d characters", len(key1))
+	}
+}
+
+// TestIsFinancialOperation verifies financial path detection
+func TestIsFinancialOperation(t *testing.T) {
+	tests := []struct {
+		path     string
+		expected bool
+	}{
+		{"/api/v1/transfers/create", true},
+		{"/api/v1/issuing/cards/create", true},
+		{"/api/v1/beneficiaries/create", true},
+		{"/api/v1/accounts/list", false},
+		{"/api/v1/balances", false},
+		{"/api/v1/transfers/list", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.path, func(t *testing.T) {
+			result := isFinancialOperation(tt.path)
+			if result != tt.expected {
+				t.Errorf("isFinancialOperation(%q) = %v, want %v", tt.path, result, tt.expected)
+			}
+		})
+	}
+}
+
+// TestClient_Post_addsIdempotencyKeyForFinancialOperations verifies idempotency header for financial paths
+func TestClient_Post_addsIdempotencyKeyForFinancialOperations(t *testing.T) {
+	var capturedHeaders http.Header
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		capturedHeaders = r.Header.Clone()
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"success": true}`))
+	}))
+	defer server.Close()
+
+	c := &Client{
+		baseURL:    server.URL,
+		clientID:   "test-id",
+		apiKey:     "test-key",
+		httpClient: http.DefaultClient,
+		token: &TokenCache{
+			Token:     "test-token",
+			ExpiresAt: time.Now().Add(10 * time.Minute),
+		},
+	}
+
+	// Test financial operation
+	resp, err := c.Post(context.Background(), "/api/v1/transfers/create", map[string]string{"amount": "100"})
+	if err != nil {
+		t.Fatalf("Post() error: %v", err)
+	}
+	defer resp.Body.Close()
+
+	idempotencyKey := capturedHeaders.Get("x-idempotency-key")
+	if idempotencyKey == "" {
+		t.Error("expected x-idempotency-key header for financial operation, got empty")
+	}
+	if len(idempotencyKey) != 32 {
+		t.Errorf("expected 32 character idempotency key, got %d characters", len(idempotencyKey))
+	}
+}
+
+// TestClient_Post_noIdempotencyKeyForNonFinancialOperations verifies no header for non-financial paths
+func TestClient_Post_noIdempotencyKeyForNonFinancialOperations(t *testing.T) {
+	var capturedHeaders http.Header
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		capturedHeaders = r.Header.Clone()
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"success": true}`))
+	}))
+	defer server.Close()
+
+	c := &Client{
+		baseURL:    server.URL,
+		clientID:   "test-id",
+		apiKey:     "test-key",
+		httpClient: http.DefaultClient,
+		token: &TokenCache{
+			Token:     "test-token",
+			ExpiresAt: time.Now().Add(10 * time.Minute),
+		},
+	}
+
+	// Test non-financial operation
+	resp, err := c.Post(context.Background(), "/api/v1/accounts/list", map[string]string{"filter": "active"})
+	if err != nil {
+		t.Fatalf("Post() error: %v", err)
+	}
+	defer resp.Body.Close()
+
+	idempotencyKey := capturedHeaders.Get("x-idempotency-key")
+	if idempotencyKey != "" {
+		t.Errorf("expected no x-idempotency-key header for non-financial operation, got %q", idempotencyKey)
+	}
+}
