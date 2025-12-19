@@ -9,7 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	mathrand "math/rand"
 	"net/http"
 	"strconv"
@@ -142,7 +142,7 @@ func (c *Client) doWithRetry(ctx context.Context, req *http.Request) (*http.Resp
 				// Could also parse HTTP date format, but seconds is more common
 			}
 
-			log.Printf("Rate limited, retrying in %v (attempt %d/%d)", delay, retries429+1, maxRetries)
+			slog.Info("rate limited, retrying", "delay", delay, "attempt", retries429+1, "max_retries", maxRetries)
 
 			resp.Body.Close()
 

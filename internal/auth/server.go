@@ -8,7 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
-	"log"
+	"log/slog"
 	"net"
 	"net/http"
 	"os/exec"
@@ -125,7 +125,7 @@ func (s *SetupServer) Start(ctx context.Context) (*SetupResult, error) {
 	// Open browser
 	go func() {
 		if err := openBrowser(baseURL); err != nil {
-			log.Printf("failed to open browser (user can navigate manually)")
+			slog.Info("failed to open browser, user can navigate manually", "url", baseURL)
 		}
 	}()
 
@@ -170,7 +170,7 @@ func (s *SetupServer) handleSetup(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("X-Frame-Options", "DENY")
 
 	if err := tmpl.Execute(w, data); err != nil {
-		log.Printf("template execution failed")
+		slog.Error("setup template execution failed", "error", err)
 	}
 }
 
@@ -391,7 +391,7 @@ func (s *SetupServer) handleSuccess(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("X-Frame-Options", "DENY")
 
 	if err := tmpl.Execute(w, data); err != nil {
-		log.Printf("template execution failed")
+		slog.Error("success template execution failed", "error", err)
 	}
 }
 
@@ -421,7 +421,7 @@ func writeJSON(w http.ResponseWriter, status int, data any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	if err := json.NewEncoder(w).Encode(data); err != nil {
-		log.Printf("JSON encoding failed")
+		slog.Error("JSON encoding failed", "error", err)
 	}
 }
 

@@ -3,7 +3,7 @@ package secrets
 import (
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"strings"
 	"sync"
 	"time"
@@ -117,7 +117,7 @@ func (s *KeyringStore) Get(name string) (Credentials, error) {
 	// Only warn once per session per account to avoid spam
 	if !creds.CreatedAt.IsZero() && time.Since(creds.CreatedAt) > CredentialRotationThreshold {
 		if _, warned := warnedAccounts.LoadOrStore(name, true); !warned {
-			log.Printf("Warning: credentials for account %q are over 90 days old, consider rotating", name)
+			slog.Warn("credentials over 90 days old, consider rotating", "account", name, "age_days", int(time.Since(creds.CreatedAt).Hours()/24))
 		}
 	}
 
