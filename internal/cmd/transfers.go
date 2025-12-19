@@ -1,16 +1,22 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"regexp"
 	"strings"
 	"text/tabwriter"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 
+	"github.com/salmonumbrella/airwallex-cli/internal/api"
+	"github.com/salmonumbrella/airwallex-cli/internal/batch"
+	"github.com/salmonumbrella/airwallex-cli/internal/dryrun"
 	"github.com/salmonumbrella/airwallex-cli/internal/outfmt"
+	"github.com/salmonumbrella/airwallex-cli/internal/suggest"
 	"github.com/salmonumbrella/airwallex-cli/internal/ui"
 )
 
@@ -22,9 +28,35 @@ func newTransfersCmd() *cobra.Command {
 	cmd.AddCommand(newTransfersListCmd())
 	cmd.AddCommand(newTransfersGetCmd())
 	cmd.AddCommand(newTransfersCreateCmd())
+	cmd.AddCommand(newTransfersBatchCreateCmd())
 	cmd.AddCommand(newTransfersCancelCmd())
 	cmd.AddCommand(newTransfersConfirmationCmd())
 	return cmd
+}
+
+// suggestBeneficiaries fetches beneficiaries and returns suggestions
+func suggestBeneficiaries(ctx context.Context, client *api.Client, query string) string {
+	result, err := client.ListBeneficiaries(ctx, 0, 50)
+	if err != nil || len(result.Items) == 0 {
+		return ""
+	}
+
+	var items []suggest.Match
+	for _, b := range result.Items {
+		label := ""
+		if b.Beneficiary.CompanyName != "" {
+			label = b.Beneficiary.CompanyName
+		} else if b.Beneficiary.FirstName != "" {
+			label = b.Beneficiary.FirstName + " " + b.Beneficiary.LastName
+		}
+		if b.Beneficiary.BankDetails.BankCountryCode != "" {
+			label += " (" + b.Beneficiary.BankDetails.BankCountryCode + ")"
+		}
+		items = append(items, suggest.Match{Value: b.BeneficiaryID, Label: label})
+	}
+
+	matches := suggest.FindSimilar(query, items, 3)
+	return suggest.FormatSuggestions(matches)
 }
 
 func newTransfersListCmd() *cobra.Command {
@@ -52,7 +84,7 @@ func newTransfersListCmd() *cobra.Command {
 			}
 
 			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, result)
+				return outfmt.WriteJSONFiltered(os.Stdout, result, outfmt.GetQuery(cmd.Context()))
 			}
 
 			if len(result.Items) == 0 {
@@ -130,6 +162,9 @@ func newTransfersCreateCmd() *cobra.Command {
 	var reason string
 	var securityQuestion string
 	var securityAnswer string
+	var dryRun bool
+	var wait bool
+	var waitTimeout int
 
 	cmd := &cobra.Command{
 		Use:   "create",
@@ -235,8 +270,44 @@ Interac e-Transfer notes:
 				req["security_answer"] = securityAnswer
 			}
 
+			if dryRun {
+				// Fetch beneficiary details for preview
+				beneficiary, err := client.GetBeneficiary(cmd.Context(), beneficiaryID)
+				if err != nil {
+					return fmt.Errorf("failed to fetch beneficiary for preview: %w", err)
+				}
+
+				beneficiaryName := beneficiary.Beneficiary.CompanyName
+				if beneficiaryName == "" {
+					beneficiaryName = beneficiary.Beneficiary.FirstName + " " + beneficiary.Beneficiary.LastName
+				}
+
+				preview := &dryrun.Preview{
+					Operation:   "create",
+					Resource:    "transfer",
+					Description: fmt.Sprintf("Send %s to %s", dryrun.FormatAmount(transferAmount, transferCurrency), beneficiaryName),
+					Details: map[string]interface{}{
+						"Beneficiary":     beneficiaryName,
+						"Beneficiary ID":  beneficiaryID,
+						"Transfer Amount": dryrun.FormatAmount(transferAmount, transferCurrency),
+						"Source Currency": sourceCurrency,
+						"Transfer Method": transferMethod,
+						"Reference":       reference,
+					},
+				}
+
+				preview.Write(os.Stderr)
+				return nil
+			}
+
 			t, err := client.CreateTransfer(cmd.Context(), req)
 			if err != nil {
+				if api.IsNotFoundError(err) && strings.Contains(err.Error(), "beneficiary") {
+					suggestions := suggestBeneficiaries(cmd.Context(), client, beneficiaryID)
+					if suggestions != "" {
+						return fmt.Errorf("%w%s\nRun 'airwallex beneficiaries list' to see all beneficiaries", err, suggestions)
+					}
+				}
 				return err
 			}
 
@@ -245,6 +316,19 @@ Interac e-Transfer notes:
 			}
 
 			u.Success(fmt.Sprintf("Created transfer: %s", t.TransferID))
+
+			if wait {
+				u.Info(fmt.Sprintf("Waiting for transfer %s to complete...", t.TransferID))
+				t, err = client.WaitForTransfer(cmd.Context(), t.TransferID, time.Duration(waitTimeout)*time.Second)
+				if err != nil {
+					return err
+				}
+
+				if t.Status == "FAILED" {
+					return fmt.Errorf("transfer failed")
+				}
+			}
+
 			return nil
 		},
 	}
@@ -260,11 +344,116 @@ Interac e-Transfer notes:
 	cmd.Flags().StringVar(&reason, "reason", "", "Transfer reason (required)")
 	cmd.Flags().StringVar(&securityQuestion, "security-question", "", "Interac security question (1-40 chars)")
 	cmd.Flags().StringVar(&securityAnswer, "security-answer", "", "Interac security answer (3-25 alphanumeric)")
+	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Preview the transfer without executing")
+	cmd.Flags().BoolVar(&wait, "wait", false, "Wait for transfer to complete")
+	cmd.Flags().IntVar(&waitTimeout, "timeout", 300, "Timeout in seconds when waiting")
 	mustMarkRequired(cmd, "beneficiary-id")
 	mustMarkRequired(cmd, "transfer-currency")
 	mustMarkRequired(cmd, "source-currency")
 	mustMarkRequired(cmd, "reference")
 	mustMarkRequired(cmd, "reason")
+	return cmd
+}
+
+func newTransfersBatchCreateCmd() *cobra.Command {
+	var fromFile string
+	var continueOnError bool
+
+	cmd := &cobra.Command{
+		Use:   "batch-create",
+		Short: "Create multiple transfers from file or stdin",
+		Long: `Create multiple transfers from a JSON file or stdin.
+
+Input format (JSON array or newline-delimited JSON):
+[
+  {
+    "beneficiary_id": "ben_xxx",
+    "transfer_amount": 100.00,
+    "transfer_currency": "USD",
+    "source_currency": "USD",
+    "transfer_method": "LOCAL",
+    "reference": "INV-001",
+    "reason": "payment_to_supplier"
+  }
+]
+
+Examples:
+  airwallex transfers batch-create --from-file transfers.json
+  cat transfers.json | airwallex transfers batch-create
+  airwallex transfers batch-create --from-file transfers.json --continue-on-error`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			u := ui.FromContext(cmd.Context())
+			client, err := getClient(cmd.Context())
+			if err != nil {
+				return err
+			}
+
+			items, err := batch.ReadItems(fromFile)
+			if err != nil {
+				return err
+			}
+
+			u.Info(fmt.Sprintf("Processing %d transfers...", len(items)))
+
+			var results []batch.Result
+			var summary batch.Summary
+			summary.Total = len(items)
+
+			for i, item := range items {
+				if _, ok := item["request_id"]; !ok {
+					item["request_id"] = uuid.New().String()
+				}
+
+				t, err := client.CreateTransfer(cmd.Context(), item)
+				if err != nil {
+					results = append(results, batch.Result{
+						Index:   i,
+						Success: false,
+						Error:   err.Error(),
+						Input:   item,
+					})
+					summary.Failed++
+
+					if !continueOnError {
+						break
+					}
+					continue
+				}
+
+				results = append(results, batch.Result{
+					Index:   i,
+					Success: true,
+					ID:      t.TransferID,
+				})
+				summary.Success++
+			}
+
+			if outfmt.IsJSON(cmd.Context()) {
+				return outfmt.WriteJSON(os.Stdout, map[string]interface{}{
+					"results": results,
+					"summary": summary,
+				})
+			}
+
+			u.Info(fmt.Sprintf("Completed: %d success, %d failed", summary.Success, summary.Failed))
+			for _, r := range results {
+				if r.Success {
+					u.Success(fmt.Sprintf("[%d] Created: %s", r.Index, r.ID))
+				} else {
+					u.Error(fmt.Sprintf("[%d] Failed: %s", r.Index, r.Error))
+				}
+			}
+
+			if summary.Failed > 0 {
+				return fmt.Errorf("%d transfers failed", summary.Failed)
+			}
+			return nil
+		},
+	}
+
+	cmd.Flags().StringVar(&fromFile, "from-file", "", "JSON file with transfers (- for stdin)")
+	cmd.Flags().BoolVar(&continueOnError, "continue-on-error", false, "Continue processing on errors")
+
 	return cmd
 }
 
