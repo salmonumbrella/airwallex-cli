@@ -62,6 +62,9 @@ func (c *Client) ListGlobalAccounts(ctx context.Context, pageNum, pageSize int) 
 
 // GetGlobalAccount retrieves a single global account by ID
 func (c *Client) GetGlobalAccount(ctx context.Context, accountID string) (*GlobalAccount, error) {
+	if err := ValidateResourceID(accountID, "account"); err != nil {
+		return nil, err
+	}
 	resp, err := c.Get(ctx, "/api/v1/global_accounts/"+url.PathEscape(accountID))
 	if err != nil {
 		return nil, err

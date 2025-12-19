@@ -91,6 +91,9 @@ func (c *Client) ListTransfers(ctx context.Context, status string, pageNum, page
 
 // GetTransfer retrieves a single transfer by ID
 func (c *Client) GetTransfer(ctx context.Context, transferID string) (*Transfer, error) {
+	if err := ValidateResourceID(transferID, "transfer"); err != nil {
+		return nil, err
+	}
 	resp, err := c.Get(ctx, "/api/v1/transfers/"+url.PathEscape(transferID))
 	if err != nil {
 		return nil, err
@@ -131,6 +134,9 @@ func (c *Client) CreateTransfer(ctx context.Context, req map[string]interface{})
 
 // CancelTransfer cancels a transfer
 func (c *Client) CancelTransfer(ctx context.Context, transferID string) (*Transfer, error) {
+	if err := ValidateResourceID(transferID, "transfer"); err != nil {
+		return nil, err
+	}
 	resp, err := c.Post(ctx, "/api/v1/transfers/"+url.PathEscape(transferID)+"/cancel", nil)
 	if err != nil {
 		return nil, err
@@ -184,6 +190,9 @@ func (c *Client) ListBeneficiaries(ctx context.Context, pageNum, pageSize int) (
 
 // GetBeneficiary retrieves a single beneficiary by ID
 func (c *Client) GetBeneficiary(ctx context.Context, beneficiaryID string) (*Beneficiary, error) {
+	if err := ValidateResourceID(beneficiaryID, "beneficiary"); err != nil {
+		return nil, err
+	}
 	resp, err := c.Get(ctx, "/api/v1/beneficiaries/"+url.PathEscape(beneficiaryID))
 	if err != nil {
 		return nil, err
@@ -224,6 +233,9 @@ func (c *Client) CreateBeneficiary(ctx context.Context, req map[string]interface
 
 // UpdateBeneficiary updates a beneficiary
 func (c *Client) UpdateBeneficiary(ctx context.Context, beneficiaryID string, update map[string]interface{}) (*Beneficiary, error) {
+	if err := ValidateResourceID(beneficiaryID, "beneficiary"); err != nil {
+		return nil, err
+	}
 	resp, err := c.Post(ctx, "/api/v1/beneficiaries/"+url.PathEscape(beneficiaryID)+"/update", update)
 	if err != nil {
 		return nil, err
@@ -244,6 +256,9 @@ func (c *Client) UpdateBeneficiary(ctx context.Context, beneficiaryID string, up
 
 // DeleteBeneficiary deletes a beneficiary
 func (c *Client) DeleteBeneficiary(ctx context.Context, beneficiaryID string) error {
+	if err := ValidateResourceID(beneficiaryID, "beneficiary"); err != nil {
+		return err
+	}
 	resp, err := c.Post(ctx, "/api/v1/beneficiaries/"+url.PathEscape(beneficiaryID)+"/delete", nil)
 	if err != nil {
 		return err
@@ -274,6 +289,9 @@ func (c *Client) ValidateBeneficiary(ctx context.Context, req map[string]interfa
 
 // GetConfirmationLetter retrieves a transfer confirmation letter as PDF
 func (c *Client) GetConfirmationLetter(ctx context.Context, transferID string, format string) ([]byte, error) {
+	if err := ValidateResourceID(transferID, "transfer"); err != nil {
+		return nil, err
+	}
 	req := map[string]interface{}{
 		"transaction_id": transferID,
 		"format":         format,

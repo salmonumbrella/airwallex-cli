@@ -117,6 +117,9 @@ func (c *Client) ListFinancialReports(ctx context.Context, pageNum, pageSize int
 
 // GetFinancialReport gets a single report by ID
 func (c *Client) GetFinancialReport(ctx context.Context, reportID string) (*FinancialReport, error) {
+	if err := ValidateResourceID(reportID, "report"); err != nil {
+		return nil, err
+	}
 	resp, err := c.Get(ctx, "/api/v1/finance/financial_reports/"+url.PathEscape(reportID))
 	if err != nil {
 		return nil, err
@@ -138,6 +141,9 @@ func (c *Client) GetFinancialReport(ctx context.Context, reportID string) (*Fina
 // DownloadFinancialReport downloads report content as bytes
 // Returns: (content bytes, content-type header, error)
 func (c *Client) DownloadFinancialReport(ctx context.Context, reportID string) ([]byte, string, error) {
+	if err := ValidateResourceID(reportID, "report"); err != nil {
+		return nil, "", err
+	}
 	resp, err := c.Get(ctx, "/api/v1/finance/financial_reports/"+url.PathEscape(reportID)+"/content")
 	if err != nil {
 		return nil, "", err
@@ -160,6 +166,9 @@ func (c *Client) DownloadFinancialReport(ctx context.Context, reportID string) (
 
 // WaitForReport polls until report is complete or failed (helper method)
 func (c *Client) WaitForReport(ctx context.Context, reportID string, timeout time.Duration) (*FinancialReport, error) {
+	if err := ValidateResourceID(reportID, "report"); err != nil {
+		return nil, err
+	}
 	deadline := time.Now().Add(timeout)
 	attempt := 0
 	maxAttempts := int(timeout / (2 * time.Second))

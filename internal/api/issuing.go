@@ -107,6 +107,11 @@ type TransactionsResponse struct {
 
 // ListCards lists all cards with optional filters
 func (c *Client) ListCards(ctx context.Context, status, cardholderID string, pageNum, pageSize int) (*CardsResponse, error) {
+	if cardholderID != "" {
+		if err := ValidateResourceID(cardholderID, "cardholder"); err != nil {
+			return nil, err
+		}
+	}
 	params := url.Values{}
 	if status != "" {
 		params.Set("card_status", status)
@@ -146,6 +151,9 @@ func (c *Client) ListCards(ctx context.Context, status, cardholderID string, pag
 
 // GetCard retrieves a single card by ID
 func (c *Client) GetCard(ctx context.Context, cardID string) (*Card, error) {
+	if err := ValidateResourceID(cardID, "card"); err != nil {
+		return nil, err
+	}
 	resp, err := c.Get(ctx, "/api/v1/issuing/cards/"+url.PathEscape(cardID))
 	if err != nil {
 		return nil, err
@@ -166,6 +174,9 @@ func (c *Client) GetCard(ctx context.Context, cardID string) (*Card, error) {
 
 // GetCardDetails retrieves sensitive card details (PAN, CVV)
 func (c *Client) GetCardDetails(ctx context.Context, cardID string) (*CardDetails, error) {
+	if err := ValidateResourceID(cardID, "card"); err != nil {
+		return nil, err
+	}
 	resp, err := c.Get(ctx, "/api/v1/issuing/cards/"+url.PathEscape(cardID)+"/details")
 	if err != nil {
 		return nil, err
@@ -186,6 +197,9 @@ func (c *Client) GetCardDetails(ctx context.Context, cardID string) (*CardDetail
 
 // GetCardLimits retrieves remaining spending limits for a card
 func (c *Client) GetCardLimits(ctx context.Context, cardID string) (*CardLimits, error) {
+	if err := ValidateResourceID(cardID, "card"); err != nil {
+		return nil, err
+	}
 	resp, err := c.Get(ctx, "/api/v1/issuing/cards/"+url.PathEscape(cardID)+"/limits")
 	if err != nil {
 		return nil, err
@@ -206,6 +220,9 @@ func (c *Client) GetCardLimits(ctx context.Context, cardID string) (*CardLimits,
 
 // UpdateCard updates a card
 func (c *Client) UpdateCard(ctx context.Context, cardID string, update map[string]interface{}) (*Card, error) {
+	if err := ValidateResourceID(cardID, "card"); err != nil {
+		return nil, err
+	}
 	resp, err := c.Post(ctx, "/api/v1/issuing/cards/"+url.PathEscape(cardID)+"/update", update)
 	if err != nil {
 		return nil, err
@@ -226,6 +243,9 @@ func (c *Client) UpdateCard(ctx context.Context, cardID string, update map[strin
 
 // ActivateCard activates a physical card
 func (c *Client) ActivateCard(ctx context.Context, cardID string) (*Card, error) {
+	if err := ValidateResourceID(cardID, "card"); err != nil {
+		return nil, err
+	}
 	resp, err := c.Post(ctx, "/api/v1/issuing/cards/"+url.PathEscape(cardID)+"/activate", nil)
 	if err != nil {
 		return nil, err
@@ -301,6 +321,9 @@ func (c *Client) ListCardholders(ctx context.Context, pageNum, pageSize int) (*C
 
 // GetCardholder retrieves a single cardholder by ID
 func (c *Client) GetCardholder(ctx context.Context, cardholderID string) (*Cardholder, error) {
+	if err := ValidateResourceID(cardholderID, "cardholder"); err != nil {
+		return nil, err
+	}
 	resp, err := c.Get(ctx, "/api/v1/issuing/cardholders/"+url.PathEscape(cardholderID))
 	if err != nil {
 		return nil, err
@@ -341,6 +364,9 @@ func (c *Client) CreateCardholder(ctx context.Context, req map[string]interface{
 
 // UpdateCardholder updates a cardholder
 func (c *Client) UpdateCardholder(ctx context.Context, cardholderID string, update map[string]interface{}) (*Cardholder, error) {
+	if err := ValidateResourceID(cardholderID, "cardholder"); err != nil {
+		return nil, err
+	}
 	resp, err := c.Post(ctx, "/api/v1/issuing/cardholders/"+url.PathEscape(cardholderID)+"/update", update)
 	if err != nil {
 		return nil, err
@@ -361,6 +387,11 @@ func (c *Client) UpdateCardholder(ctx context.Context, cardholderID string, upda
 
 // ListTransactions lists issuing transactions
 func (c *Client) ListTransactions(ctx context.Context, cardID string, from, to string, pageNum, pageSize int) (*TransactionsResponse, error) {
+	if cardID != "" {
+		if err := ValidateResourceID(cardID, "card"); err != nil {
+			return nil, err
+		}
+	}
 	params := url.Values{}
 	if cardID != "" {
 		params.Set("card_id", cardID)
@@ -403,6 +434,9 @@ func (c *Client) ListTransactions(ctx context.Context, cardID string, from, to s
 
 // GetTransaction retrieves a single transaction by ID
 func (c *Client) GetTransaction(ctx context.Context, transactionID string) (*Transaction, error) {
+	if err := ValidateResourceID(transactionID, "transaction"); err != nil {
+		return nil, err
+	}
 	resp, err := c.Get(ctx, "/api/v1/issuing/transactions/"+url.PathEscape(transactionID))
 	if err != nil {
 		return nil, err
