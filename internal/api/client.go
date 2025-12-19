@@ -6,8 +6,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"math/rand"
 	"net/http"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -65,14 +67,15 @@ func (c *Client) Do(ctx context.Context, req *http.Request) (*http.Response, err
 	req.Header.Set("Authorization", "Bearer "+token)
 	req.Header.Set("x-api-version", APIVersion)
 	req.Header.Set("Content-Type", "application/json")
-	return c.doWithRetry(req)
+	return c.doWithRetry(ctx, req)
 }
 
 // doWithRetry executes the request with retry logic:
 // - 429: exponential backoff with jitter, max 3 retries (safe for all methods)
+//   Respects Retry-After header if present
 // - 5xx: single retry after 1s, ONLY for idempotent methods (GET, HEAD, OPTIONS)
 // - 4xx: no retry
-func (c *Client) doWithRetry(req *http.Request) (*http.Response, error) {
+func (c *Client) doWithRetry(ctx context.Context, req *http.Request) (*http.Response, error) {
 	var resp *http.Response
 	var err error
 
@@ -101,10 +104,21 @@ func (c *Client) doWithRetry(req *http.Request) (*http.Response, error) {
 			if retries429 >= maxRetries {
 				return resp, nil
 			}
+
 			// Calculate backoff: 1s, 2s, 4s with jitter
 			baseDelay := time.Duration(1<<retries429) * time.Second
 			jitter := time.Duration(rand.Int63n(int64(baseDelay / 2)))
 			delay := baseDelay + jitter
+
+			// Check for Retry-After header (can be seconds or HTTP date)
+			if retryAfter := resp.Header.Get("Retry-After"); retryAfter != "" {
+				if seconds, err := strconv.Atoi(retryAfter); err == nil {
+					delay = time.Duration(seconds) * time.Second
+				}
+				// Could also parse HTTP date format, but seconds is more common
+			}
+
+			log.Printf("Rate limited, retrying in %v (attempt %d/%d)", delay, retries429+1, maxRetries)
 
 			resp.Body.Close()
 
@@ -116,7 +130,14 @@ func (c *Client) doWithRetry(req *http.Request) (*http.Response, error) {
 				}
 			}
 
-			time.Sleep(delay)
+			// Context-aware sleep for cancellation support
+			select {
+			case <-time.After(delay):
+				// Continue with retry
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			}
+
 			retries429++
 			continue
 		}

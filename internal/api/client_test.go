@@ -118,7 +118,7 @@ func TestClient_doWithRetry_noRetryOn4xx(t *testing.T) {
 		clientID:   "test-id",
 		apiKey:     "test-key",
 		httpClient: http.DefaultClient,
-		
+
 		token: &TokenCache{
 			Token:     "test-token",
 			ExpiresAt: time.Now().Add(10 * time.Minute),
@@ -126,7 +126,7 @@ func TestClient_doWithRetry_noRetryOn4xx(t *testing.T) {
 	}
 
 	req, _ := http.NewRequest("GET", server.URL+"/test", nil)
-	resp, err := c.doWithRetry(req)
+	resp, err := c.doWithRetry(context.Background(), req)
 	if err != nil {
 		t.Fatalf("doWithRetry() error: %v", err)
 	}
@@ -168,7 +168,7 @@ func TestClient_doWithRetry_retriesOn429WithExponentialBackoff(t *testing.T) {
 
 	req, _ := http.NewRequest("GET", server.URL+"/test", nil)
 	start := time.Now()
-	resp, err := c.doWithRetry(req)
+	resp, err := c.doWithRetry(context.Background(), req)
 	elapsed := time.Since(start)
 
 	if err != nil {
@@ -203,7 +203,7 @@ func TestClient_doWithRetry_maxRetriesOn429(t *testing.T) {
 		clientID:   "test-id",
 		apiKey:     "test-key",
 		httpClient: http.DefaultClient,
-		
+
 		token: &TokenCache{
 			Token:     "test-token",
 			ExpiresAt: time.Now().Add(10 * time.Minute),
@@ -211,7 +211,7 @@ func TestClient_doWithRetry_maxRetriesOn429(t *testing.T) {
 	}
 
 	req, _ := http.NewRequest("GET", server.URL+"/test", nil)
-	resp, err := c.doWithRetry(req)
+	resp, err := c.doWithRetry(context.Background(), req)
 	if err != nil {
 		t.Fatalf("doWithRetry() error: %v", err)
 	}
@@ -223,6 +223,114 @@ func TestClient_doWithRetry_maxRetriesOn429(t *testing.T) {
 	}
 	if resp.StatusCode != http.StatusTooManyRequests {
 		t.Errorf("status = %d, want %d", resp.StatusCode, http.StatusTooManyRequests)
+	}
+}
+
+func TestClient_doWithRetry_respectsRetryAfterHeader(t *testing.T) {
+	callCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		callCount++
+		if callCount == 1 {
+			w.Header().Set("Retry-After", "2")
+			w.WriteHeader(http.StatusTooManyRequests)
+			_, _ = w.Write([]byte(`{"error": "rate limit"}`))
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"data": "success"}`))
+	}))
+	defer server.Close()
+
+	c := &Client{
+		baseURL:    server.URL,
+		clientID:   "test-id",
+		apiKey:     "test-key",
+		httpClient: http.DefaultClient,
+
+		token: &TokenCache{
+			Token:     "test-token",
+			ExpiresAt: time.Now().Add(10 * time.Minute),
+		},
+	}
+
+	req, _ := http.NewRequest("GET", server.URL+"/test", nil)
+	start := time.Now()
+	resp, err := c.doWithRetry(context.Background(), req)
+	elapsed := time.Since(start)
+
+	if err != nil {
+		t.Fatalf("doWithRetry() error: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if callCount != 2 {
+		t.Errorf("expected 2 calls (1 retry), got %d", callCount)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("status = %d, want %d", resp.StatusCode, http.StatusOK)
+	}
+
+	// Verify we waited for the Retry-After duration (2 seconds)
+	if elapsed < 2*time.Second {
+		t.Errorf("elapsed = %v, expected at least 2s based on Retry-After header", elapsed)
+	}
+	// Should be close to 2s, not the exponential backoff of ~1s
+	if elapsed > 3*time.Second {
+		t.Errorf("elapsed = %v, expected around 2s based on Retry-After header, not exponential backoff", elapsed)
+	}
+}
+
+func TestClient_doWithRetry_contextCancellationDuringRetry(t *testing.T) {
+	callCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusTooManyRequests)
+		_, _ = w.Write([]byte(`{"error": "rate limit"}`))
+	}))
+	defer server.Close()
+
+	c := &Client{
+		baseURL:    server.URL,
+		clientID:   "test-id",
+		apiKey:     "test-key",
+		httpClient: http.DefaultClient,
+
+		token: &TokenCache{
+			Token:     "test-token",
+			ExpiresAt: time.Now().Add(10 * time.Minute),
+		},
+	}
+
+	// Create a context that we'll cancel during retry
+	ctx, cancel := context.WithCancel(context.Background())
+
+	// Cancel after 500ms (during the retry delay)
+	go func() {
+		time.Sleep(500 * time.Millisecond)
+		cancel()
+	}()
+
+	req, _ := http.NewRequest("GET", server.URL+"/test", nil)
+	start := time.Now()
+	resp, err := c.doWithRetry(ctx, req)
+	elapsed := time.Since(start)
+
+	if err == nil {
+		resp.Body.Close()
+		t.Fatal("expected context.Canceled error, got nil")
+	}
+	if err != context.Canceled {
+		t.Errorf("error = %v, want context.Canceled", err)
+	}
+
+	// Should fail quickly (around 500ms), not wait for full retry delay
+	if elapsed > 1*time.Second {
+		t.Errorf("elapsed = %v, expected cancellation within ~500ms", elapsed)
+	}
+
+	// Should have made 1 call before context was cancelled
+	if callCount != 1 {
+		t.Errorf("expected 1 call before cancellation, got %d", callCount)
 	}
 }
 
@@ -254,7 +362,7 @@ func TestClient_doWithRetry_retriesOnce5xx(t *testing.T) {
 
 	req, _ := http.NewRequest("GET", server.URL+"/test", nil)
 	start := time.Now()
-	resp, err := c.doWithRetry(req)
+	resp, err := c.doWithRetry(context.Background(), req)
 	elapsed := time.Since(start)
 
 	if err != nil {
@@ -297,7 +405,7 @@ func TestClient_doWithRetry_noSecondRetryOn5xx(t *testing.T) {
 	}
 
 	req, _ := http.NewRequest("GET", server.URL+"/test", nil)
-	resp, err := c.doWithRetry(req)
+	resp, err := c.doWithRetry(context.Background(), req)
 	if err != nil {
 		t.Fatalf("doWithRetry() error: %v", err)
 	}
@@ -334,7 +442,7 @@ func TestClient_doWithRetry_successOnFirstAttempt(t *testing.T) {
 	}
 
 	req, _ := http.NewRequest("GET", server.URL+"/test", nil)
-	resp, err := c.doWithRetry(req)
+	resp, err := c.doWithRetry(context.Background(), req)
 	if err != nil {
 		t.Fatalf("doWithRetry() error: %v", err)
 	}
@@ -442,7 +550,7 @@ func TestClient_doWithRetry_mixedErrors5xxThen429(t *testing.T) {
 	}
 
 	req, _ := http.NewRequest("GET", server.URL+"/test", nil)
-	resp, err := c.doWithRetry(req)
+	resp, err := c.doWithRetry(context.Background(), req)
 	if err != nil {
 		t.Fatalf("doWithRetry() error: %v", err)
 	}
@@ -488,7 +596,7 @@ func TestClient_doWithRetry_mixedErrors429Then5xx(t *testing.T) {
 	}
 
 	req, _ := http.NewRequest("GET", server.URL+"/test", nil)
-	resp, err := c.doWithRetry(req)
+	resp, err := c.doWithRetry(context.Background(), req)
 	if err != nil {
 		t.Fatalf("doWithRetry() error: %v", err)
 	}
@@ -531,7 +639,7 @@ func TestClient_doWithRetry_GET_retriesOn5xx(t *testing.T) {
 	}
 
 	req, _ := http.NewRequest("GET", server.URL+"/test", nil)
-	resp, err := c.doWithRetry(req)
+	resp, err := c.doWithRetry(context.Background(), req)
 	if err != nil {
 		t.Fatalf("doWithRetry() error: %v", err)
 	}
@@ -568,7 +676,7 @@ func TestClient_doWithRetry_POST_noRetryOn5xx(t *testing.T) {
 	}
 
 	req, _ := http.NewRequest("POST", server.URL+"/test", nil)
-	resp, err := c.doWithRetry(req)
+	resp, err := c.doWithRetry(context.Background(), req)
 	if err != nil {
 		t.Fatalf("doWithRetry() error: %v", err)
 	}
@@ -610,7 +718,7 @@ func TestClient_doWithRetry_POST_retriesOn429(t *testing.T) {
 	}
 
 	req, _ := http.NewRequest("POST", server.URL+"/test", nil)
-	resp, err := c.doWithRetry(req)
+	resp, err := c.doWithRetry(context.Background(), req)
 	if err != nil {
 		t.Fatalf("doWithRetry() error: %v", err)
 	}
@@ -647,7 +755,7 @@ func TestClient_doWithRetry_PUT_noRetryOn5xx(t *testing.T) {
 	}
 
 	req, _ := http.NewRequest("PUT", server.URL+"/test", nil)
-	resp, err := c.doWithRetry(req)
+	resp, err := c.doWithRetry(context.Background(), req)
 	if err != nil {
 		t.Fatalf("doWithRetry() error: %v", err)
 	}
@@ -684,7 +792,7 @@ func TestClient_doWithRetry_DELETE_noRetryOn5xx(t *testing.T) {
 	}
 
 	req, _ := http.NewRequest("DELETE", server.URL+"/test", nil)
-	resp, err := c.doWithRetry(req)
+	resp, err := c.doWithRetry(context.Background(), req)
 	if err != nil {
 		t.Fatalf("doWithRetry() error: %v", err)
 	}
@@ -721,7 +829,7 @@ func TestClient_doWithRetry_PATCH_noRetryOn5xx(t *testing.T) {
 	}
 
 	req, _ := http.NewRequest("PATCH", server.URL+"/test", nil)
-	resp, err := c.doWithRetry(req)
+	resp, err := c.doWithRetry(context.Background(), req)
 	if err != nil {
 		t.Fatalf("doWithRetry() error: %v", err)
 	}
@@ -761,7 +869,7 @@ func TestClient_doWithRetry_HEAD_retriesOn5xx(t *testing.T) {
 	}
 
 	req, _ := http.NewRequest("HEAD", server.URL+"/test", nil)
-	resp, err := c.doWithRetry(req)
+	resp, err := c.doWithRetry(context.Background(), req)
 	if err != nil {
 		t.Fatalf("doWithRetry() error: %v", err)
 	}
@@ -801,7 +909,7 @@ func TestClient_doWithRetry_OPTIONS_retriesOn5xx(t *testing.T) {
 	}
 
 	req, _ := http.NewRequest("OPTIONS", server.URL+"/test", nil)
-	resp, err := c.doWithRetry(req)
+	resp, err := c.doWithRetry(context.Background(), req)
 	if err != nil {
 		t.Fatalf("doWithRetry() error: %v", err)
 	}
