@@ -963,6 +963,46 @@ func TestNewClientWithAccount_enforcesTLS12(t *testing.T) {
 	}
 }
 
+func TestNewClient_verifiesCertificates(t *testing.T) {
+	client, err := NewClient("test-id", "test-key")
+	if err != nil {
+		t.Fatalf("NewClient failed: %v", err)
+	}
+
+	transport, ok := client.httpClient.Transport.(*http.Transport)
+	if !ok {
+		t.Fatal("expected *http.Transport")
+	}
+
+	if transport.TLSClientConfig == nil {
+		t.Fatal("TLSClientConfig is nil")
+	}
+
+	if transport.TLSClientConfig.InsecureSkipVerify {
+		t.Error("InsecureSkipVerify = true, want false (certificates must be verified)")
+	}
+}
+
+func TestNewClientWithAccount_verifiesCertificates(t *testing.T) {
+	client, err := NewClientWithAccount("test-id", "test-key", "account-id")
+	if err != nil {
+		t.Fatalf("NewClientWithAccount failed: %v", err)
+	}
+
+	transport, ok := client.httpClient.Transport.(*http.Transport)
+	if !ok {
+		t.Fatal("expected *http.Transport")
+	}
+
+	if transport.TLSClientConfig == nil {
+		t.Fatal("TLSClientConfig is nil")
+	}
+
+	if transport.TLSClientConfig.InsecureSkipVerify {
+		t.Error("InsecureSkipVerify = true, want false (certificates must be verified)")
+	}
+}
+
 // TestGenerateIdempotencyKey verifies that idempotency keys are unique
 func TestGenerateIdempotencyKey(t *testing.T) {
 	key1, err := generateIdempotencyKey()

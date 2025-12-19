@@ -50,7 +50,8 @@ func NewClient(clientID, apiKey string) (*Client, error) {
 			Timeout: 30 * time.Second,
 			Transport: &http.Transport{
 				TLSClientConfig: &tls.Config{
-					MinVersion: tls.VersionTLS12,
+					MinVersion:         tls.VersionTLS12,
+					InsecureSkipVerify: false, // Explicit: always verify certificates
 				},
 			},
 		},
@@ -72,7 +73,8 @@ func NewClientWithAccount(clientID, apiKey, accountID string) (*Client, error) {
 			Timeout: 30 * time.Second,
 			Transport: &http.Transport{
 				TLSClientConfig: &tls.Config{
-					MinVersion: tls.VersionTLS12,
+					MinVersion:         tls.VersionTLS12,
+					InsecureSkipVerify: false, // Explicit: always verify certificates
 				},
 			},
 		},
