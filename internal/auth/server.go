@@ -15,6 +15,7 @@ import (
 	"regexp"
 	"runtime"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/salmonumbrella/airwallex-cli/internal/api"
@@ -72,6 +73,7 @@ type SetupServer struct {
 	result        chan SetupResult
 	shutdown      chan struct{}
 	pendingResult *SetupResult
+	pendingMu     sync.Mutex
 	csrfToken     string
 	store         secrets.Store
 }
@@ -139,6 +141,8 @@ func (s *SetupServer) Start(ctx context.Context) (*SetupResult, error) {
 		return nil, ctx.Err()
 	case <-s.shutdown:
 		_ = server.Shutdown(context.Background())
+		s.pendingMu.Lock()
+		defer s.pendingMu.Unlock()
 		if s.pendingResult != nil {
 			return s.pendingResult, nil
 		}
@@ -353,11 +357,13 @@ func (s *SetupServer) handleSubmit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Store pending result
+	s.pendingMu.Lock()
 	s.pendingResult = &SetupResult{
 		AccountName: req.AccountName,
 		ClientID:    req.ClientID,
 		AccountID:   req.AccountID,
 	}
+	s.pendingMu.Unlock()
 
 	writeJSON(w, http.StatusOK, map[string]any{
 		"success":      true,
@@ -374,10 +380,12 @@ func (s *SetupServer) handleSuccess(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Use server state instead of URL parameter to prevent spoofing
+	s.pendingMu.Lock()
 	accountName := ""
 	if s.pendingResult != nil {
 		accountName = s.pendingResult.AccountName
 	}
+	s.pendingMu.Unlock()
 
 	data := map[string]string{
 		"AccountName": accountName,
@@ -409,9 +417,11 @@ func (s *SetupServer) handleComplete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	s.pendingMu.Lock()
 	if s.pendingResult != nil {
 		s.result <- *s.pendingResult
 	}
+	s.pendingMu.Unlock()
 	close(s.shutdown)
 	writeJSON(w, http.StatusOK, map[string]any{"success": true})
 }
