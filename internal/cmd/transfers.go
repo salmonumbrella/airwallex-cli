@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"strings"
 	"text/tabwriter"
 
 	"github.com/google/uuid"
@@ -266,7 +267,9 @@ Interac e-Transfer notes:
 }
 
 func newTransfersCancelCmd() *cobra.Command {
-	return &cobra.Command{
+	var skipConfirm bool
+
+	cmd := &cobra.Command{
 		Use:   "cancel <transferId>",
 		Short: "Cancel a transfer",
 		Args:  cobra.ExactArgs(1),
@@ -277,7 +280,21 @@ func newTransfersCancelCmd() *cobra.Command {
 				return err
 			}
 
-			t, err := client.CancelTransfer(cmd.Context(), args[0])
+			transferID := args[0]
+
+			// Prompt for confirmation unless --yes flag is set
+			if !skipConfirm {
+				fmt.Printf("Are you sure you want to cancel transfer %s? [y/N]: ", transferID)
+				var response string
+				fmt.Scanln(&response)
+				response = strings.ToLower(strings.TrimSpace(response))
+				if response != "y" && response != "yes" {
+					fmt.Println("Cancellation aborted.")
+					return nil
+				}
+			}
+
+			t, err := client.CancelTransfer(cmd.Context(), transferID)
 			if err != nil {
 				return err
 			}
@@ -290,6 +307,9 @@ func newTransfersCancelCmd() *cobra.Command {
 			return nil
 		},
 	}
+
+	cmd.Flags().BoolVarP(&skipConfirm, "yes", "y", false, "Skip confirmation prompt")
+	return cmd
 }
 
 func newTransfersConfirmationCmd() *cobra.Command {

@@ -401,7 +401,9 @@ func newBeneficiariesUpdateCmd() *cobra.Command {
 }
 
 func newBeneficiariesDeleteCmd() *cobra.Command {
-	return &cobra.Command{
+	var skipConfirm bool
+
+	cmd := &cobra.Command{
 		Use:   "delete <beneficiaryId>",
 		Short: "Delete a beneficiary",
 		Args:  cobra.ExactArgs(1),
@@ -412,14 +414,31 @@ func newBeneficiariesDeleteCmd() *cobra.Command {
 				return err
 			}
 
-			if err := client.DeleteBeneficiary(cmd.Context(), args[0]); err != nil {
+			beneficiaryID := args[0]
+
+			// Prompt for confirmation unless --yes flag is set
+			if !skipConfirm {
+				fmt.Printf("Are you sure you want to delete beneficiary %s? [y/N]: ", beneficiaryID)
+				var response string
+				fmt.Scanln(&response)
+				response = strings.ToLower(strings.TrimSpace(response))
+				if response != "y" && response != "yes" {
+					fmt.Println("Deletion cancelled.")
+					return nil
+				}
+			}
+
+			if err := client.DeleteBeneficiary(cmd.Context(), beneficiaryID); err != nil {
 				return err
 			}
 
-			u.Success(fmt.Sprintf("Deleted beneficiary: %s", args[0]))
+			u.Success(fmt.Sprintf("Deleted beneficiary: %s", beneficiaryID))
 			return nil
 		},
 	}
+
+	cmd.Flags().BoolVarP(&skipConfirm, "yes", "y", false, "Skip confirmation prompt")
+	return cmd
 }
 
 func newBeneficiariesValidateCmd() *cobra.Command {
