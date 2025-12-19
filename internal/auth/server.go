@@ -24,6 +24,33 @@ import (
 
 var validAccountName = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
 
+// rateLimiter tracks attempts per endpoint to prevent brute-force
+type rateLimiter struct {
+	mu          sync.Mutex
+	attempts    map[string]int
+	maxAttempts int
+}
+
+// newRateLimiter creates a rate limiter with the given max attempts
+func newRateLimiter(maxAttempts int) *rateLimiter {
+	return &rateLimiter{
+		attempts:    make(map[string]int),
+		maxAttempts: maxAttempts,
+	}
+}
+
+// check verifies if the endpoint has exceeded the rate limit
+func (rl *rateLimiter) check(endpoint string) error {
+	rl.mu.Lock()
+	defer rl.mu.Unlock()
+
+	rl.attempts[endpoint]++
+	if rl.attempts[endpoint] > rl.maxAttempts {
+		return fmt.Errorf("too many attempts (max %d)", rl.maxAttempts)
+	}
+	return nil
+}
+
 // ValidateAccountName validates an account name
 func ValidateAccountName(name string) error {
 	if len(name) == 0 {
@@ -76,6 +103,7 @@ type SetupServer struct {
 	pendingMu     sync.Mutex
 	csrfToken     string
 	store         secrets.Store
+	limiter       *rateLimiter
 }
 
 // NewSetupServer creates a new setup server
@@ -91,6 +119,7 @@ func NewSetupServer(store secrets.Store) (*SetupServer, error) {
 		shutdown:  make(chan struct{}),
 		csrfToken: hex.EncodeToString(tokenBytes),
 		store:     store,
+		limiter:   newRateLimiter(10),
 	}, nil
 }
 
@@ -209,6 +238,15 @@ func (s *SetupServer) handleValidate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Check rate limit
+	if err := s.limiter.check("/validate"); err != nil {
+		writeJSON(w, http.StatusTooManyRequests, map[string]any{
+			"success": false,
+			"error":   err.Error(),
+		})
+		return
+	}
+
 	// Verify CSRF token
 	providedToken := r.Header.Get("X-CSRF-Token")
 	if subtle.ConstantTimeCompare([]byte(providedToken), []byte(s.csrfToken)) != 1 {
@@ -279,6 +317,15 @@ func (s *SetupServer) handleValidate(w http.ResponseWriter, r *http.Request) {
 func (s *SetupServer) handleSubmit(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Check rate limit
+	if err := s.limiter.check("/submit"); err != nil {
+		writeJSON(w, http.StatusTooManyRequests, map[string]any{
+			"success": false,
+			"error":   err.Error(),
+		})
 		return
 	}
 
