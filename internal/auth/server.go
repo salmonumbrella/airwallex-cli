@@ -24,31 +24,64 @@ import (
 
 var validAccountName = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
 
-// rateLimiter tracks attempts per endpoint to prevent brute-force
-type rateLimiter struct {
-	mu          sync.Mutex
-	attempts    map[string]int
-	maxAttempts int
+// clientLimit tracks attempts for a specific client
+type clientLimit struct {
+	count   int
+	resetAt time.Time
 }
 
-// newRateLimiter creates a rate limiter with the given max attempts
-func newRateLimiter(maxAttempts int) *rateLimiter {
+// rateLimiter tracks attempts per client IP and endpoint to prevent brute-force
+type rateLimiter struct {
+	mu          sync.Mutex
+	attempts    map[string]*clientLimit // key: "clientIP:endpoint"
+	maxAttempts int
+	window      time.Duration
+}
+
+// newRateLimiter creates a rate limiter with the given max attempts and time window
+func newRateLimiter(maxAttempts int, window time.Duration) *rateLimiter {
 	return &rateLimiter{
-		attempts:    make(map[string]int),
+		attempts:    make(map[string]*clientLimit),
 		maxAttempts: maxAttempts,
+		window:      window,
 	}
 }
 
-// check verifies if the endpoint has exceeded the rate limit
-func (rl *rateLimiter) check(endpoint string) error {
+// check verifies if the client has exceeded the rate limit for this endpoint
+func (rl *rateLimiter) check(clientIP, endpoint string) error {
 	rl.mu.Lock()
 	defer rl.mu.Unlock()
 
-	rl.attempts[endpoint]++
-	if rl.attempts[endpoint] > rl.maxAttempts {
-		return fmt.Errorf("too many attempts (max %d)", rl.maxAttempts)
+	key := clientIP + ":" + endpoint
+	now := time.Now()
+
+	// Reset if window expired
+	if limit, exists := rl.attempts[key]; exists && now.After(limit.resetAt) {
+		delete(rl.attempts, key)
+	}
+
+	// Initialize new limit if doesn't exist
+	if rl.attempts[key] == nil {
+		rl.attempts[key] = &clientLimit{
+			count:   1,
+			resetAt: now.Add(rl.window),
+		}
+		return nil
+	}
+
+	// Increment and check limit
+	rl.attempts[key].count++
+	if rl.attempts[key].count > rl.maxAttempts {
+		return fmt.Errorf("too many attempts, please try again later")
 	}
 	return nil
+}
+
+// getClientIP extracts the client IP from the request
+func getClientIP(r *http.Request) string {
+	// For localhost, use RemoteAddr
+	host, _, _ := net.SplitHostPort(r.RemoteAddr)
+	return host
 }
 
 // ValidateAccountName validates an account name
@@ -119,7 +152,7 @@ func NewSetupServer(store secrets.Store) (*SetupServer, error) {
 		shutdown:  make(chan struct{}),
 		csrfToken: hex.EncodeToString(tokenBytes),
 		store:     store,
-		limiter:   newRateLimiter(10),
+		limiter:   newRateLimiter(10, 15*time.Minute),
 	}, nil
 }
 
@@ -238,19 +271,20 @@ func (s *SetupServer) handleValidate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check rate limit
-	if err := s.limiter.check("/validate"); err != nil {
+	// Verify CSRF token FIRST (before rate limiting)
+	providedToken := r.Header.Get("X-CSRF-Token")
+	if subtle.ConstantTimeCompare([]byte(providedToken), []byte(s.csrfToken)) != 1 {
+		http.Error(w, "Invalid CSRF token", http.StatusForbidden)
+		return
+	}
+
+	// Check rate limit per client IP
+	clientIP := getClientIP(r)
+	if err := s.limiter.check(clientIP, "/validate"); err != nil {
 		writeJSON(w, http.StatusTooManyRequests, map[string]any{
 			"success": false,
 			"error":   err.Error(),
 		})
-		return
-	}
-
-	// Verify CSRF token
-	providedToken := r.Header.Get("X-CSRF-Token")
-	if subtle.ConstantTimeCompare([]byte(providedToken), []byte(s.csrfToken)) != 1 {
-		http.Error(w, "Invalid CSRF token", http.StatusForbidden)
 		return
 	}
 
@@ -320,19 +354,20 @@ func (s *SetupServer) handleSubmit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check rate limit
-	if err := s.limiter.check("/submit"); err != nil {
+	// Verify CSRF token FIRST (before rate limiting)
+	providedToken := r.Header.Get("X-CSRF-Token")
+	if subtle.ConstantTimeCompare([]byte(providedToken), []byte(s.csrfToken)) != 1 {
+		http.Error(w, "Invalid CSRF token", http.StatusForbidden)
+		return
+	}
+
+	// Check rate limit per client IP
+	clientIP := getClientIP(r)
+	if err := s.limiter.check(clientIP, "/submit"); err != nil {
 		writeJSON(w, http.StatusTooManyRequests, map[string]any{
 			"success": false,
 			"error":   err.Error(),
 		})
-		return
-	}
-
-	// Verify CSRF token
-	providedToken := r.Header.Get("X-CSRF-Token")
-	if subtle.ConstantTimeCompare([]byte(providedToken), []byte(s.csrfToken)) != 1 {
-		http.Error(w, "Invalid CSRF token", http.StatusForbidden)
 		return
 	}
 
