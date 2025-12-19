@@ -8,6 +8,7 @@ import (
 	"io"
 	"math/rand"
 	"net/http"
+	"sync"
 	"time"
 )
 
@@ -22,6 +23,7 @@ type Client struct {
 	apiKey     string
 	accountID  string // Optional: for x-login-as header (multi-account API keys)
 	token      *TokenCache
+	tokenMu    sync.RWMutex
 	httpClient *http.Client
 	ctx        context.Context
 }
@@ -58,15 +60,20 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 	if err := c.ensureValidToken(); err != nil {
 		return nil, fmt.Errorf("auth failed: %w", err)
 	}
-	req.Header.Set("Authorization", "Bearer "+c.token.Token)
+
+	c.tokenMu.RLock()
+	token := c.token.Token
+	c.tokenMu.RUnlock()
+
+	req.Header.Set("Authorization", "Bearer "+token)
 	req.Header.Set("x-api-version", APIVersion)
 	req.Header.Set("Content-Type", "application/json")
 	return c.doWithRetry(req)
 }
 
 // doWithRetry executes the request with retry logic:
-// - 429: exponential backoff with jitter, max 3 retries
-// - 5xx: single retry after 1s
+// - 429: exponential backoff with jitter, max 3 retries (safe for all methods)
+// - 5xx: single retry after 1s, ONLY for idempotent methods (GET, HEAD, OPTIONS)
 // - 4xx: no retry
 func (c *Client) doWithRetry(req *http.Request) (*http.Response, error) {
 	var resp *http.Response
@@ -76,6 +83,9 @@ func (c *Client) doWithRetry(req *http.Request) (*http.Response, error) {
 	retries429 := 0
 	retries5xx := 0
 	maxRetries := 3
+
+	// Determine if the method is idempotent
+	isIdempotent := req.Method == "GET" || req.Method == "HEAD" || req.Method == "OPTIONS"
 
 	for {
 		resp, err = c.httpClient.Do(req)
@@ -89,6 +99,7 @@ func (c *Client) doWithRetry(req *http.Request) (*http.Response, error) {
 		}
 
 		// 429 rate limit: exponential backoff with jitter
+		// Safe to retry for all methods because the request wasn't processed
 		if resp.StatusCode == 429 {
 			if retries429 >= maxRetries {
 				return resp, nil
@@ -113,8 +124,15 @@ func (c *Client) doWithRetry(req *http.Request) (*http.Response, error) {
 			continue
 		}
 
-		// 5xx errors: retry once after 1s
+		// 5xx errors: retry once after 1s, ONLY for idempotent operations
+		// Non-idempotent operations (POST, PUT, DELETE, PATCH) could have been partially
+		// processed, so retrying could cause duplicates (e.g., duplicate transfers)
 		if resp.StatusCode >= 500 {
+			// Don't retry non-idempotent operations on 5xx
+			if !isIdempotent {
+				return resp, nil
+			}
+
 			// Only retry once
 			if retries5xx > 0 {
 				return resp, nil
@@ -140,13 +158,25 @@ func (c *Client) doWithRetry(req *http.Request) (*http.Response, error) {
 }
 
 func (c *Client) ensureValidToken() error {
-	if c.token != nil && time.Now().Add(60*time.Second).Before(c.token.ExpiresAt) {
+	c.tokenMu.RLock()
+	valid := c.token != nil && time.Now().Add(60*time.Second).Before(c.token.ExpiresAt)
+	c.tokenMu.RUnlock()
+
+	if valid {
 		return nil
 	}
 	return c.fetchToken()
 }
 
 func (c *Client) fetchToken() error {
+	c.tokenMu.Lock()
+	defer c.tokenMu.Unlock()
+
+	// Double-check pattern: another goroutine might have fetched while we waited
+	if c.token != nil && time.Now().Add(60*time.Second).Before(c.token.ExpiresAt) {
+		return nil
+	}
+
 	url := c.baseURL + "/api/v1/authentication/login"
 
 	req, err := http.NewRequestWithContext(c.ctx, "POST", url, nil)

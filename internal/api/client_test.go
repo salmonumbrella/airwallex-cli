@@ -348,7 +348,7 @@ func TestClient_doWithRetry_successOnFirstAttempt(t *testing.T) {
 	}
 }
 
-func TestClient_Post_retriesWithBodyReplay(t *testing.T) {
+func TestClient_Post_retriesOn429WithBodyReplay(t *testing.T) {
 	callCount := 0
 	var receivedBodies []string
 
@@ -361,8 +361,8 @@ func TestClient_Post_retriesWithBodyReplay(t *testing.T) {
 		receivedBodies = append(receivedBodies, string(body[:n]))
 
 		if callCount == 1 {
-			w.WriteHeader(http.StatusInternalServerError)
-			_, _ = w.Write([]byte(`{"error": "server error"}`))
+			w.WriteHeader(http.StatusTooManyRequests)
+			_, _ = w.Write([]byte(`{"error": "rate limit"}`))
 			return
 		}
 		w.WriteHeader(http.StatusOK)
@@ -497,6 +497,281 @@ func TestClient_doWithRetry_mixedErrors429Then5xx(t *testing.T) {
 	// Should be: 1 initial 429 + 1 retry (gets 5xx) + 1 retry for 5xx (gets success) = 3 total
 	if callCount != 3 {
 		t.Errorf("expected 3 calls (429 retry + 5xx retry + success), got %d", callCount)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("status = %d, want %d", resp.StatusCode, http.StatusOK)
+	}
+}
+
+// TestClient_doWithRetry_GET_retriesOn5xx verifies that GET requests ARE retried on 5xx errors
+func TestClient_doWithRetry_GET_retriesOn5xx(t *testing.T) {
+	callCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		callCount++
+		if callCount == 1 {
+			w.WriteHeader(http.StatusInternalServerError)
+			_, _ = w.Write([]byte(`{"error": "server error"}`))
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"data": "success"}`))
+	}))
+	defer server.Close()
+
+	c := &Client{
+		baseURL:    server.URL,
+		clientID:   "test-id",
+		apiKey:     "test-key",
+		httpClient: http.DefaultClient,
+		ctx:        context.Background(),
+		token: &TokenCache{
+			Token:     "test-token",
+			ExpiresAt: time.Now().Add(10 * time.Minute),
+		},
+	}
+
+	req, _ := http.NewRequest("GET", server.URL+"/test", nil)
+	resp, err := c.doWithRetry(req)
+	if err != nil {
+		t.Fatalf("doWithRetry() error: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if callCount != 2 {
+		t.Errorf("expected 2 calls (1 retry on 5xx for GET), got %d", callCount)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("status = %d, want %d", resp.StatusCode, http.StatusOK)
+	}
+}
+
+// TestClient_doWithRetry_POST_noRetryOn5xx verifies that POST requests are NOT retried on 5xx errors
+func TestClient_doWithRetry_POST_noRetryOn5xx(t *testing.T) {
+	callCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte(`{"error": "server error"}`))
+	}))
+	defer server.Close()
+
+	c := &Client{
+		baseURL:    server.URL,
+		clientID:   "test-id",
+		apiKey:     "test-key",
+		httpClient: http.DefaultClient,
+		ctx:        context.Background(),
+		token: &TokenCache{
+			Token:     "test-token",
+			ExpiresAt: time.Now().Add(10 * time.Minute),
+		},
+	}
+
+	req, _ := http.NewRequest("POST", server.URL+"/test", nil)
+	resp, err := c.doWithRetry(req)
+	if err != nil {
+		t.Fatalf("doWithRetry() error: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if callCount != 1 {
+		t.Errorf("expected 1 call (no retry on 5xx for POST), got %d", callCount)
+	}
+	if resp.StatusCode != http.StatusInternalServerError {
+		t.Errorf("status = %d, want %d", resp.StatusCode, http.StatusInternalServerError)
+	}
+}
+
+// TestClient_doWithRetry_POST_retriesOn429 verifies that POST requests ARE still retried on 429 rate limit
+func TestClient_doWithRetry_POST_retriesOn429(t *testing.T) {
+	callCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		callCount++
+		if callCount == 1 {
+			w.WriteHeader(http.StatusTooManyRequests)
+			_, _ = w.Write([]byte(`{"error": "rate limit"}`))
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"data": "success"}`))
+	}))
+	defer server.Close()
+
+	c := &Client{
+		baseURL:    server.URL,
+		clientID:   "test-id",
+		apiKey:     "test-key",
+		httpClient: http.DefaultClient,
+		ctx:        context.Background(),
+		token: &TokenCache{
+			Token:     "test-token",
+			ExpiresAt: time.Now().Add(10 * time.Minute),
+		},
+	}
+
+	req, _ := http.NewRequest("POST", server.URL+"/test", nil)
+	resp, err := c.doWithRetry(req)
+	if err != nil {
+		t.Fatalf("doWithRetry() error: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if callCount != 2 {
+		t.Errorf("expected 2 calls (1 retry on 429 for POST), got %d", callCount)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("status = %d, want %d", resp.StatusCode, http.StatusOK)
+	}
+}
+
+// TestClient_doWithRetry_PUT_noRetryOn5xx verifies that PUT requests are NOT retried on 5xx errors
+func TestClient_doWithRetry_PUT_noRetryOn5xx(t *testing.T) {
+	callCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusBadGateway)
+		_, _ = w.Write([]byte(`{"error": "bad gateway"}`))
+	}))
+	defer server.Close()
+
+	c := &Client{
+		baseURL:    server.URL,
+		clientID:   "test-id",
+		apiKey:     "test-key",
+		httpClient: http.DefaultClient,
+		ctx:        context.Background(),
+		token: &TokenCache{
+			Token:     "test-token",
+			ExpiresAt: time.Now().Add(10 * time.Minute),
+		},
+	}
+
+	req, _ := http.NewRequest("PUT", server.URL+"/test", nil)
+	resp, err := c.doWithRetry(req)
+	if err != nil {
+		t.Fatalf("doWithRetry() error: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if callCount != 1 {
+		t.Errorf("expected 1 call (no retry on 5xx for PUT), got %d", callCount)
+	}
+	if resp.StatusCode != http.StatusBadGateway {
+		t.Errorf("status = %d, want %d", resp.StatusCode, http.StatusBadGateway)
+	}
+}
+
+// TestClient_doWithRetry_DELETE_noRetryOn5xx verifies that DELETE requests are NOT retried on 5xx errors
+func TestClient_doWithRetry_DELETE_noRetryOn5xx(t *testing.T) {
+	callCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusServiceUnavailable)
+		_, _ = w.Write([]byte(`{"error": "service unavailable"}`))
+	}))
+	defer server.Close()
+
+	c := &Client{
+		baseURL:    server.URL,
+		clientID:   "test-id",
+		apiKey:     "test-key",
+		httpClient: http.DefaultClient,
+		ctx:        context.Background(),
+		token: &TokenCache{
+			Token:     "test-token",
+			ExpiresAt: time.Now().Add(10 * time.Minute),
+		},
+	}
+
+	req, _ := http.NewRequest("DELETE", server.URL+"/test", nil)
+	resp, err := c.doWithRetry(req)
+	if err != nil {
+		t.Fatalf("doWithRetry() error: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if callCount != 1 {
+		t.Errorf("expected 1 call (no retry on 5xx for DELETE), got %d", callCount)
+	}
+	if resp.StatusCode != http.StatusServiceUnavailable {
+		t.Errorf("status = %d, want %d", resp.StatusCode, http.StatusServiceUnavailable)
+	}
+}
+
+// TestClient_doWithRetry_HEAD_retriesOn5xx verifies that HEAD requests ARE retried on 5xx errors
+func TestClient_doWithRetry_HEAD_retriesOn5xx(t *testing.T) {
+	callCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		callCount++
+		if callCount == 1 {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	c := &Client{
+		baseURL:    server.URL,
+		clientID:   "test-id",
+		apiKey:     "test-key",
+		httpClient: http.DefaultClient,
+		ctx:        context.Background(),
+		token: &TokenCache{
+			Token:     "test-token",
+			ExpiresAt: time.Now().Add(10 * time.Minute),
+		},
+	}
+
+	req, _ := http.NewRequest("HEAD", server.URL+"/test", nil)
+	resp, err := c.doWithRetry(req)
+	if err != nil {
+		t.Fatalf("doWithRetry() error: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if callCount != 2 {
+		t.Errorf("expected 2 calls (1 retry on 5xx for HEAD), got %d", callCount)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("status = %d, want %d", resp.StatusCode, http.StatusOK)
+	}
+}
+
+// TestClient_doWithRetry_OPTIONS_retriesOn5xx verifies that OPTIONS requests ARE retried on 5xx errors
+func TestClient_doWithRetry_OPTIONS_retriesOn5xx(t *testing.T) {
+	callCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		callCount++
+		if callCount == 1 {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	c := &Client{
+		baseURL:    server.URL,
+		clientID:   "test-id",
+		apiKey:     "test-key",
+		httpClient: http.DefaultClient,
+		ctx:        context.Background(),
+		token: &TokenCache{
+			Token:     "test-token",
+			ExpiresAt: time.Now().Add(10 * time.Minute),
+		},
+	}
+
+	req, _ := http.NewRequest("OPTIONS", server.URL+"/test", nil)
+	resp, err := c.doWithRetry(req)
+	if err != nil {
+		t.Fatalf("doWithRetry() error: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if callCount != 2 {
+		t.Errorf("expected 2 calls (1 retry on 5xx for OPTIONS), got %d", callCount)
 	}
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("status = %d, want %d", resp.StatusCode, http.StatusOK)
