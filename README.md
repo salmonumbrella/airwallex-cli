@@ -156,6 +156,64 @@ airwallex beneficiaries delete <beneficiaryId>
 airwallex beneficiaries validate --entity-type ... --bank-country ...
 ```
 
+### FX / Conversions
+
+```bash
+airwallex fx rates --sell USD --buy EUR              # Get current rates
+airwallex fx quotes create --sell-currency USD --buy-currency EUR \
+  --sell-amount 10000 --validity 1h                  # Lock a rate
+airwallex fx quotes get <quoteId>                    # Get quote details
+airwallex fx conversions list [--status <status>]   # List conversions
+airwallex fx conversions get <conversionId>         # Get conversion details
+airwallex fx conversions create --sell-currency USD --buy-currency EUR \
+  --sell-amount 10000 [--quote-id <id>]             # Execute conversion
+```
+
+### Deposits
+
+```bash
+airwallex deposits list [--status SETTLED|PENDING|FAILED] [--from <date>] [--to <date>]
+airwallex deposits get <depositId>
+```
+
+### Linked Accounts
+
+```bash
+airwallex linked-accounts list
+airwallex linked-accounts get <accountId>
+airwallex linked-accounts create --type AU_BANK --account-name "..." \
+  --currency AUD --bsb "..." --account-number "..."
+airwallex linked-accounts deposit <accountId> --amount 5000 --currency AUD
+```
+
+### Schemas (API Field Discovery)
+
+```bash
+# Discover required fields for a beneficiary
+airwallex schemas beneficiary --bank-country US --entity-type COMPANY
+
+# Discover required fields for a transfer
+airwallex schemas transfer --source-currency USD --dest-currency EUR
+```
+
+### Payment Links
+
+```bash
+airwallex payment-links list
+airwallex payment-links get <linkId>
+airwallex payment-links create --amount 100 --currency USD --description "Invoice #123"
+```
+
+### Webhooks
+
+```bash
+airwallex webhooks list
+airwallex webhooks get <webhookId>
+airwallex webhooks create --url https://example.com/hook \
+  --events transfer.completed,deposit.settled
+airwallex webhooks delete <webhookId>
+```
+
 ### Reports
 
 ```bash
