@@ -125,7 +125,7 @@ func (s *SetupServer) Start(ctx context.Context) (*SetupResult, error) {
 	// Open browser
 	go func() {
 		if err := openBrowser(baseURL); err != nil {
-			log.Printf("failed to open browser: %v (user can navigate manually)", err)
+			log.Printf("failed to open browser (user can navigate manually)")
 		}
 	}()
 
@@ -170,7 +170,7 @@ func (s *SetupServer) handleSetup(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("X-Frame-Options", "DENY")
 
 	if err := tmpl.Execute(w, data); err != nil {
-		log.Printf("template execution failed: %v", err)
+		log.Printf("template execution failed")
 	}
 }
 
@@ -343,7 +343,7 @@ func (s *SetupServer) handleSubmit(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		writeJSON(w, http.StatusOK, map[string]any{
 			"success": false,
-			"error":   fmt.Sprintf("Failed to save credentials: %v", err),
+			"error":   "Failed to save credentials to secure storage",
 		})
 		return
 	}
@@ -387,7 +387,7 @@ func (s *SetupServer) handleSuccess(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("X-Frame-Options", "DENY")
 
 	if err := tmpl.Execute(w, data); err != nil {
-		log.Printf("template execution failed: %v", err)
+		log.Printf("template execution failed")
 	}
 }
 
@@ -417,7 +417,7 @@ func writeJSON(w http.ResponseWriter, status int, data any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	if err := json.NewEncoder(w).Encode(data); err != nil {
-		log.Printf("JSON encoding failed: %v", err)
+		log.Printf("JSON encoding failed")
 	}
 }
 
