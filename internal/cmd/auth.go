@@ -110,10 +110,20 @@ Examples:
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			u := ui.FromContext(cmd.Context())
-			name := args[0]
+			name := strings.TrimSpace(args[0])
+
+			// Validate account name
+			if err := auth.ValidateAccountName(name); err != nil {
+				return fmt.Errorf("invalid account name: %w", err)
+			}
 
 			if clientID == "" {
 				return fmt.Errorf("--client-id is required")
+			}
+
+			clientID = strings.TrimSpace(clientID)
+			if err := auth.ValidateClientID(clientID); err != nil {
+				return fmt.Errorf("invalid client ID: %w", err)
 			}
 
 			if apiKey == "" {
@@ -130,6 +140,11 @@ Examples:
 				}
 			}
 
+			apiKey = strings.TrimSpace(apiKey)
+			if err := auth.ValidateAPIKey(apiKey); err != nil {
+				return fmt.Errorf("invalid API key: %w", err)
+			}
+
 			store, err := openSecretsStore()
 			if err != nil {
 				return fmt.Errorf("failed to open keyring: %w", err)
@@ -138,7 +153,7 @@ Examples:
 			err = store.Set(name, secrets.Credentials{
 				ClientID:  clientID,
 				APIKey:    apiKey,
-				AccountID: accountID,
+				AccountID: strings.TrimSpace(accountID),
 			})
 			if err != nil {
 				return fmt.Errorf("failed to store credentials: %w", err)

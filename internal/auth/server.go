@@ -12,6 +12,7 @@ import (
 	"net"
 	"net/http"
 	"os/exec"
+	"regexp"
 	"runtime"
 	"strings"
 	"time"
@@ -19,6 +20,44 @@ import (
 	"github.com/salmonumbrella/airwallex-cli/internal/api"
 	"github.com/salmonumbrella/airwallex-cli/internal/secrets"
 )
+
+var validAccountName = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
+
+// ValidateAccountName validates an account name
+func ValidateAccountName(name string) error {
+	if len(name) == 0 {
+		return fmt.Errorf("account name cannot be empty")
+	}
+	if len(name) > 64 {
+		return fmt.Errorf("account name too long (max 64 characters)")
+	}
+	if !validAccountName.MatchString(name) {
+		return fmt.Errorf("account name contains invalid characters (use only letters, numbers, dash, underscore)")
+	}
+	return nil
+}
+
+// ValidateClientID validates a client ID
+func ValidateClientID(clientID string) error {
+	if len(clientID) == 0 {
+		return fmt.Errorf("client ID cannot be empty")
+	}
+	if len(clientID) > 128 {
+		return fmt.Errorf("client ID too long (max 128 characters)")
+	}
+	return nil
+}
+
+// ValidateAPIKey validates an API key
+func ValidateAPIKey(apiKey string) error {
+	if len(apiKey) == 0 {
+		return fmt.Errorf("API key cannot be empty")
+	}
+	if len(apiKey) > 256 {
+		return fmt.Errorf("API key too long (max 256 characters)")
+	}
+	return nil
+}
 
 // SetupResult contains the result of a browser-based setup
 type SetupResult struct {
@@ -190,6 +229,29 @@ func (s *SetupServer) handleValidate(w http.ResponseWriter, r *http.Request) {
 	req.APIKey = strings.TrimSpace(req.APIKey)
 	req.AccountID = strings.TrimSpace(req.AccountID)
 
+	// Validate input format
+	if err := ValidateAccountName(req.AccountName); err != nil {
+		writeJSON(w, http.StatusOK, map[string]any{
+			"success": false,
+			"error":   err.Error(),
+		})
+		return
+	}
+	if err := ValidateClientID(req.ClientID); err != nil {
+		writeJSON(w, http.StatusOK, map[string]any{
+			"success": false,
+			"error":   err.Error(),
+		})
+		return
+	}
+	if err := ValidateAPIKey(req.APIKey); err != nil {
+		writeJSON(w, http.StatusOK, map[string]any{
+			"success": false,
+			"error":   err.Error(),
+		})
+		return
+	}
+
 	// Validate credentials
 	if err := s.validateCredentials(r.Context(), req.AccountName, req.ClientID, req.APIKey, req.AccountID); err != nil {
 		writeJSON(w, http.StatusOK, map[string]any{
@@ -239,6 +301,29 @@ func (s *SetupServer) handleSubmit(w http.ResponseWriter, r *http.Request) {
 	req.ClientID = strings.TrimSpace(req.ClientID)
 	req.APIKey = strings.TrimSpace(req.APIKey)
 	req.AccountID = strings.TrimSpace(req.AccountID)
+
+	// Validate input format
+	if err := ValidateAccountName(req.AccountName); err != nil {
+		writeJSON(w, http.StatusOK, map[string]any{
+			"success": false,
+			"error":   err.Error(),
+		})
+		return
+	}
+	if err := ValidateClientID(req.ClientID); err != nil {
+		writeJSON(w, http.StatusOK, map[string]any{
+			"success": false,
+			"error":   err.Error(),
+		})
+		return
+	}
+	if err := ValidateAPIKey(req.APIKey); err != nil {
+		writeJSON(w, http.StatusOK, map[string]any{
+			"success": false,
+			"error":   err.Error(),
+		})
+		return
+	}
 
 	// Validate credentials
 	if err := s.validateCredentials(r.Context(), req.AccountName, req.ClientID, req.APIKey, req.AccountID); err != nil {
