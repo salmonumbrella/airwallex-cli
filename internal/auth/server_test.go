@@ -342,6 +342,11 @@ func TestNewSetupServer(t *testing.T) {
 		t.Error("expected CSRF token to be generated")
 	}
 
+	// CSRF token should be 64 characters (32 bytes hex encoded)
+	if len(server.csrfToken) != 64 {
+		t.Errorf("expected CSRF token length 64, got %d", len(server.csrfToken))
+	}
+
 	if server.store == nil {
 		t.Error("expected store to be set")
 	}
