@@ -38,9 +38,9 @@ type TokenCache struct {
 	ExpiresAt time.Time
 }
 
-func NewClient(clientID, apiKey string) *Client {
+func NewClient(clientID, apiKey string) (*Client, error) {
 	if !strings.HasPrefix(BaseURL, "https://") {
-		panic("API base URL must use HTTPS")
+		return nil, fmt.Errorf("api base URL must use HTTPS")
 	}
 	return &Client{
 		baseURL:  BaseURL,
@@ -54,14 +54,14 @@ func NewClient(clientID, apiKey string) *Client {
 				},
 			},
 		},
-	}
+	}, nil
 }
 
 // NewClientWithAccount creates a client with an account ID for x-login-as header.
 // Use this when your API key has access to multiple accounts.
-func NewClientWithAccount(clientID, apiKey, accountID string) *Client {
+func NewClientWithAccount(clientID, apiKey, accountID string) (*Client, error) {
 	if !strings.HasPrefix(BaseURL, "https://") {
-		panic("API base URL must use HTTPS")
+		return nil, fmt.Errorf("api base URL must use HTTPS")
 	}
 	return &Client{
 		baseURL:   BaseURL,
@@ -76,7 +76,7 @@ func NewClientWithAccount(clientID, apiKey, accountID string) *Client {
 				},
 			},
 		},
-	}
+	}, nil
 }
 
 func (c *Client) Do(ctx context.Context, req *http.Request) (*http.Response, error) {

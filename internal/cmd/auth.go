@@ -257,9 +257,13 @@ func newAuthTestCmd() *cobra.Command {
 			// Actually test the credentials by fetching a token
 			var client *api.Client
 			if creds.AccountID != "" {
-				client = api.NewClientWithAccount(creds.ClientID, creds.APIKey, creds.AccountID)
+				client, err = api.NewClientWithAccount(creds.ClientID, creds.APIKey, creds.AccountID)
 			} else {
-				client = api.NewClient(creds.ClientID, creds.APIKey)
+				client, err = api.NewClient(creds.ClientID, creds.APIKey)
+			}
+			if err != nil {
+				u.Error(fmt.Sprintf("Failed to create client: %v", err))
+				return err
 			}
 			_, err = client.Get(cmd.Context(), "/api/v1/balances/current")
 			if err != nil {

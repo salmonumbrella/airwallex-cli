@@ -924,7 +924,10 @@ func TestClient_doWithRetry_OPTIONS_retriesOn5xx(t *testing.T) {
 }
 
 func TestNewClient_enforcesTLS12(t *testing.T) {
-	client := NewClient("test-id", "test-key")
+	client, err := NewClient("test-id", "test-key")
+	if err != nil {
+		t.Fatalf("NewClient failed: %v", err)
+	}
 
 	transport, ok := client.httpClient.Transport.(*http.Transport)
 	if !ok {
@@ -941,7 +944,10 @@ func TestNewClient_enforcesTLS12(t *testing.T) {
 }
 
 func TestNewClientWithAccount_enforcesTLS12(t *testing.T) {
-	client := NewClientWithAccount("test-id", "test-key", "account-id")
+	client, err := NewClientWithAccount("test-id", "test-key", "account-id")
+	if err != nil {
+		t.Fatalf("NewClientWithAccount failed: %v", err)
+	}
 
 	transport, ok := client.httpClient.Transport.(*http.Transport)
 	if !ok {

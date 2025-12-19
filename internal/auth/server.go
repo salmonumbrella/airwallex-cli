@@ -181,10 +181,14 @@ func (s *SetupServer) validateCredentials(ctx context.Context, accountName, clie
 	}
 
 	var client *api.Client
+	var err error
 	if accountID != "" {
-		client = api.NewClientWithAccount(clientID, apiKey, accountID)
+		client, err = api.NewClientWithAccount(clientID, apiKey, accountID)
 	} else {
-		client = api.NewClient(clientID, apiKey)
+		client, err = api.NewClient(clientID, apiKey)
+	}
+	if err != nil {
+		return fmt.Errorf("failed to create client: %v", err)
 	}
 
 	if _, err := client.Get(ctx, "/api/v1/balances/current"); err != nil {

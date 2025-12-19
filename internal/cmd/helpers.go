@@ -40,9 +40,9 @@ func getClient(ctx context.Context) (*api.Client, error) {
 	}
 
 	if creds.AccountID != "" {
-		return api.NewClientWithAccount(creds.ClientID, creds.APIKey, creds.AccountID), nil
+		return api.NewClientWithAccount(creds.ClientID, creds.APIKey, creds.AccountID)
 	}
-	return api.NewClient(creds.ClientID, creds.APIKey), nil
+	return api.NewClient(creds.ClientID, creds.APIKey)
 }
 
 // convertDateToRFC3339 converts a date string in YYYY-MM-DD format to RFC3339 format
