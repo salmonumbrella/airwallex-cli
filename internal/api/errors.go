@@ -2,7 +2,9 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"time"
 )
 
 type APIError struct {
@@ -35,4 +37,57 @@ func ParseAPIError(body []byte) *APIError {
 		}
 	}
 	return &e
+}
+
+// ValidationError represents an input validation error.
+type ValidationError struct {
+	Field   string
+	Message string
+}
+
+func (e *ValidationError) Error() string {
+	return fmt.Sprintf("validation error: %s - %s", e.Field, e.Message)
+}
+
+// RateLimitError represents a rate limit exceeded error.
+type RateLimitError struct {
+	RetryAfter time.Duration
+}
+
+func (e *RateLimitError) Error() string {
+	return fmt.Sprintf("rate limit exceeded, retry after %s", e.RetryAfter)
+}
+
+// AuthError represents an authentication or authorization error.
+type AuthError struct {
+	Reason string
+}
+
+func (e *AuthError) Error() string {
+	return fmt.Sprintf("authentication error: %s", e.Reason)
+}
+
+// CircuitBreakerError indicates the circuit breaker is open.
+type CircuitBreakerError struct{}
+
+func (e *CircuitBreakerError) Error() string {
+	return "circuit breaker is open, too many recent failures"
+}
+
+// IsRateLimitError checks if the error is a rate limit error.
+func IsRateLimitError(err error) bool {
+	var e *RateLimitError
+	return errors.As(err, &e)
+}
+
+// IsAuthError checks if the error is an authentication error.
+func IsAuthError(err error) bool {
+	var e *AuthError
+	return errors.As(err, &e)
+}
+
+// IsCircuitBreakerError checks if the error is a circuit breaker error.
+func IsCircuitBreakerError(err error) bool {
+	var e *CircuitBreakerError
+	return errors.As(err, &e)
 }
