@@ -6,7 +6,16 @@ import (
 	"fmt"
 	"io"
 	"net/url"
+	"time"
 )
+
+// TransferFinalStatuses are statuses that indicate the transfer is complete
+var TransferFinalStatuses = map[string]bool{
+	"COMPLETED": true,
+	"FAILED":    true,
+	"CANCELLED": true,
+	"RETURNED":  true,
+}
 
 // Transfer represents a transfer/payout
 type Transfer struct {
@@ -156,6 +165,38 @@ func (c *Client) CancelTransfer(ctx context.Context, transferID string) (*Transf
 		return nil, err
 	}
 	return &t, nil
+}
+
+// WaitForTransfer polls until the transfer reaches a final status
+func (c *Client) WaitForTransfer(ctx context.Context, transferID string, timeout time.Duration) (*Transfer, error) {
+	if err := ValidateResourceID(transferID, "transfer"); err != nil {
+		return nil, err
+	}
+
+	deadline := time.Now().Add(timeout)
+	pollInterval := 2 * time.Second
+
+	for {
+		if time.Now().After(deadline) {
+			return nil, fmt.Errorf("timeout waiting for transfer %s", transferID)
+		}
+
+		transfer, err := c.GetTransfer(ctx, transferID)
+		if err != nil {
+			return nil, err
+		}
+
+		if TransferFinalStatuses[transfer.Status] {
+			return transfer, nil
+		}
+
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-time.After(pollInterval):
+			// Continue polling
+		}
+	}
 }
 
 // ListBeneficiaries lists all beneficiaries
