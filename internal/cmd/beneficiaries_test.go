@@ -1,26 +1,15 @@
 package cmd
 
 import (
-	"os"
 	"strings"
 	"testing"
 
 	"github.com/spf13/cobra"
-
-	"github.com/salmonumbrella/airwallex-cli/internal/secrets"
 )
 
 func TestBeneficiariesCreateValidation(t *testing.T) {
-	// Set the AWX_ACCOUNT environment variable for all tests
-	os.Setenv("AWX_ACCOUNT", "test-account")
-	defer os.Unsetenv("AWX_ACCOUNT")
-
-	// Mock the secrets store to avoid needing real credentials
-	originalOpenSecretsStore := openSecretsStore
-	defer func() { openSecretsStore = originalOpenSecretsStore }()
-	openSecretsStore = func() (secrets.Store, error) {
-		return &mockStore{}, nil
-	}
+	cleanup := setupTestEnvironment(t)
+	defer cleanup()
 
 	tests := []struct {
 		name        string
@@ -398,10 +387,7 @@ func TestBeneficiariesCreateValidation(t *testing.T) {
 				// For non-error cases, we expect to fail on the actual API call
 				// since we don't have a mock client set up. This is acceptable
 				// as we're only testing validation logic here.
-				if err != nil && !strings.Contains(err.Error(), "client") &&
-				   !strings.Contains(err.Error(), "context") &&
-				   !strings.Contains(err.Error(), "API") &&
-				   !strings.Contains(err.Error(), "auth") {
+				if err != nil && !isExpectedTestError(err) {
 					t.Errorf("unexpected validation error: %v", err)
 				}
 			}
@@ -410,16 +396,8 @@ func TestBeneficiariesCreateValidation(t *testing.T) {
 }
 
 func TestBeneficiariesCreateValidationCombinations(t *testing.T) {
-	// Set the AWX_ACCOUNT environment variable for all tests
-	os.Setenv("AWX_ACCOUNT", "test-account")
-	defer os.Unsetenv("AWX_ACCOUNT")
-
-	// Mock the secrets store to avoid needing real credentials
-	originalOpenSecretsStore := openSecretsStore
-	defer func() { openSecretsStore = originalOpenSecretsStore }()
-	openSecretsStore = func() (secrets.Store, error) {
-		return &mockStore{}, nil
-	}
+	cleanup := setupTestEnvironment(t)
+	defer cleanup()
 
 	tests := []struct {
 		name        string
@@ -495,46 +473,10 @@ func TestBeneficiariesCreateValidationCombinations(t *testing.T) {
 			} else {
 				// For non-error cases, we expect to fail on the actual API call
 				// since we don't have real credentials. This is acceptable.
-				if err != nil && !strings.Contains(err.Error(), "client") &&
-				   !strings.Contains(err.Error(), "context") &&
-				   !strings.Contains(err.Error(), "API") &&
-				   !strings.Contains(err.Error(), "auth failed") &&
-				   !strings.Contains(err.Error(), "403") &&
-				   !strings.Contains(err.Error(), "Forbidden") {
+				if err != nil && !isExpectedTestError(err) {
 					t.Errorf("unexpected validation error: %v", err)
 				}
 			}
 		})
 	}
-}
-
-// mockStore is a mock implementation of secrets.Store for testing
-type mockStore struct{}
-
-func (m *mockStore) Get(account string) (secrets.Credentials, error) {
-	return secrets.Credentials{
-		ClientID: "test-client-id",
-		APIKey:   "test-api-key",
-	}, nil
-}
-
-func (m *mockStore) Set(account string, creds secrets.Credentials) error {
-	return nil
-}
-
-func (m *mockStore) Delete(account string) error {
-	return nil
-}
-
-func (m *mockStore) Keys() ([]string, error) {
-	return []string{"test-account"}, nil
-}
-
-func (m *mockStore) List() ([]secrets.Credentials, error) {
-	return []secrets.Credentials{
-		{
-			ClientID: "test-client-id",
-			APIKey:   "test-api-key",
-		},
-	}, nil
 }

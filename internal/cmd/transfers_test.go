@@ -11,10 +11,10 @@ import (
 
 func TestTransfersListCmd_PageSizeValidation(t *testing.T) {
 	tests := []struct {
-		name          string
-		pageSize      int
-		expectedMin   int
-		description   string
+		name        string
+		pageSize    int
+		expectedMin int
+		description string
 	}{
 		{
 			name:        "page size below minimum gets adjusted",
@@ -130,7 +130,7 @@ func TestTransfersCreateCmd_AmountValidation(t *testing.T) {
 				if !strings.Contains(err.Error(), tt.errContains) {
 					t.Errorf("expected error containing %q, got %q", tt.errContains, err.Error())
 				}
-			} else if err != nil && !isClientError(err) {
+			} else if err != nil && !isExpectedTestError(err) {
 				// We expect client initialization to fail in tests,
 				// but validation should pass before that point
 				if !strings.Contains(err.Error(), "must provide exactly one") &&
@@ -210,7 +210,7 @@ func TestTransfersCreateCmd_SecurityQAPairing(t *testing.T) {
 				if !strings.Contains(err.Error(), tt.errContains) {
 					t.Errorf("expected error containing %q, got %q", tt.errContains, err.Error())
 				}
-			} else if err != nil && !isClientError(err) {
+			} else if err != nil && !isExpectedTestError(err) {
 				if strings.Contains(err.Error(), "must be provided together") {
 					t.Errorf("unexpected pairing validation error: %v", err)
 				}
@@ -280,7 +280,7 @@ func TestTransfersCreateCmd_SecurityQuestionLength(t *testing.T) {
 				if !strings.Contains(err.Error(), tt.errContains) {
 					t.Errorf("expected error containing %q, got %q", tt.errContains, err.Error())
 				}
-			} else if err != nil && !isClientError(err) {
+			} else if err != nil && !isExpectedTestError(err) {
 				if strings.Contains(err.Error(), "security-question must be") {
 					t.Errorf("unexpected question length validation error: %v", err)
 				}
@@ -387,7 +387,7 @@ func TestTransfersCreateCmd_SecurityAnswerFormat(t *testing.T) {
 				if !strings.Contains(err.Error(), tt.errContains) {
 					t.Errorf("expected error containing %q, got %q", tt.errContains, err.Error())
 				}
-			} else if err != nil && !isClientError(err) {
+			} else if err != nil && !isExpectedTestError(err) {
 				if strings.Contains(err.Error(), "security-answer must") {
 					t.Errorf("unexpected answer validation error: %v", err)
 				}
@@ -443,12 +443,4 @@ func intToString(i int) string {
 
 func floatToString(f float64) string {
 	return fmt.Sprintf("%.2f", f)
-}
-
-func isClientError(err error) bool {
-	// Check if error is related to client initialization
-	// In tests, we expect getClient to fail since we don't have a real context
-	return err != nil && (strings.Contains(err.Error(), "client") ||
-		strings.Contains(err.Error(), "context") ||
-		strings.Contains(err.Error(), "config"))
 }
