@@ -724,7 +724,7 @@ const setupTemplate = `<!DOCTYPE html>
                 const result = await response.json();
                 if (result.success) {
                     showStatus('success', 'Credentials saved! Redirecting...');
-                    setTimeout(() => { window.location.href = '/success?name=' + encodeURIComponent(result.account_name); }, 600);
+                    setTimeout(() => { window.location.href = '/success'; }, 600);
                 } else {
                     showStatus('error', result.error);
                     testBtn.disabled = false;
