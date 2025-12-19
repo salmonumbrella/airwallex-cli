@@ -21,9 +21,17 @@ func (e *APIError) Error() string {
 func ParseAPIError(body []byte) *APIError {
 	var e APIError
 	if err := json.Unmarshal(body, &e); err != nil {
+		// Don't leak raw response body - return generic error
 		return &APIError{
-			Code:    "unknown",
-			Message: string(body),
+			Code:    "unknown_error",
+			Message: "An error occurred processing the API response",
+		}
+	}
+	// Only return sanitized fields from the API error structure
+	if e.Code == "" && e.Message == "" {
+		return &APIError{
+			Code:    "unknown_error",
+			Message: "An error occurred but no details were provided",
 		}
 	}
 	return &e

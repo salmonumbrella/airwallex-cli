@@ -45,10 +45,21 @@ func TestParseAPIError(t *testing.T) {
 func TestParseAPIError_InvalidJSON(t *testing.T) {
 	body := []byte(`not json`)
 	err := ParseAPIError(body)
-	if err.Code != "unknown" {
-		t.Errorf("Code = %q, want 'unknown'", err.Code)
+	if err.Code != "unknown_error" {
+		t.Errorf("Code = %q, want 'unknown_error'", err.Code)
 	}
-	if err.Message != "not json" {
-		t.Errorf("Message = %q, want 'not json'", err.Message)
+	if err.Message != "An error occurred processing the API response" {
+		t.Errorf("Message = %q, want generic error message", err.Message)
+	}
+}
+
+func TestParseAPIError_EmptyFields(t *testing.T) {
+	body := []byte(`{"code": "", "message": ""}`)
+	err := ParseAPIError(body)
+	if err.Code != "unknown_error" {
+		t.Errorf("Code = %q, want 'unknown_error'", err.Code)
+	}
+	if err.Message != "An error occurred but no details were provided" {
+		t.Errorf("Message = %q, want generic error message", err.Message)
 	}
 }
