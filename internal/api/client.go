@@ -21,6 +21,36 @@ import (
 const (
 	BaseURL    = "https://api.airwallex.com"
 	APIVersion = "2025-11-11"
+
+	// DefaultHTTPTimeout is the default timeout for HTTP requests.
+	DefaultHTTPTimeout = 30 * time.Second
+
+	// TokenRefreshBuffer is how long before expiry to refresh the token.
+	TokenRefreshBuffer = 60 * time.Second
+
+	// MaxRateLimitRetries is the maximum number of retries on 429 responses.
+	MaxRateLimitRetries = 3
+
+	// Max5xxRetries is the maximum retries for server errors on idempotent requests.
+	Max5xxRetries = 1
+
+	// RateLimitBaseDelay is the initial delay for rate limit exponential backoff.
+	RateLimitBaseDelay = 1 * time.Second
+
+	// ServerErrorRetryDelay is the delay before retrying on 5xx errors.
+	ServerErrorRetryDelay = 1 * time.Second
+
+	// IdempotencyKeyBytes is the number of random bytes for idempotency keys.
+	IdempotencyKeyBytes = 16
+
+	// MaxIdleConns is the maximum number of idle connections.
+	MaxIdleConns = 100
+
+	// MaxConnsPerHost is the maximum connections per host.
+	MaxConnsPerHost = 10
+
+	// IdleConnTimeout is how long to keep idle connections.
+	IdleConnTimeout = 90 * time.Second
 )
 
 type Client struct {
@@ -47,8 +77,11 @@ func NewClient(clientID, apiKey string) (*Client, error) {
 		clientID: clientID,
 		apiKey:   apiKey,
 		httpClient: &http.Client{
-			Timeout: 30 * time.Second,
+			Timeout: DefaultHTTPTimeout,
 			Transport: &http.Transport{
+				MaxIdleConns:        MaxIdleConns,
+				MaxConnsPerHost:     MaxConnsPerHost,
+				IdleConnTimeout:     IdleConnTimeout,
 				TLSClientConfig: &tls.Config{
 					MinVersion:         tls.VersionTLS12,
 					InsecureSkipVerify: false, // Explicit: always verify certificates
@@ -70,8 +103,11 @@ func NewClientWithAccount(clientID, apiKey, accountID string) (*Client, error) {
 		apiKey:    apiKey,
 		accountID: accountID,
 		httpClient: &http.Client{
-			Timeout: 30 * time.Second,
+			Timeout: DefaultHTTPTimeout,
 			Transport: &http.Transport{
+				MaxIdleConns:        MaxIdleConns,
+				MaxConnsPerHost:     MaxConnsPerHost,
+				IdleConnTimeout:     IdleConnTimeout,
 				TLSClientConfig: &tls.Config{
 					MinVersion:         tls.VersionTLS12,
 					InsecureSkipVerify: false, // Explicit: always verify certificates
@@ -108,7 +144,6 @@ func (c *Client) doWithRetry(ctx context.Context, req *http.Request) (*http.Resp
 	// Separate retry counters for different error types
 	retries429 := 0
 	retries5xx := 0
-	maxRetries := 3
 
 	// Determine if the method is idempotent
 	isIdempotent := req.Method == "GET" || req.Method == "HEAD" || req.Method == "OPTIONS"
@@ -127,12 +162,12 @@ func (c *Client) doWithRetry(ctx context.Context, req *http.Request) (*http.Resp
 		// 429 rate limit: exponential backoff with jitter
 		// Safe to retry for all methods because the request wasn't processed
 		if resp.StatusCode == 429 {
-			if retries429 >= maxRetries {
+			if retries429 >= MaxRateLimitRetries {
 				return resp, nil
 			}
 
 			// Calculate backoff: 1s, 2s, 4s with jitter
-			baseDelay := time.Duration(1<<retries429) * time.Second
+			baseDelay := RateLimitBaseDelay * time.Duration(1<<retries429)
 			jitter := time.Duration(mathrand.Int63n(int64(baseDelay / 2)))
 			delay := baseDelay + jitter
 
@@ -144,7 +179,7 @@ func (c *Client) doWithRetry(ctx context.Context, req *http.Request) (*http.Resp
 				// Could also parse HTTP date format, but seconds is more common
 			}
 
-			slog.Info("rate limited, retrying", "delay", delay, "attempt", retries429+1, "max_retries", maxRetries)
+			slog.Info("rate limited, retrying", "delay", delay, "attempt", retries429+1, "max_retries", MaxRateLimitRetries)
 
 			resp.Body.Close()
 
@@ -178,7 +213,7 @@ func (c *Client) doWithRetry(ctx context.Context, req *http.Request) (*http.Resp
 			}
 
 			// Only retry once
-			if retries5xx > 0 {
+			if retries5xx >= Max5xxRetries {
 				return resp, nil
 			}
 			resp.Body.Close()
@@ -191,7 +226,7 @@ func (c *Client) doWithRetry(ctx context.Context, req *http.Request) (*http.Resp
 				}
 			}
 
-			time.Sleep(1 * time.Second)
+			time.Sleep(ServerErrorRetryDelay)
 			retries5xx++
 			continue
 		}
@@ -203,7 +238,7 @@ func (c *Client) doWithRetry(ctx context.Context, req *http.Request) (*http.Resp
 
 func (c *Client) ensureValidToken(ctx context.Context) error {
 	c.tokenMu.RLock()
-	valid := c.token != nil && time.Now().Add(60*time.Second).Before(c.token.ExpiresAt)
+	valid := c.token != nil && time.Now().Add(TokenRefreshBuffer).Before(c.token.ExpiresAt)
 	c.tokenMu.RUnlock()
 
 	if valid {
@@ -217,7 +252,7 @@ func (c *Client) fetchToken(ctx context.Context) error {
 	defer c.tokenMu.Unlock()
 
 	// Double-check pattern: another goroutine might have fetched while we waited
-	if c.token != nil && time.Now().Add(60*time.Second).Before(c.token.ExpiresAt) {
+	if c.token != nil && time.Now().Add(TokenRefreshBuffer).Before(c.token.ExpiresAt) {
 		return nil
 	}
 
@@ -274,7 +309,7 @@ func (c *Client) fetchToken(ctx context.Context) error {
 
 // generateIdempotencyKey creates a unique key for idempotent operations.
 func generateIdempotencyKey() (string, error) {
-	b := make([]byte, 16)
+	b := make([]byte, IdempotencyKeyBytes)
 	if _, err := rand.Read(b); err != nil {
 		return "", fmt.Errorf("failed to generate idempotency key: %w", err)
 	}
