@@ -377,10 +377,16 @@ func newBeneficiariesUpdateCmd() *cobra.Command {
 	var companyName string
 	var firstName string
 	var lastName string
+	// Address fields
+	var addressCountry string
+	var addressStreet string
+	var addressCity string
+	var addressState string
+	var addressPostcode string
 
 	cmd := &cobra.Command{
 		Use:   "update <beneficiaryId>",
-		Short: "Update beneficiary (nickname, names)",
+		Short: "Update beneficiary (nickname, names, address)",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			u := ui.FromContext(cmd.Context())
@@ -404,6 +410,27 @@ func newBeneficiariesUpdateCmd() *cobra.Command {
 			}
 			if cmd.Flags().Changed("last-name") {
 				beneficiary["last_name"] = lastName
+			}
+
+			// Address fields
+			address := make(map[string]interface{})
+			if cmd.Flags().Changed("address-country") {
+				address["country_code"] = addressCountry
+			}
+			if cmd.Flags().Changed("address-street") {
+				address["street_address"] = addressStreet
+			}
+			if cmd.Flags().Changed("address-city") {
+				address["city"] = addressCity
+			}
+			if cmd.Flags().Changed("address-state") {
+				address["state"] = addressState
+			}
+			if cmd.Flags().Changed("address-postcode") {
+				address["postcode"] = addressPostcode
+			}
+			if len(address) > 0 {
+				beneficiary["address"] = address
 			}
 
 			if len(beneficiary) > 0 {
@@ -432,6 +459,12 @@ func newBeneficiariesUpdateCmd() *cobra.Command {
 	cmd.Flags().StringVar(&companyName, "company-name", "", "Company name")
 	cmd.Flags().StringVar(&firstName, "first-name", "", "First name")
 	cmd.Flags().StringVar(&lastName, "last-name", "", "Last name")
+	// Address flags
+	cmd.Flags().StringVar(&addressCountry, "address-country", "", "Beneficiary country code (e.g. CA)")
+	cmd.Flags().StringVar(&addressStreet, "address-street", "", "Beneficiary street address")
+	cmd.Flags().StringVar(&addressCity, "address-city", "", "Beneficiary city")
+	cmd.Flags().StringVar(&addressState, "address-state", "", "Beneficiary state/province")
+	cmd.Flags().StringVar(&addressPostcode, "address-postcode", "", "Beneficiary postal code")
 	return cmd
 }
 

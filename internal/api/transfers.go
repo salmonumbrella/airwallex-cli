@@ -242,6 +242,7 @@ func (c *Client) UpdateBeneficiary(ctx context.Context, beneficiaryID string, up
 	if err := ValidateResourceID(beneficiaryID, "beneficiary"); err != nil {
 		return nil, err
 	}
+
 	resp, err := c.Post(ctx, "/api/v1/beneficiaries/"+url.PathEscape(beneficiaryID)+"/update", update)
 	if err != nil {
 		return nil, err
