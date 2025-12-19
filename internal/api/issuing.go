@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/url"
+	"strings"
 )
 
 // Card represents an Airwallex issued card
@@ -25,13 +26,32 @@ type CardsResponse struct {
 	HasMore bool   `json:"has_more"`
 }
 
-// CardDetails contains sensitive card information
+// CardDetails contains HIGHLY SENSITIVE payment card data (PCI DSS Level 1).
+// WARNING: Never log, cache, or persist this data.
+// Only display to authorized users and immediately discard after use.
 type CardDetails struct {
 	CardID      string `json:"card_id"`
 	CardNumber  string `json:"card_number"`
 	Cvv         string `json:"cvv"`
 	ExpiryMonth int    `json:"expiry_month"`
 	ExpiryYear  int    `json:"expiry_year"`
+}
+
+// MaskedPAN returns the card number with all but last 4 digits masked.
+func (cd *CardDetails) MaskedPAN() string {
+	if len(cd.CardNumber) <= 4 {
+		return "****"
+	}
+	return strings.Repeat("*", len(cd.CardNumber)-4) + cd.CardNumber[len(cd.CardNumber)-4:]
+}
+
+// Zeroize clears all sensitive card data from memory.
+// Call this when done using the card details.
+func (cd *CardDetails) Zeroize() {
+	cd.CardNumber = ""
+	cd.Cvv = ""
+	cd.ExpiryMonth = 0
+	cd.ExpiryYear = 0
 }
 
 // CardLimits contains spending limits for a card

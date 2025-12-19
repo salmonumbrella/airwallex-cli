@@ -264,6 +264,7 @@ Program types: PREPAID, DEBIT, CREDIT, DEFERRED_DEBIT`,
 					u.Error(fmt.Sprintf("Card created but could not fetch details: %v", err))
 					u.Info("Use 'airwallex issuing cards details " + card.CardID + "' to retrieve them later")
 				} else {
+					defer details.Zeroize()
 					fmt.Println()
 					tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
 					fmt.Fprintln(tw, "CARD DETAILS (Company Card)")
@@ -367,7 +368,9 @@ func newCardsActivateCmd() *cobra.Command {
 }
 
 func newCardsDetailsCmd() *cobra.Command {
-	return &cobra.Command{
+	var showPAN bool
+
+	cmd := &cobra.Command{
 		Use:   "details <cardId>",
 		Short: "Get sensitive card details (PAN, CVV, expiry)",
 		Args:  cobra.ExactArgs(1),
@@ -381,6 +384,7 @@ func newCardsDetailsCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			defer details.Zeroize()
 
 			if outfmt.IsJSON(cmd.Context()) {
 				return outfmt.WriteJSON(os.Stdout, details)
@@ -388,13 +392,20 @@ func newCardsDetailsCmd() *cobra.Command {
 
 			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
 			fmt.Fprintf(tw, "card_id\t%s\n", details.CardID)
-			fmt.Fprintf(tw, "card_number\t%s\n", details.CardNumber)
+			if showPAN {
+				fmt.Fprintf(tw, "card_number\t%s\n", details.CardNumber)
+			} else {
+				fmt.Fprintf(tw, "card_number\t%s\n", details.MaskedPAN())
+			}
 			fmt.Fprintf(tw, "cvv\t%s\n", details.Cvv)
 			fmt.Fprintf(tw, "expiry\t%02d/%d\n", details.ExpiryMonth, details.ExpiryYear)
 			tw.Flush()
 			return nil
 		},
 	}
+
+	cmd.Flags().BoolVar(&showPAN, "show-pan", false, "Show full card number (PCI-sensitive)")
+	return cmd
 }
 
 func newCardsLimitsCmd() *cobra.Command {
