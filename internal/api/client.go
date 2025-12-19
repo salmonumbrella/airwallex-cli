@@ -81,8 +81,12 @@ type circuitBreaker struct {
 func (cb *circuitBreaker) recordSuccess() {
 	cb.mu.Lock()
 	defer cb.mu.Unlock()
+	wasOpen := cb.open
 	cb.failures = 0
 	cb.open = false
+	if wasOpen {
+		slog.Info("circuit breaker reset")
+	}
 }
 
 func (cb *circuitBreaker) recordFailure() bool {
@@ -92,6 +96,7 @@ func (cb *circuitBreaker) recordFailure() bool {
 	cb.lastFailure = time.Now()
 	if cb.failures >= CircuitBreakerThreshold {
 		cb.open = true
+		slog.Warn("circuit breaker opened", "failures", cb.failures)
 		return true // circuit just opened
 	}
 	return false
@@ -217,6 +222,7 @@ func (c *Client) doWithRetry(ctx context.Context, req *http.Request) (*http.Resp
 	isIdempotent := req.Method == "GET" || req.Method == "HEAD" || req.Method == "OPTIONS"
 
 	for {
+		start := time.Now()
 		resp, err = c.httpClient.Do(req)
 		if err != nil {
 			return nil, err
@@ -290,6 +296,9 @@ func (c *Client) doWithRetry(ctx context.Context, req *http.Request) (*http.Resp
 			if retries5xx >= Max5xxRetries {
 				return resp, nil
 			}
+
+			slog.Info("retrying after server error", "status", resp.StatusCode, "attempt", retries5xx+1, "delay", ServerErrorRetryDelay)
+
 			resp.Body.Close()
 
 			// Replay request body if available
@@ -307,7 +316,9 @@ func (c *Client) doWithRetry(ctx context.Context, req *http.Request) (*http.Resp
 
 		// Success: record for circuit breaker (2xx status codes)
 		if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+			duration := time.Since(start)
 			c.circuitBreaker.recordSuccess()
+			slog.Debug("api request completed", "method", req.Method, "url", req.URL.Path, "status", resp.StatusCode, "duration_ms", duration.Milliseconds())
 		}
 
 		return resp, nil
@@ -377,6 +388,9 @@ func (c *Client) fetchToken(ctx context.Context) error {
 			return fmt.Errorf("parsing expires_at %q: %w", result.ExpiresAt, err)
 		}
 	}
+
+	expiresIn := time.Until(expiresAt)
+	slog.Debug("refreshing api token", "expires_in", expiresIn)
 
 	c.token = &TokenCache{
 		Token:     result.Token,
