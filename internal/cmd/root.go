@@ -8,6 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/salmonumbrella/airwallex-cli/internal/debug"
 	"github.com/salmonumbrella/airwallex-cli/internal/outfmt"
 	"github.com/salmonumbrella/airwallex-cli/internal/ui"
 )
@@ -16,6 +17,8 @@ type rootFlags struct {
 	Account string
 	Output  string
 	Color   string
+	Debug   bool
+	Query   string
 }
 
 var flags rootFlags
@@ -27,12 +30,19 @@ func NewRootCmd() *cobra.Command {
 		Long:         "A command-line interface for the Airwallex API.",
 		SilenceUsage: true,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			// Setup debug mode
+			debug.SetupLogger(flags.Debug)
+			ctx := debug.WithDebug(cmd.Context(), flags.Debug)
+
 			// Inject UI context
 			u := ui.New(flags.Color)
-			ctx := ui.WithUI(cmd.Context(), u)
+			ctx = ui.WithUI(ctx, u)
 
 			// Inject output format context
 			ctx = outfmt.WithFormat(ctx, flags.Output)
+
+			// Inject query filter context
+			ctx = outfmt.WithQuery(ctx, flags.Query)
 
 			cmd.SetContext(ctx)
 			return nil
@@ -42,6 +52,8 @@ func NewRootCmd() *cobra.Command {
 	cmd.PersistentFlags().StringVar(&flags.Account, "account", os.Getenv("AWX_ACCOUNT"), "Account name (or AWX_ACCOUNT env)")
 	cmd.PersistentFlags().StringVar(&flags.Output, "output", getEnvOrDefault("AWX_OUTPUT", "text"), "Output format: text|json")
 	cmd.PersistentFlags().StringVar(&flags.Color, "color", getEnvOrDefault("AWX_COLOR", "auto"), "Color output: auto|always|never")
+	cmd.PersistentFlags().BoolVar(&flags.Debug, "debug", false, "Enable debug output (shows API requests/responses)")
+	cmd.PersistentFlags().StringVar(&flags.Query, "query", "", "JQ filter expression for JSON output")
 
 	cmd.AddCommand(newAuthCmd())
 	cmd.AddCommand(newBalancesCmd())
@@ -51,6 +63,7 @@ func NewRootCmd() *cobra.Command {
 	cmd.AddCommand(newAccountsCmd())
 	cmd.AddCommand(newReportsCmd())
 	cmd.AddCommand(newVersionCmd())
+	cmd.AddCommand(newUpgradeCmd())
 	cmd.AddCommand(newCompletionCmd())
 	cmd.AddCommand(newFXCmd())
 	cmd.AddCommand(newDepositsCmd())
