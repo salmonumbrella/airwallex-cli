@@ -414,6 +414,9 @@ func isFinancialOperation(path string) bool {
 		"/api/v1/transfers/create",
 		"/api/v1/issuing/cards/create",
 		"/api/v1/beneficiaries/create",
+		"/api/v1/fx/conversions/create",
+		"/api/v1/linked_accounts/create",
+		"/api/v1/pa/payment_links/create",
 	}
 	for _, fp := range financialPaths {
 		if strings.Contains(path, fp) {
