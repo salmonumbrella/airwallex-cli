@@ -342,6 +342,93 @@ export AWX_ACCOUNT=prod
 airwallex balances
 ```
 
+## Advanced Features
+
+### Debug Mode
+
+Enable verbose output for troubleshooting:
+
+```bash
+airwallex --debug transfers list
+# Shows: api request method=GET url=/api/v1/transfers
+# Shows: api response status=200 content_length=1234
+```
+
+### Dry-Run Mode
+
+Preview mutations before executing:
+
+```bash
+airwallex transfers create --dry-run \
+  --beneficiary-id ben_xxx \
+  --transfer-amount 1000 \
+  --transfer-currency USD \
+  --source-currency USD \
+  --reference "Test" \
+  --reason "payment_to_supplier"
+
+# Output:
+# [DRY-RUN] Would create transfer
+# ─────────────────────────────────────
+# Send 1000.00 USD to John Smith
+#   Beneficiary: John Smith
+#   Transfer Amount: 1000.00 USD
+# ─────────────────────────────────────
+# No changes made (dry-run mode)
+```
+
+### Wait for Completion
+
+Wait for async operations to complete:
+
+```bash
+# Wait for transfer to reach final status
+airwallex transfers create --wait --timeout 300 \
+  --beneficiary-id ben_xxx ...
+```
+
+### Batch Operations
+
+Create multiple resources from a file:
+
+```bash
+# From JSON file
+airwallex transfers batch-create --from-file payroll.json
+
+# From stdin
+cat transfers.json | airwallex transfers batch-create
+
+# Continue processing on errors
+airwallex transfers batch-create --from-file data.json --continue-on-error
+```
+
+### JQ Filtering
+
+Filter JSON output with JQ expressions:
+
+```bash
+# Get only USD balance
+airwallex balances --output json --query '.balances[] | select(.currency=="USD")'
+
+# Extract transfer IDs
+airwallex transfers list --output json --query '[.items[].id]'
+
+# Filter by status
+airwallex transfers list --output json --query '.items[] | select(.status=="PENDING")'
+```
+
+### Self-Update
+
+Check for and install updates:
+
+```bash
+# Check version and update availability
+airwallex version
+
+# Upgrade to latest version
+airwallex upgrade
+```
+
 ## Global Flags
 
 All commands support these flags:
