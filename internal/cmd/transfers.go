@@ -282,14 +282,22 @@ Interac e-Transfer notes:
 					beneficiaryName = beneficiary.Beneficiary.FirstName + " " + beneficiary.Beneficiary.LastName
 				}
 
+				// Determine which amount to show in preview
+				previewAmount := transferAmount
+				previewCurrency := transferCurrency
+				if transferAmount == 0 && sourceAmount > 0 {
+					previewAmount = sourceAmount
+					previewCurrency = sourceCurrency
+				}
+
 				preview := &dryrun.Preview{
 					Operation:   "create",
 					Resource:    "transfer",
-					Description: fmt.Sprintf("Send %s to %s", dryrun.FormatAmount(transferAmount, transferCurrency), beneficiaryName),
+					Description: fmt.Sprintf("Send %s to %s", dryrun.FormatAmount(previewAmount, previewCurrency), beneficiaryName),
 					Details: map[string]interface{}{
 						"Beneficiary":     beneficiaryName,
 						"Beneficiary ID":  beneficiaryID,
-						"Transfer Amount": dryrun.FormatAmount(transferAmount, transferCurrency),
+						"Amount":          dryrun.FormatAmount(previewAmount, previewCurrency),
 						"Source Currency": sourceCurrency,
 						"Transfer Method": transferMethod,
 						"Reference":       reference,
