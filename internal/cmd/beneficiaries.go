@@ -142,6 +142,12 @@ func newBeneficiariesCreateCmd() *cobra.Command {
 	var email string
 	var phone string
 	var localClearingSystem string
+	// Address fields (required for Interac)
+	var addressCountry string
+	var addressStreet string
+	var addressCity string
+	var addressState string
+	var addressPostcode string
 
 	cmd := &cobra.Command{
 		Use:   "create",
@@ -250,6 +256,27 @@ Examples:
 				beneficiary["last_name"] = lastName
 			}
 
+			// Build address (required for Interac)
+			if addressCountry != "" || addressStreet != "" || addressCity != "" {
+				address := map[string]interface{}{}
+				if addressCountry != "" {
+					address["country_code"] = addressCountry
+				}
+				if addressStreet != "" {
+					address["street_address"] = addressStreet
+				}
+				if addressCity != "" {
+					address["city"] = addressCity
+				}
+				if addressState != "" {
+					address["state"] = addressState
+				}
+				if addressPostcode != "" {
+					address["postcode"] = addressPostcode
+				}
+				beneficiary["address"] = address
+			}
+
 			// Build bank_details
 			bankDetails := map[string]interface{}{
 				"bank_country_code": bankCountry,
@@ -290,6 +317,7 @@ Examples:
 			req := map[string]interface{}{
 				"beneficiary":      beneficiary,
 				"transfer_methods": []string{transferMethod},
+				"payment_methods":  []string{transferMethod},
 			}
 			if nickname != "" {
 				req["nickname"] = nickname
@@ -331,6 +359,13 @@ Examples:
 	cmd.Flags().StringVar(&email, "email", "", "Email for Interac e-Transfer")
 	cmd.Flags().StringVar(&phone, "phone", "", "Phone for Interac e-Transfer (format: +1-nnnnnnnnnn)")
 	cmd.Flags().StringVar(&localClearingSystem, "clearing-system", "", "Clearing system: EFT, REGULAR_EFT, INTERAC, etc.")
+
+	// Address flags (required for Interac)
+	cmd.Flags().StringVar(&addressCountry, "address-country", "", "Beneficiary country code (e.g. CA)")
+	cmd.Flags().StringVar(&addressStreet, "address-street", "", "Beneficiary street address")
+	cmd.Flags().StringVar(&addressCity, "address-city", "", "Beneficiary city")
+	cmd.Flags().StringVar(&addressState, "address-state", "", "Beneficiary state/province")
+	cmd.Flags().StringVar(&addressPostcode, "address-postcode", "", "Beneficiary postal code")
 
 	mustMarkRequired(cmd, "entity-type")
 	mustMarkRequired(cmd, "bank-country")
