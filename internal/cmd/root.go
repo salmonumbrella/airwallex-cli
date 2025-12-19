@@ -52,6 +52,12 @@ func NewRootCmd() *cobra.Command {
 	cmd.AddCommand(newReportsCmd())
 	cmd.AddCommand(newVersionCmd())
 	cmd.AddCommand(newCompletionCmd())
+	cmd.AddCommand(newFXCmd())
+	cmd.AddCommand(newDepositsCmd())
+	cmd.AddCommand(newLinkedAccountsCmd())
+	cmd.AddCommand(newSchemasCmd())
+	cmd.AddCommand(newPaymentLinksCmd())
+	cmd.AddCommand(newWebhooksCmd())
 
 	return cmd
 }
