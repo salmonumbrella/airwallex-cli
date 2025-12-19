@@ -77,11 +77,11 @@ type SetupServer struct {
 }
 
 // NewSetupServer creates a new setup server
-func NewSetupServer(store secrets.Store) *SetupServer {
+func NewSetupServer(store secrets.Store) (*SetupServer, error) {
 	// Generate CSRF token
 	tokenBytes := make([]byte, 32)
 	if _, err := rand.Read(tokenBytes); err != nil {
-		panic(fmt.Sprintf("crypto/rand failed: %v", err))
+		return nil, fmt.Errorf("failed to generate CSRF token: %w", err)
 	}
 
 	return &SetupServer{
@@ -89,7 +89,7 @@ func NewSetupServer(store secrets.Store) *SetupServer {
 		shutdown:  make(chan struct{}),
 		csrfToken: hex.EncodeToString(tokenBytes),
 		store:     store,
-	}
+	}, nil
 }
 
 // Start starts the setup server and opens the browser

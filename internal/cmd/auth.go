@@ -70,7 +70,10 @@ Examples:
 				cancel()
 			}()
 
-			server := auth.NewSetupServer(store)
+			server, err := auth.NewSetupServer(store)
+			if err != nil {
+				return fmt.Errorf("failed to create setup server: %w", err)
+			}
 			result, err := server.Start(ctx)
 			if err != nil {
 				return fmt.Errorf("setup failed: %w", err)

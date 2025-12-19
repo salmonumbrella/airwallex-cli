@@ -965,8 +965,14 @@ func TestNewClientWithAccount_enforcesTLS12(t *testing.T) {
 
 // TestGenerateIdempotencyKey verifies that idempotency keys are unique
 func TestGenerateIdempotencyKey(t *testing.T) {
-	key1 := generateIdempotencyKey()
-	key2 := generateIdempotencyKey()
+	key1, err := generateIdempotencyKey()
+	if err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+	key2, err := generateIdempotencyKey()
+	if err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
 
 	if key1 == "" {
 		t.Error("expected non-empty key")

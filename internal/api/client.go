@@ -271,12 +271,12 @@ func (c *Client) fetchToken(ctx context.Context) error {
 }
 
 // generateIdempotencyKey creates a unique key for idempotent operations.
-func generateIdempotencyKey() string {
+func generateIdempotencyKey() (string, error) {
 	b := make([]byte, 16)
 	if _, err := rand.Read(b); err != nil {
-		panic(fmt.Sprintf("crypto/rand failed: %v", err))
+		return "", fmt.Errorf("failed to generate idempotency key: %w", err)
 	}
-	return hex.EncodeToString(b)
+	return hex.EncodeToString(b), nil
 }
 
 // isFinancialOperation checks if the path is a financial operation that needs idempotency.
@@ -323,7 +323,11 @@ func (c *Client) Post(ctx context.Context, path string, body interface{}) (*http
 
 	// Add idempotency key for financial operations
 	if isFinancialOperation(path) {
-		req.Header.Set("x-idempotency-key", generateIdempotencyKey())
+		idempotencyKey, err := generateIdempotencyKey()
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set("x-idempotency-key", idempotencyKey)
 	}
 
 	req.GetBody = getBody
