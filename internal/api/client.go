@@ -222,11 +222,25 @@ func (c *Client) doWithRetry(ctx context.Context, req *http.Request) (*http.Resp
 	isIdempotent := req.Method == "GET" || req.Method == "HEAD" || req.Method == "OPTIONS"
 
 	for {
+		// Log request details in debug mode
+		slog.Debug("api request",
+			"method", req.Method,
+			"url", req.URL.String(),
+			"has_body", req.Body != nil,
+		)
+
 		start := time.Now()
 		resp, err = c.httpClient.Do(req)
 		if err != nil {
+			slog.Debug("api request failed", "error", err)
 			return nil, err
 		}
+
+		// Log response details in debug mode
+		slog.Debug("api response",
+			"status", resp.StatusCode,
+			"content_length", resp.ContentLength,
+		)
 
 		// 4xx errors (except 429): no retry
 		if resp.StatusCode >= 400 && resp.StatusCode < 500 && resp.StatusCode != 429 {
