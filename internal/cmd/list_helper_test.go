@@ -354,3 +354,49 @@ func TestNewListCommand_TextTableOutput(t *testing.T) {
 		t.Errorf("expected 2 items to be returned, got %d", itemCount)
 	}
 }
+
+func TestNewListCommand_CustomFlagsCapture(t *testing.T) {
+	// Simulate the pattern used in deposits.go and other migrated commands
+	// where custom flags are captured by the Fetch closure
+	var customStatus string
+	var capturedStatus string
+
+	cfg := ListConfig[testItem]{
+		Use:          "test",
+		Short:        "Test list command",
+		Headers:      []string{"ID", "NAME"},
+		EmptyMessage: "No items",
+		RowFunc: func(item testItem) []string {
+			return []string{item.ID, item.Name}
+		},
+		Fetch: func(ctx context.Context, client *api.Client, page, pageSize int) (ListResult[testItem], error) {
+			// Capture the custom flag value inside the closure
+			capturedStatus = customStatus
+			return ListResult[testItem]{
+				Items:   []testItem{{ID: "1", Name: "Test"}},
+				HasMore: false,
+			}, nil
+		},
+	}
+
+	cmd := NewListCommand(cfg, func(ctx context.Context) (*api.Client, error) {
+		return &api.Client{}, nil
+	})
+
+	// Add custom flag that captures into the closure variable
+	cmd.Flags().StringVar(&customStatus, "status", "", "Filter by status")
+
+	ctx := outfmt.WithFormat(context.Background(), "text")
+	cmd.SetContext(ctx)
+	cmd.SetArgs([]string{"--status", "SETTLED"})
+
+	err := cmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Verify the custom flag value was correctly captured inside Fetch
+	if capturedStatus != "SETTLED" {
+		t.Errorf("expected captured status 'SETTLED', got '%s'", capturedStatus)
+	}
+}
