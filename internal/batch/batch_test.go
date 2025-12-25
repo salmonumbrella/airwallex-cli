@@ -1,8 +1,10 @@
 package batch
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -42,5 +44,37 @@ func TestReadItems_NDJSON(t *testing.T) {
 
 	if len(items) != 3 {
 		t.Errorf("expected 3 items, got %d", len(items))
+	}
+}
+
+func TestParseJSON_MaxInputSize(t *testing.T) {
+	// Create input larger than 10MB
+	largeInput := strings.Repeat(`{"id": "test"}`+"\n", 1000000) // ~14MB
+	reader := strings.NewReader(largeInput)
+
+	_, err := parseJSON(reader)
+	if err == nil {
+		t.Error("expected error for input > 10MB, got nil")
+	}
+	if !strings.Contains(err.Error(), "too large") {
+		t.Errorf("expected 'too large' error, got: %v", err)
+	}
+}
+
+func TestParseJSON_MaxItemCount(t *testing.T) {
+	// Create input with more than 10000 items
+	var items []string
+	for i := 0; i < 10001; i++ {
+		items = append(items, fmt.Sprintf(`{"id": "%d"}`, i))
+	}
+	input := "[" + strings.Join(items, ",") + "]"
+	reader := strings.NewReader(input)
+
+	_, err := parseJSON(reader)
+	if err == nil {
+		t.Error("expected error for > 10000 items, got nil")
+	}
+	if !strings.Contains(err.Error(), "too many") {
+		t.Errorf("expected 'too many' error, got: %v", err)
 	}
 }
