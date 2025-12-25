@@ -61,60 +61,34 @@ func suggestBeneficiaries(ctx context.Context, client *api.Client, query string)
 
 func newTransfersListCmd() *cobra.Command {
 	var status string
-	var page int
-	var pageSize int
 
-	cmd := &cobra.Command{
-		Use:   "list",
-		Short: "List transfers",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			// Validate page size (minimum 10)
-			if pageSize < 10 {
-				pageSize = 10
+	cmd := NewListCommand(ListConfig[api.Transfer]{
+		Use:          "list",
+		Short:        "List transfers",
+		Headers:      []string{"TRANSFER_ID", "AMOUNT", "CURRENCY", "STATUS", "REFERENCE"},
+		EmptyMessage: "No transfers found",
+		RowFunc: func(t api.Transfer) []string {
+			return []string{
+				t.TransferID,
+				fmt.Sprintf("%.2f", t.TransferAmount),
+				t.TransferCurrency,
+				t.Status,
+				t.Reference,
 			}
-
-			client, err := getClient(cmd.Context())
-			if err != nil {
-				return err
-			}
-
-			result, err := client.ListTransfers(cmd.Context(), status, page, pageSize)
-			if err != nil {
-				return err
-			}
-
-			f := outfmt.FromContext(cmd.Context())
-
-			// Handle JSON output
-			if outfmt.IsJSON(cmd.Context()) {
-				return f.Output(result)
-			}
-
-			// Handle empty results
-			if len(result.Items) == 0 {
-				f.Empty("No transfers found")
-				return nil
-			}
-
-			// Handle text table output
-			f.StartTable([]string{"TRANSFER_ID", "AMOUNT", "CURRENCY", "STATUS", "REFERENCE"})
-			for _, t := range result.Items {
-				f.Row(t.TransferID, fmt.Sprintf("%.2f", t.TransferAmount), t.TransferCurrency, t.Status, t.Reference)
-			}
-			if err := f.EndTable(); err != nil {
-				return err
-			}
-
-			if result.HasMore {
-				fmt.Fprintln(os.Stderr, "# More results available")
-			}
-			return nil
 		},
-	}
+		Fetch: func(ctx context.Context, client *api.Client, page, pageSize int) (ListResult[api.Transfer], error) {
+			result, err := client.ListTransfers(ctx, status, page, pageSize)
+			if err != nil {
+				return ListResult[api.Transfer]{}, err
+			}
+			return ListResult[api.Transfer]{
+				Items:   result.Items,
+				HasMore: result.HasMore,
+			}, nil
+		},
+	}, getClient)
 
 	cmd.Flags().StringVar(&status, "status", "", "Filter by status")
-	cmd.Flags().IntVar(&page, "page", 0, "Page number (0 = first page)")
-	cmd.Flags().IntVar(&pageSize, "limit", 20, "Max results (min 10)")
 	return cmd
 }
 

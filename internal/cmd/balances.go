@@ -1,12 +1,13 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/spf13/cobra"
 
+	"github.com/salmonumbrella/airwallex-cli/internal/api"
 	"github.com/salmonumbrella/airwallex-cli/internal/outfmt"
 )
 
@@ -56,10 +57,8 @@ func newBalancesHistoryCmd() *cobra.Command {
 	var currency string
 	var from string
 	var to string
-	var page int
-	var pageSize int
 
-	cmd := &cobra.Command{
+	cmd := NewListCommand(ListConfig[api.BalanceHistoryItem]{
 		Use:   "history",
 		Short: "Show balance transaction history",
 		Long: `Show balance transaction history.
@@ -79,21 +78,29 @@ Examples:
 
   # Combine filters with custom limit
   airwallex balances history --currency USD --from 2024-01-01 --to 2024-01-07 --limit 50`,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		Headers:      []string{"ID", "CURRENCY", "AMOUNT", "BALANCE", "TYPE", "CREATED_AT", "DESCRIPTION"},
+		EmptyMessage: "No balance history found",
+		RowFunc: func(item api.BalanceHistoryItem) []string {
+			return []string{
+				item.ID,
+				item.Currency,
+				fmt.Sprintf("%.2f", item.Amount),
+				fmt.Sprintf("%.2f", item.Balance),
+				item.TransactionType,
+				item.CreatedAt,
+				item.Description,
+			}
+		},
+		Fetch: func(ctx context.Context, client *api.Client, page, pageSize int) (ListResult[api.BalanceHistoryItem], error) {
 			// Validate date inputs
 			if err := validateDate(from); err != nil {
-				return fmt.Errorf("--from: %w", err)
+				return ListResult[api.BalanceHistoryItem]{}, fmt.Errorf("--from: %w", err)
 			}
 			if err := validateDate(to); err != nil {
-				return fmt.Errorf("--to: %w", err)
+				return ListResult[api.BalanceHistoryItem]{}, fmt.Errorf("--to: %w", err)
 			}
 			if err := validateDateRange(from, to); err != nil {
-				return err
-			}
-
-			// Validate page size (minimum 10)
-			if pageSize < 10 {
-				pageSize = 10
+				return ListResult[api.BalanceHistoryItem]{}, err
 			}
 
 			// Convert YYYY-MM-DD dates to RFC3339 format
@@ -103,14 +110,14 @@ Examples:
 			if from != "" {
 				fromRFC3339, err = convertDateToRFC3339(from)
 				if err != nil {
-					return fmt.Errorf("invalid --from date: %w", err)
+					return ListResult[api.BalanceHistoryItem]{}, fmt.Errorf("invalid --from date: %w", err)
 				}
 			}
 
 			if to != "" {
 				toRFC3339, err = convertDateToRFC3339(to)
 				if err != nil {
-					return fmt.Errorf("invalid --to date: %w", err)
+					return ListResult[api.BalanceHistoryItem]{}, fmt.Errorf("invalid --to date: %w", err)
 				}
 			}
 
@@ -119,54 +126,25 @@ Examples:
 				fromTime, _ := time.Parse(time.RFC3339, fromRFC3339)
 				toTime, _ := time.Parse(time.RFC3339, toRFC3339)
 				if toTime.Sub(fromTime) > 7*24*time.Hour {
-					return fmt.Errorf("date range exceeds 7 days maximum")
+					return ListResult[api.BalanceHistoryItem]{}, fmt.Errorf("date range exceeds 7 days maximum")
 				}
 			}
 
-			client, err := getClient(cmd.Context())
+			result, err := client.GetBalanceHistory(ctx, currency, fromRFC3339, toRFC3339, page, pageSize)
 			if err != nil {
-				return err
+				return ListResult[api.BalanceHistoryItem]{}, err
 			}
 
-			result, err := client.GetBalanceHistory(cmd.Context(), currency, fromRFC3339, toRFC3339, page, pageSize)
-			if err != nil {
-				return err
-			}
-
-			f := outfmt.FromContext(cmd.Context())
-
-			if outfmt.IsJSON(cmd.Context()) {
-				return f.Output(result)
-			}
-
-			if len(result.Items) == 0 {
-				f.Empty("No balance history found")
-				return nil
-			}
-
-			f.StartTable([]string{"ID", "CURRENCY", "AMOUNT", "BALANCE", "TYPE", "CREATED_AT", "DESCRIPTION"})
-			for _, item := range result.Items {
-				f.Row(item.ID, item.Currency,
-					fmt.Sprintf("%.2f", item.Amount),
-					fmt.Sprintf("%.2f", item.Balance),
-					item.TransactionType, item.CreatedAt, item.Description)
-			}
-			if err := f.EndTable(); err != nil {
-				return err
-			}
-
-			if result.HasMore {
-				fmt.Fprintln(os.Stderr, "# More results available")
-			}
-			return nil
+			return ListResult[api.BalanceHistoryItem]{
+				Items:   result.Items,
+				HasMore: result.HasMore,
+			}, nil
 		},
-	}
+	}, getClient)
 
 	cmd.Flags().StringVar(&currency, "currency", "", "Filter by currency (e.g., CAD, USD)")
 	cmd.Flags().StringVar(&from, "from", "", "Start date (YYYY-MM-DD)")
 	cmd.Flags().StringVar(&to, "to", "", "End date (YYYY-MM-DD)")
-	cmd.Flags().IntVar(&page, "page", 0, "Page number (0 = first page)")
-	cmd.Flags().IntVar(&pageSize, "limit", 20, "Max results per page (min 10)")
 
 	return cmd
 }

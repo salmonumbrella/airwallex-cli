@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"regexp"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/salmonumbrella/airwallex-cli/internal/api"
 	"github.com/salmonumbrella/airwallex-cli/internal/outfmt"
 	"github.com/salmonumbrella/airwallex-cli/internal/ui"
 )
@@ -29,65 +31,39 @@ func newBeneficiariesCmd() *cobra.Command {
 }
 
 func newBeneficiariesListCmd() *cobra.Command {
-	var page int
-	var pageSize int
-
-	cmd := &cobra.Command{
-		Use:   "list",
-		Short: "List beneficiaries",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := getClient(cmd.Context())
-			if err != nil {
-				return err
+	return NewListCommand(ListConfig[api.Beneficiary]{
+		Use:          "list",
+		Short:        "List beneficiaries",
+		Headers:      []string{"BENEFICIARY_ID", "TYPE", "NAME", "BANK_COUNTRY", "METHODS"},
+		EmptyMessage: "No beneficiaries found",
+		RowFunc: func(b api.Beneficiary) []string {
+			name := b.Nickname
+			if name == "" {
+				name = b.Beneficiary.BankDetails.AccountName
 			}
-
-			// Airwallex API requires minimum page_size of 10
-			if pageSize < 10 {
-				pageSize = 10
+			methods := ""
+			if len(b.TransferMethods) > 0 {
+				methods = b.TransferMethods[0]
 			}
-
-			result, err := client.ListBeneficiaries(cmd.Context(), page, pageSize)
-			if err != nil {
-				return err
+			return []string{
+				b.BeneficiaryID,
+				b.Beneficiary.EntityType,
+				name,
+				b.Beneficiary.BankDetails.BankCountryCode,
+				methods,
 			}
-
-			f := outfmt.FromContext(cmd.Context())
-
-			if outfmt.IsJSON(cmd.Context()) {
-				return f.Output(result)
-			}
-
-			if len(result.Items) == 0 {
-				f.Empty("No beneficiaries found")
-				return nil
-			}
-
-			f.StartTable([]string{"BENEFICIARY_ID", "TYPE", "NAME", "BANK_COUNTRY", "METHODS"})
-			for _, b := range result.Items {
-				name := b.Nickname
-				if name == "" {
-					name = b.Beneficiary.BankDetails.AccountName
-				}
-				methods := ""
-				if len(b.TransferMethods) > 0 {
-					methods = b.TransferMethods[0]
-				}
-				f.Row(b.BeneficiaryID, b.Beneficiary.EntityType, name, b.Beneficiary.BankDetails.BankCountryCode, methods)
-			}
-			if err := f.EndTable(); err != nil {
-				return err
-			}
-
-			if result.HasMore {
-				fmt.Fprintln(os.Stderr, "# More results available")
-			}
-			return nil
 		},
-	}
-
-	cmd.Flags().IntVar(&page, "page", 0, "Page number (0 = first page)")
-	cmd.Flags().IntVar(&pageSize, "limit", 20, "Max results (min 10)")
-	return cmd
+		Fetch: func(ctx context.Context, client *api.Client, page, pageSize int) (ListResult[api.Beneficiary], error) {
+			result, err := client.ListBeneficiaries(ctx, page, pageSize)
+			if err != nil {
+				return ListResult[api.Beneficiary]{}, err
+			}
+			return ListResult[api.Beneficiary]{
+				Items:   result.Items,
+				HasMore: result.HasMore,
+			}, nil
+		},
+	}, getClient)
 }
 
 func newBeneficiariesGetCmd() *cobra.Command {
