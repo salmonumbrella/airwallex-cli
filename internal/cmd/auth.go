@@ -188,18 +188,21 @@ func newAuthListCmd() *cobra.Command {
 				return fmt.Errorf("failed to list accounts: %w", err)
 			}
 
+			// Get IO streams from context
+			io := GetIO(cmd.Context())
+
 			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, map[string]interface{}{
+				return outfmt.WriteJSON(io.Out, map[string]interface{}{
 					"accounts": creds,
 				})
 			}
 
 			if len(creds) == 0 {
-				fmt.Fprintln(os.Stderr, "No accounts configured")
+				fmt.Fprintln(io.ErrOut, "No accounts configured")
 				return nil
 			}
 
-			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
+			tw := tabwriter.NewWriter(io.Out, 0, 4, 2, ' ', 0)
 			fmt.Fprintln(tw, "NAME\tCLIENT_ID\tCREATED")
 			for _, c := range creds {
 				fmt.Fprintf(tw, "%s\t%s\t%s\n", c.Name, c.ClientID, c.CreatedAt.Format("2006-01-02"))

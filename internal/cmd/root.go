@@ -34,6 +34,11 @@ func NewRootCmd() *cobra.Command {
 			debug.SetupLogger(flags.Debug)
 			ctx := debug.WithDebug(cmd.Context(), flags.Debug)
 
+			// Inject IO streams (only if not already set, to support testing)
+			if ctx.Value(ioKey{}) == nil {
+				ctx = WithIO(ctx, DefaultIO())
+			}
+
 			// Inject UI context
 			u := ui.New(flags.Color)
 			ctx = ui.WithUI(ctx, u)

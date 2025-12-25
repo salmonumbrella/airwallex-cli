@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
 
@@ -36,6 +37,19 @@ func newVersionCmd() *cobra.Command {
 			// Check for updates (non-blocking, ignores errors)
 			updateResult := update.CheckForUpdate(cmd.Context(), Version)
 
+			// Get IO streams - prefer context IO, fall back to cobra's writers
+			io := GetIO(cmd.Context())
+			out := io.Out
+			errOut := io.ErrOut
+
+			// If IO from context is still the default (os.Stdout), check if cobra has custom writers
+			if out == os.Stdout {
+				out = cmd.OutOrStdout()
+			}
+			if errOut == os.Stderr {
+				errOut = cmd.OutOrStderr()
+			}
+
 			if outfmt.IsJSON(cmd.Context()) {
 				info := versionInfo{
 					Version:   Version,
@@ -46,17 +60,17 @@ func newVersionCmd() *cobra.Command {
 					info.LatestVersion = updateResult.LatestVersion
 					info.UpdateAvailable = updateResult.UpdateAvailable
 				}
-				return outfmt.WriteJSON(cmd.OutOrStdout(), info)
+				return outfmt.WriteJSON(out, info)
 			}
 
-			fmt.Fprintf(cmd.OutOrStdout(), "airwallex-cli %s\n", Version)
-			fmt.Fprintf(cmd.OutOrStdout(), "  commit:     %s\n", Commit)
-			fmt.Fprintf(cmd.OutOrStdout(), "  build date: %s\n", BuildDate)
+			fmt.Fprintf(out, "airwallex-cli %s\n", Version)
+			fmt.Fprintf(out, "  commit:     %s\n", Commit)
+			fmt.Fprintf(out, "  build date: %s\n", BuildDate)
 
 			if updateResult != nil && updateResult.UpdateAvailable {
-				fmt.Fprintf(cmd.OutOrStderr(), "\nUpdate available: %s → %s\n",
+				fmt.Fprintf(errOut, "\nUpdate available: %s → %s\n",
 					updateResult.CurrentVersion, updateResult.LatestVersion)
-				fmt.Fprintf(cmd.OutOrStderr(), "Run: brew upgrade airwallex-cli\n")
+				fmt.Fprintf(errOut, "Run: brew upgrade airwallex-cli\n")
 			}
 
 			return nil
