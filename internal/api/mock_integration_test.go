@@ -340,7 +340,7 @@ func TestMockIntegration_CustomResponseHeaders(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Get() error: %v", err)
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	// Check custom headers
 	if rateLimitRemaining := resp.Header.Get("X-Rate-Limit-Remaining"); rateLimitRemaining != "100" {

@@ -40,7 +40,7 @@ func (c *Client) GetBalances(ctx context.Context) (*BalancesResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	if resp.StatusCode != Endpoints.BalancesCurrent.ExpectedStatus {
 		body, _ := io.ReadAll(resp.Body)
@@ -82,7 +82,7 @@ func (c *Client) GetBalanceHistory(ctx context.Context, currency string, from, t
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	if resp.StatusCode != Endpoints.BalancesHistory.ExpectedStatus {
 		body, _ := io.ReadAll(resp.Body)

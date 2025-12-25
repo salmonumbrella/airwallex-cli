@@ -55,7 +55,7 @@ func (c *Client) ListDeposits(ctx context.Context, status, fromDate, toDate stri
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
@@ -79,7 +79,7 @@ func (c *Client) GetDeposit(ctx context.Context, depositID string) (*Deposit, er
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)

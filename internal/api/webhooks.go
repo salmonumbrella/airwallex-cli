@@ -110,7 +110,7 @@ func (c *Client) ListWebhooks(ctx context.Context, pageNum, pageSize int) (*Webh
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
@@ -134,7 +134,7 @@ func (c *Client) GetWebhook(ctx context.Context, webhookID string) (*Webhook, er
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
@@ -167,7 +167,7 @@ func (c *Client) CreateWebhook(ctx context.Context, webhookURL string, events []
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	if resp.StatusCode != 200 && resp.StatusCode != 201 {
 		body, _ := io.ReadAll(resp.Body)
@@ -194,7 +194,7 @@ func (c *Client) DeleteWebhook(ctx context.Context, webhookID string) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	if resp.StatusCode != 204 && resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)

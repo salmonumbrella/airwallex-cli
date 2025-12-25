@@ -44,7 +44,7 @@ func (c *Client) ListPaymentLinks(ctx context.Context, pageNum, pageSize int) (*
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
@@ -68,7 +68,7 @@ func (c *Client) GetPaymentLink(ctx context.Context, linkID string) (*PaymentLin
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
@@ -91,7 +91,7 @@ func (c *Client) CreatePaymentLink(ctx context.Context, req map[string]interface
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	if resp.StatusCode != 200 && resp.StatusCode != 201 {
 		body, _ := io.ReadAll(resp.Body)

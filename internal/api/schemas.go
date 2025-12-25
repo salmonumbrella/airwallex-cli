@@ -37,7 +37,7 @@ func (c *Client) GetBeneficiarySchema(ctx context.Context, bankCountry, entityTy
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
@@ -65,7 +65,7 @@ func (c *Client) GetTransferSchema(ctx context.Context, sourceCurrency, destCurr
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)

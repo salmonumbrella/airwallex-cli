@@ -84,7 +84,7 @@ func (c *Client) ListTransfers(ctx context.Context, status string, pageNum, page
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
@@ -107,7 +107,7 @@ func (c *Client) GetTransfer(ctx context.Context, transferID string) (*Transfer,
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
@@ -130,7 +130,7 @@ func (c *Client) CreateTransfer(ctx context.Context, req map[string]interface{})
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	if resp.StatusCode != 200 && resp.StatusCode != 201 {
 		body, _ := io.ReadAll(resp.Body)
@@ -153,7 +153,7 @@ func (c *Client) CancelTransfer(ctx context.Context, transferID string) (*Transf
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
@@ -218,7 +218,7 @@ func (c *Client) ListBeneficiaries(ctx context.Context, pageNum, pageSize int) (
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
@@ -241,7 +241,7 @@ func (c *Client) GetBeneficiary(ctx context.Context, beneficiaryID string) (*Ben
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
@@ -264,7 +264,7 @@ func (c *Client) GetBeneficiaryRaw(ctx context.Context, beneficiaryID string) (m
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
@@ -287,7 +287,7 @@ func (c *Client) CreateBeneficiary(ctx context.Context, req map[string]interface
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	if resp.StatusCode != 200 && resp.StatusCode != 201 {
 		body, _ := io.ReadAll(resp.Body)
@@ -311,7 +311,7 @@ func (c *Client) UpdateBeneficiary(ctx context.Context, beneficiaryID string, up
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
@@ -334,7 +334,7 @@ func (c *Client) DeleteBeneficiary(ctx context.Context, beneficiaryID string) er
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	if resp.StatusCode != 200 && resp.StatusCode != 204 {
 		body, _ := io.ReadAll(resp.Body)
@@ -349,7 +349,7 @@ func (c *Client) ValidateBeneficiary(ctx context.Context, req map[string]interfa
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
@@ -372,7 +372,7 @@ func (c *Client) GetConfirmationLetter(ctx context.Context, transferID string, f
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	if resp.StatusCode != 200 && resp.StatusCode != 201 {
 		body, _ := io.ReadAll(resp.Body)

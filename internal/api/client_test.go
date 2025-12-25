@@ -136,7 +136,7 @@ func TestClient_doWithRetry_noRetryOn4xx(t *testing.T) {
 	if err != nil {
 		t.Fatalf("doWithRetry() error: %v", err)
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	if callCount != 1 {
 		t.Errorf("expected 1 call (no retry), got %d", callCount)
@@ -181,7 +181,7 @@ func TestClient_doWithRetry_retriesOn429WithExponentialBackoff(t *testing.T) {
 	if err != nil {
 		t.Fatalf("doWithRetry() error: %v", err)
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	if callCount != 3 {
 		t.Errorf("expected 3 calls (2 retries), got %d", callCount)
@@ -223,7 +223,7 @@ func TestClient_doWithRetry_maxRetriesOn429(t *testing.T) {
 	if err != nil {
 		t.Fatalf("doWithRetry() error: %v", err)
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	// Should be 1 initial + 3 retries = 4 total calls
 	if callCount != 4 {
@@ -270,7 +270,7 @@ func TestClient_doWithRetry_respectsRetryAfterHeader(t *testing.T) {
 	if err != nil {
 		t.Fatalf("doWithRetry() error: %v", err)
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	if callCount != 2 {
 		t.Errorf("expected 2 calls (1 retry), got %d", callCount)
@@ -379,7 +379,7 @@ func TestClient_doWithRetry_retriesOnce5xx(t *testing.T) {
 	if err != nil {
 		t.Fatalf("doWithRetry() error: %v", err)
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	if callCount != 2 {
 		t.Errorf("expected 2 calls (1 retry), got %d", callCount)
@@ -421,7 +421,7 @@ func TestClient_doWithRetry_noSecondRetryOn5xx(t *testing.T) {
 	if err != nil {
 		t.Fatalf("doWithRetry() error: %v", err)
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	// Should be 1 initial + 1 retry = 2 total calls (not more)
 	if callCount != 2 {
@@ -459,7 +459,7 @@ func TestClient_doWithRetry_successOnFirstAttempt(t *testing.T) {
 	if err != nil {
 		t.Fatalf("doWithRetry() error: %v", err)
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	if callCount != 1 {
 		t.Errorf("expected 1 call (no retry), got %d", callCount)
@@ -509,7 +509,7 @@ func TestClient_Post_retriesOn429WithBodyReplay(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Post() error: %v", err)
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	if callCount != 2 {
 		t.Errorf("expected 2 calls (1 retry), got %d", callCount)
@@ -569,7 +569,7 @@ func TestClient_doWithRetry_mixedErrors5xxThen429(t *testing.T) {
 	if err != nil {
 		t.Fatalf("doWithRetry() error: %v", err)
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	// Should be: 1 initial 5xx + 1 retry (gets 429) + 2 retries for 429 + 1 success = 4 total
 	if callCount != 4 {
@@ -616,7 +616,7 @@ func TestClient_doWithRetry_mixedErrors429Then5xx(t *testing.T) {
 	if err != nil {
 		t.Fatalf("doWithRetry() error: %v", err)
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	// Should be: 1 initial 429 + 1 retry (gets 5xx) + 1 retry for 5xx (gets success) = 3 total
 	if callCount != 3 {
@@ -660,7 +660,7 @@ func TestClient_doWithRetry_GET_retriesOn5xx(t *testing.T) {
 	if err != nil {
 		t.Fatalf("doWithRetry() error: %v", err)
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	if callCount != 2 {
 		t.Errorf("expected 2 calls (1 retry on 5xx for GET), got %d", callCount)
@@ -698,7 +698,7 @@ func TestClient_doWithRetry_POST_noRetryOn5xx(t *testing.T) {
 	if err != nil {
 		t.Fatalf("doWithRetry() error: %v", err)
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	if callCount != 1 {
 		t.Errorf("expected 1 call (no retry on 5xx for POST), got %d", callCount)
@@ -741,7 +741,7 @@ func TestClient_doWithRetry_POST_retriesOn429(t *testing.T) {
 	if err != nil {
 		t.Fatalf("doWithRetry() error: %v", err)
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	if callCount != 2 {
 		t.Errorf("expected 2 calls (1 retry on 429 for POST), got %d", callCount)
@@ -779,7 +779,7 @@ func TestClient_doWithRetry_PUT_noRetryOn5xx(t *testing.T) {
 	if err != nil {
 		t.Fatalf("doWithRetry() error: %v", err)
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	if callCount != 1 {
 		t.Errorf("expected 1 call (no retry on 5xx for PUT), got %d", callCount)
@@ -817,7 +817,7 @@ func TestClient_doWithRetry_DELETE_noRetryOn5xx(t *testing.T) {
 	if err != nil {
 		t.Fatalf("doWithRetry() error: %v", err)
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	if callCount != 1 {
 		t.Errorf("expected 1 call (no retry on 5xx for DELETE), got %d", callCount)
@@ -855,7 +855,7 @@ func TestClient_doWithRetry_PATCH_noRetryOn5xx(t *testing.T) {
 	if err != nil {
 		t.Fatalf("doWithRetry() error: %v", err)
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	if callCount != 1 {
 		t.Errorf("expected 1 call (no retry on 5xx for PATCH), got %d", callCount)
@@ -896,7 +896,7 @@ func TestClient_doWithRetry_HEAD_retriesOn5xx(t *testing.T) {
 	if err != nil {
 		t.Fatalf("doWithRetry() error: %v", err)
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	if callCount != 2 {
 		t.Errorf("expected 2 calls (1 retry on 5xx for HEAD), got %d", callCount)
@@ -937,7 +937,7 @@ func TestClient_doWithRetry_OPTIONS_retriesOn5xx(t *testing.T) {
 	if err != nil {
 		t.Fatalf("doWithRetry() error: %v", err)
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	if callCount != 2 {
 		t.Errorf("expected 2 calls (1 retry on 5xx for OPTIONS), got %d", callCount)
@@ -1124,7 +1124,7 @@ func TestClient_Post_addsIdempotencyKeyForFinancialOperations(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Post() error: %v", err)
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	idempotencyKey := capturedHeaders.Get("x-idempotency-key")
 	if idempotencyKey == "" {
@@ -1162,7 +1162,7 @@ func TestClient_Post_noIdempotencyKeyForNonFinancialOperations(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Post() error: %v", err)
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	idempotencyKey := capturedHeaders.Get("x-idempotency-key")
 	if idempotencyKey != "" {

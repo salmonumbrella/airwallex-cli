@@ -71,7 +71,7 @@ func (c *Client) GetRates(ctx context.Context, sellCurrency, buyCurrency string)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	body, _ := io.ReadAll(resp.Body)
 	if resp.StatusCode != 200 {
@@ -105,7 +105,7 @@ func (c *Client) CreateQuote(ctx context.Context, req map[string]interface{}) (*
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	// Accept both 200 and 201 for backward compatibility
 	if resp.StatusCode != 200 && resp.StatusCode != 201 {
@@ -130,7 +130,7 @@ func (c *Client) GetQuote(ctx context.Context, quoteID string) (*Quote, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
@@ -172,7 +172,7 @@ func (c *Client) ListConversions(ctx context.Context, status string, fromDate, t
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
@@ -196,7 +196,7 @@ func (c *Client) GetConversion(ctx context.Context, conversionID string) (*Conve
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
@@ -219,7 +219,7 @@ func (c *Client) CreateConversion(ctx context.Context, req map[string]interface{
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	// Accept both 200 and 201 for backward compatibility
 	if resp.StatusCode != 200 && resp.StatusCode != 201 {

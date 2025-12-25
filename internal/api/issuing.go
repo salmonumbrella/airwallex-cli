@@ -135,7 +135,7 @@ func (c *Client) ListCards(ctx context.Context, status, cardholderID string, pag
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
@@ -158,7 +158,7 @@ func (c *Client) GetCard(ctx context.Context, cardID string) (*Card, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
@@ -181,7 +181,7 @@ func (c *Client) GetCardDetails(ctx context.Context, cardID string) (*CardDetail
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
@@ -204,7 +204,7 @@ func (c *Client) GetCardLimits(ctx context.Context, cardID string) (*CardLimits,
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
@@ -227,7 +227,7 @@ func (c *Client) UpdateCard(ctx context.Context, cardID string, update map[strin
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
@@ -253,7 +253,7 @@ func (c *Client) ActivateCard(ctx context.Context, cardID string) (*Card, error)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
@@ -276,7 +276,7 @@ func (c *Client) CreateCard(ctx context.Context, req map[string]interface{}) (*C
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	body, _ := io.ReadAll(resp.Body)
 
@@ -311,7 +311,7 @@ func (c *Client) ListCardholders(ctx context.Context, pageNum, pageSize int) (*C
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
@@ -334,7 +334,7 @@ func (c *Client) GetCardholder(ctx context.Context, cardholderID string) (*Cardh
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
@@ -354,7 +354,7 @@ func (c *Client) CreateCardholder(ctx context.Context, req map[string]interface{
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	if resp.StatusCode != 200 && resp.StatusCode != 201 {
 		body, _ := io.ReadAll(resp.Body)
@@ -377,7 +377,7 @@ func (c *Client) UpdateCardholder(ctx context.Context, cardholderID string, upda
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
@@ -424,7 +424,7 @@ func (c *Client) ListTransactions(ctx context.Context, cardID string, from, to s
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
@@ -447,7 +447,7 @@ func (c *Client) GetTransaction(ctx context.Context, transactionID string) (*Tra
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)

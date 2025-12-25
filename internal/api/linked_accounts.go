@@ -52,7 +52,7 @@ func (c *Client) ListLinkedAccounts(ctx context.Context, pageNum, pageSize int) 
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
@@ -76,7 +76,7 @@ func (c *Client) GetLinkedAccount(ctx context.Context, accountID string) (*Linke
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
@@ -99,7 +99,7 @@ func (c *Client) CreateLinkedAccount(ctx context.Context, req map[string]interfa
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	if resp.StatusCode != 200 && resp.StatusCode != 201 {
 		body, _ := io.ReadAll(resp.Body)
@@ -131,7 +131,7 @@ func (c *Client) InitiateDeposit(ctx context.Context, accountID string, amount f
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	if resp.StatusCode != 200 && resp.StatusCode != 201 {
 		body, _ := io.ReadAll(resp.Body)

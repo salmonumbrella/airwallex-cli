@@ -46,7 +46,7 @@ func (c *Client) ListGlobalAccounts(ctx context.Context, pageNum, pageSize int) 
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
@@ -69,7 +69,7 @@ func (c *Client) GetGlobalAccount(ctx context.Context, accountID string) (*Globa
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)

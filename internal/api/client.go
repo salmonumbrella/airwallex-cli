@@ -82,6 +82,15 @@ func withDefaultTimeout(ctx context.Context) (context.Context, context.CancelFun
 	return context.WithTimeout(ctx, DefaultOperationTimeout)
 }
 
+// closeBody closes the response body and logs any error.
+func closeBody(resp *http.Response) {
+	if resp != nil && resp.Body != nil {
+		if err := resp.Body.Close(); err != nil {
+			slog.Debug("failed to close response body", "error", err)
+		}
+	}
+}
+
 type circuitBreaker struct {
 	mu          sync.Mutex
 	failures    int
@@ -280,7 +289,7 @@ func (c *Client) doWithRetry(ctx context.Context, req *http.Request) (*http.Resp
 
 			slog.Info("rate limited, retrying", "delay", delay, "attempt", retries429+1, "max_retries", MaxRateLimitRetries)
 
-			resp.Body.Close()
+			closeBody(resp)
 
 			// Replay request body if available
 			if req.GetBody != nil {
@@ -324,7 +333,7 @@ func (c *Client) doWithRetry(ctx context.Context, req *http.Request) (*http.Resp
 
 			slog.Info("retrying after server error", "status", resp.StatusCode, "attempt", retries5xx+1, "delay", ServerErrorRetryDelay)
 
-			resp.Body.Close()
+			closeBody(resp)
 
 			// Replay request body if available
 			if req.GetBody != nil {
@@ -387,7 +396,7 @@ func (c *Client) fetchToken(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp)
 
 	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
