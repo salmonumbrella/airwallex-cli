@@ -169,6 +169,7 @@ type SetupResult struct {
 type SetupServer struct {
 	result        chan SetupResult
 	shutdown      chan struct{}
+	stopCleanup   chan struct{}
 	pendingResult *SetupResult
 	pendingMu     sync.Mutex
 	csrfToken     string
@@ -184,17 +185,25 @@ func NewSetupServer(store secrets.Store) (*SetupServer, error) {
 		return nil, fmt.Errorf("failed to generate CSRF token: %w", err)
 	}
 
+	stopCleanup := make(chan struct{})
+	limiter := newRateLimiter(10, 15*time.Minute)
+	limiter.startCleanup(5*time.Minute, stopCleanup)
+
 	return &SetupServer{
-		result:    make(chan SetupResult, 1),
-		shutdown:  make(chan struct{}),
-		csrfToken: hex.EncodeToString(tokenBytes),
-		store:     store,
-		limiter:   newRateLimiter(10, 15*time.Minute),
+		result:      make(chan SetupResult, 1),
+		shutdown:    make(chan struct{}),
+		stopCleanup: stopCleanup,
+		csrfToken:   hex.EncodeToString(tokenBytes),
+		store:       store,
+		limiter:     limiter,
 	}, nil
 }
 
 // Start starts the setup server and opens the browser
 func (s *SetupServer) Start(ctx context.Context) (*SetupResult, error) {
+	// Ensure cleanup goroutine is stopped when server exits
+	defer close(s.stopCleanup)
+
 	// Find an available port
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {

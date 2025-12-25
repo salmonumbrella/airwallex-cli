@@ -350,6 +350,10 @@ func TestNewSetupServer(t *testing.T) {
 	if server.store == nil {
 		t.Error("expected store to be set")
 	}
+
+	if server.stopCleanup == nil {
+		t.Error("expected stopCleanup channel to be initialized")
+	}
 }
 
 func TestHandleValidateCSRFProtection(t *testing.T) {
