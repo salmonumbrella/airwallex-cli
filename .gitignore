@@ -1,4 +1,5 @@
 # Build output
+/airwallex
 bin/
 dist/
 

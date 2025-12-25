@@ -85,6 +85,7 @@ Credentials are stored securely in your system's keychain:
 - Use `airwallex auth login` for interactive browser-based setup
 - Use `airwallex auth add <name>` and enter API key when prompted
 - Rotate API keys immediately if exposed in logs or history
+- **Rotate credentials regularly** - the CLI warns about credentials older than 90 days
 
 ## Rate Limiting
 
@@ -93,6 +94,7 @@ The Airwallex API enforces rate limits to ensure service stability. The CLI auto
 - **Exponential backoff** - Retries with increasing delays (1s, 2s, 4s) plus jitter to avoid thundering herd
 - **Retry-After header respect** - Honors the API's suggested retry timing when provided
 - **Maximum retry attempts** - Up to 3 retries on 429 (Too Many Requests) responses
+- **Circuit breaker** - After 5 consecutive server errors (5xx), requests are blocked for 30 seconds to prevent cascading failures
 
 For bulk operations (creating multiple cards, sending many transfers, etc.), consider adding delays between requests to stay well under rate limits and avoid triggering backoff logic.
 
@@ -436,8 +438,54 @@ All commands support these flags:
 - `--account <name>` - Account to use (overrides AWX_ACCOUNT)
 - `--output <format>` - Output format: `text` or `json` (default: text)
 - `--color <mode>` - Color mode: `auto`, `always`, or `never` (default: auto)
+- `--debug` - Enable debug output (shows API requests/responses)
+- `--query <expr>` - JQ filter expression for JSON output
 - `--help` - Show help for any command
 - `--version` - Show version information (via `airwallex version`)
+
+## Shell Completions
+
+Generate shell completions for your preferred shell:
+
+### Bash
+
+```bash
+# macOS (Homebrew):
+airwallex completion bash > $(brew --prefix)/etc/bash_completion.d/airwallex
+
+# Linux:
+airwallex completion bash > /etc/bash_completion.d/airwallex
+
+# Or source directly in current session:
+source <(airwallex completion bash)
+```
+
+### Zsh
+
+```zsh
+# Save to fpath:
+airwallex completion zsh > "${fpath[1]}/_airwallex"
+
+# Or add to .zshrc for auto-loading:
+echo 'autoload -U compinit; compinit' >> ~/.zshrc
+echo 'source <(airwallex completion zsh)' >> ~/.zshrc
+```
+
+### Fish
+
+```fish
+airwallex completion fish > ~/.config/fish/completions/airwallex.fish
+```
+
+### PowerShell
+
+```powershell
+# Load for current session:
+airwallex completion powershell | Out-String | Invoke-Expression
+
+# Or add to profile for persistence:
+airwallex completion powershell >> $PROFILE
+```
 
 ## Development
 
