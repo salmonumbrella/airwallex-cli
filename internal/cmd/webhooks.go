@@ -128,27 +128,26 @@ func newWebhooksListCmd() *cobra.Command {
 				return outfmt.WriteJSON(os.Stdout, result)
 			}
 
+			f := outfmt.FromContext(cmd.Context())
+
 			if len(result.Items) == 0 {
-				fmt.Fprintln(os.Stderr, "No webhooks found")
+				f.Empty("No webhooks found")
 				return nil
 			}
 
-			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-			fmt.Fprintln(tw, "ID\tURL\tEVENTS\tSTATUS")
+			f.StartTable([]string{"ID", "URL", "EVENTS", "STATUS"})
 			for _, wh := range result.Items {
 				events := strings.Join(wh.Events, ", ")
 				if len(events) > 40 {
 					events = events[:37] + "..."
 				}
-				fmt.Fprintf(tw, "%s\t%s\t%s\t%s\n",
-					wh.ID, wh.URL, events, wh.Status)
+				f.Row(wh.ID, wh.URL, events, wh.Status)
 			}
-			tw.Flush()
 
 			if result.HasMore {
 				fmt.Fprintln(os.Stderr, "# More results available")
 			}
-			return nil
+			return f.EndTable()
 		},
 	}
 

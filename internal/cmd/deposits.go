@@ -65,23 +65,22 @@ Examples:
 				return outfmt.WriteJSON(os.Stdout, result)
 			}
 
+			f := outfmt.FromContext(cmd.Context())
+
 			if len(result.Items) == 0 {
-				fmt.Fprintln(os.Stderr, "No deposits found")
+				f.Empty("No deposits found")
 				return nil
 			}
 
-			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-			fmt.Fprintln(tw, "DEPOSIT_ID\tAMOUNT\tCURRENCY\tSTATUS\tSOURCE\tCREATED")
+			f.StartTable([]string{"DEPOSIT_ID", "AMOUNT", "CURRENCY", "STATUS", "SOURCE", "CREATED"})
 			for _, d := range result.Items {
-				fmt.Fprintf(tw, "%s\t%.2f\t%s\t%s\t%s\t%s\n",
-					d.ID, d.Amount, d.Currency, d.Status, d.Source, d.CreatedAt)
+				f.Row(d.ID, fmt.Sprintf("%.2f", d.Amount), d.Currency, d.Status, d.Source, d.CreatedAt)
 			}
-			tw.Flush()
 
 			if result.HasMore {
 				fmt.Fprintln(os.Stderr, "# More results available")
 			}
-			return nil
+			return f.EndTable()
 		},
 	}
 

@@ -62,23 +62,22 @@ func newTransactionsListCmd() *cobra.Command {
 				return outfmt.WriteJSON(os.Stdout, result)
 			}
 
+			f := outfmt.FromContext(cmd.Context())
+
 			if len(result.Items) == 0 {
-				fmt.Fprintln(os.Stderr, "No transactions found")
+				f.Empty("No transactions found")
 				return nil
 			}
 
-			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-			fmt.Fprintln(tw, "TRANSACTION_ID\tTYPE\tAMOUNT\tCURRENCY\tMERCHANT\tSTATUS")
+			f.StartTable([]string{"TRANSACTION_ID", "TYPE", "AMOUNT", "CURRENCY", "MERCHANT", "STATUS"})
 			for _, txn := range result.Items {
-				fmt.Fprintf(tw, "%s\t%s\t%.2f\t%s\t%s\t%s\n",
-					txn.TransactionID, txn.TransactionType, txn.Amount, txn.Currency, txn.Merchant.Name, txn.Status)
+				f.Row(txn.TransactionID, txn.TransactionType, fmt.Sprintf("%.2f", txn.Amount), txn.Currency, txn.Merchant.Name, txn.Status)
 			}
-			tw.Flush()
 
 			if result.HasMore {
 				fmt.Fprintln(os.Stderr, "# More results available")
 			}
-			return nil
+			return f.EndTable()
 		},
 	}
 

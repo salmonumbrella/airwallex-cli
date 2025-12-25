@@ -61,23 +61,22 @@ func newFXConversionsListCmd() *cobra.Command {
 				return outfmt.WriteJSON(os.Stdout, result)
 			}
 
+			f := outfmt.FromContext(cmd.Context())
+
 			if len(result.Items) == 0 {
-				fmt.Fprintln(os.Stderr, "No conversions found")
+				f.Empty("No conversions found")
 				return nil
 			}
 
-			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-			fmt.Fprintln(tw, "CONVERSION_ID\tSELL\tBUY\tRATE\tSTATUS")
+			f.StartTable([]string{"CONVERSION_ID", "SELL", "BUY", "RATE", "STATUS"})
 			for _, c := range result.Items {
-				fmt.Fprintf(tw, "%s\t%.2f %s\t%.2f %s\t%.6f\t%s\n",
-					c.ID, c.SellAmount, c.SellCurrency, c.BuyAmount, c.BuyCurrency, c.Rate, c.Status)
+				f.Row(c.ID, fmt.Sprintf("%.2f %s", c.SellAmount, c.SellCurrency), fmt.Sprintf("%.2f %s", c.BuyAmount, c.BuyCurrency), fmt.Sprintf("%.6f", c.Rate), c.Status)
 			}
-			tw.Flush()
 
 			if result.HasMore {
 				fmt.Fprintln(os.Stderr, "# More results available")
 			}
-			return nil
+			return f.EndTable()
 		},
 	}
 

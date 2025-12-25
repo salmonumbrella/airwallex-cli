@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"text/tabwriter"
 
 	"github.com/spf13/cobra"
 
@@ -50,19 +49,18 @@ Examples:
 				return outfmt.WriteJSON(os.Stdout, result)
 			}
 
+			f := outfmt.FromContext(cmd.Context())
+
 			if len(result.Rates) == 0 {
-				fmt.Fprintln(os.Stderr, "No rates found")
+				f.Empty("No rates found")
 				return nil
 			}
 
-			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-			fmt.Fprintln(tw, "SELL\tBUY\tRATE\tTYPE")
+			f.StartTable([]string{"SELL", "BUY", "RATE", "TYPE"})
 			for _, r := range result.Rates {
-				fmt.Fprintf(tw, "%s\t%s\t%.6f\t%s\n",
-					r.SellCurrency, r.BuyCurrency, r.Rate, r.RateType)
+				f.Row(r.SellCurrency, r.BuyCurrency, fmt.Sprintf("%.6f", r.Rate), r.RateType)
 			}
-			tw.Flush()
-			return nil
+			return f.EndTable()
 		},
 	}
 

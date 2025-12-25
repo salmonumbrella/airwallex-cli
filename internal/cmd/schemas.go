@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"text/tabwriter"
 
 	"github.com/spf13/cobra"
 
@@ -47,13 +46,14 @@ Examples:
 				return outfmt.WriteJSON(os.Stdout, schema)
 			}
 
+			formatter := outfmt.FromContext(cmd.Context())
+
 			if len(schema.Fields) == 0 {
-				fmt.Fprintln(os.Stderr, "No fields returned")
+				formatter.Empty("No fields returned")
 				return nil
 			}
 
-			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-			fmt.Fprintln(tw, "FIELD\tTYPE\tREQUIRED\tDESCRIPTION")
+			formatter.StartTable([]string{"FIELD", "TYPE", "REQUIRED", "DESCRIPTION"})
 			for _, f := range schema.Fields {
 				required := ""
 				if f.Required {
@@ -63,10 +63,9 @@ Examples:
 				if len(f.Enum) > 0 && len(desc) == 0 {
 					desc = fmt.Sprintf("enum: %v", f.Enum)
 				}
-				fmt.Fprintf(tw, "%s\t%s\t%s\t%s\n", f.Name, f.Type, required, desc)
+				formatter.Row(f.Name, f.Type, required, desc)
 			}
-			tw.Flush()
-			return nil
+			return formatter.EndTable()
 		},
 	}
 
@@ -104,13 +103,14 @@ Examples:
 				return outfmt.WriteJSON(os.Stdout, schema)
 			}
 
+			formatter := outfmt.FromContext(cmd.Context())
+
 			if len(schema.Fields) == 0 {
-				fmt.Fprintln(os.Stderr, "No fields returned")
+				formatter.Empty("No fields returned")
 				return nil
 			}
 
-			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-			fmt.Fprintln(tw, "FIELD\tTYPE\tREQUIRED\tDESCRIPTION")
+			formatter.StartTable([]string{"FIELD", "TYPE", "REQUIRED", "DESCRIPTION"})
 			for _, f := range schema.Fields {
 				required := ""
 				if f.Required {
@@ -120,10 +120,9 @@ Examples:
 				if len(f.Enum) > 0 && len(desc) == 0 {
 					desc = fmt.Sprintf("enum: %v", f.Enum)
 				}
-				fmt.Fprintf(tw, "%s\t%s\t%s\t%s\n", f.Name, f.Type, required, desc)
+				formatter.Row(f.Name, f.Type, required, desc)
 			}
-			tw.Flush()
-			return nil
+			return formatter.EndTable()
 		},
 	}
 

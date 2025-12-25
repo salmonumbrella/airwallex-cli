@@ -51,23 +51,22 @@ func newLinkedAccountsListCmd() *cobra.Command {
 				return outfmt.WriteJSON(os.Stdout, result)
 			}
 
+			f := outfmt.FromContext(cmd.Context())
+
 			if len(result.Items) == 0 {
-				fmt.Fprintln(os.Stderr, "No linked accounts found")
+				f.Empty("No linked accounts found")
 				return nil
 			}
 
-			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-			fmt.Fprintln(tw, "ID\tTYPE\tACCOUNT_NAME\tBANK\tCURRENCY\tSTATUS")
+			f.StartTable([]string{"ID", "TYPE", "ACCOUNT_NAME", "BANK", "CURRENCY", "STATUS"})
 			for _, la := range result.Items {
-				fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\n",
-					la.ID, la.Type, la.AccountName, la.BankName, la.Currency, la.Status)
+				f.Row(la.ID, la.Type, la.AccountName, la.BankName, la.Currency, la.Status)
 			}
-			tw.Flush()
 
 			if result.HasMore {
 				fmt.Fprintln(os.Stderr, "# More results available")
 			}
-			return nil
+			return f.EndTable()
 		},
 	}
 

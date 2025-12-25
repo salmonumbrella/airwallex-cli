@@ -45,24 +45,23 @@ func newCardholdersListCmd() *cobra.Command {
 				return outfmt.WriteJSON(os.Stdout, result)
 			}
 
+			f := outfmt.FromContext(cmd.Context())
+
 			if len(result.Items) == 0 {
-				fmt.Fprintln(os.Stderr, "No cardholders found")
+				f.Empty("No cardholders found")
 				return nil
 			}
 
-			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-			fmt.Fprintln(tw, "CARDHOLDER_ID\tTYPE\tNAME\tEMAIL\tSTATUS")
+			f.StartTable([]string{"CARDHOLDER_ID", "TYPE", "NAME", "EMAIL", "STATUS"})
 			for _, ch := range result.Items {
 				name := fmt.Sprintf("%s %s", ch.FirstName, ch.LastName)
-				fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\n",
-					ch.CardholderID, ch.Type, name, ch.Email, ch.Status)
+				f.Row(ch.CardholderID, ch.Type, name, ch.Email, ch.Status)
 			}
-			tw.Flush()
 
 			if result.HasMore {
 				fmt.Fprintln(os.Stderr, "# More results available")
 			}
-			return nil
+			return f.EndTable()
 		},
 	}
 

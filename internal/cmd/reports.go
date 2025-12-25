@@ -61,28 +61,27 @@ func newReportsListCmd() *cobra.Command {
 				return outfmt.WriteJSON(os.Stdout, result)
 			}
 
+			f := outfmt.FromContext(cmd.Context())
+
 			if len(result.Items) == 0 {
-				fmt.Fprintln(os.Stderr, "No reports found")
+				f.Empty("No reports found")
 				return nil
 			}
 
-			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-			fmt.Fprintln(tw, "ID\tTYPE\tSTATUS\tDATE_RANGE\tFORMAT\tEXPIRES_AT")
+			f.StartTable([]string{"ID", "TYPE", "STATUS", "DATE_RANGE", "FORMAT", "EXPIRES_AT"})
 			for _, r := range result.Items {
 				dateRange := fmt.Sprintf("%s to %s", r.FromDate, r.ToDate)
 				expiresAt := r.ReportExpiresAt
 				if expiresAt == "" {
 					expiresAt = "N/A"
 				}
-				fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\n",
-					r.ID, r.Type, r.Status, dateRange, r.FileFormat, expiresAt)
+				f.Row(r.ID, r.Type, r.Status, dateRange, r.FileFormat, expiresAt)
 			}
-			tw.Flush()
 
 			if result.HasMore {
 				fmt.Fprintln(os.Stderr, "# More results available")
 			}
-			return nil
+			return f.EndTable()
 		},
 	}
 

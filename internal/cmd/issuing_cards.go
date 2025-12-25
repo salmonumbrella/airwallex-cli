@@ -50,27 +50,26 @@ func newCardsListCmd() *cobra.Command {
 				return outfmt.WriteJSON(os.Stdout, cards)
 			}
 
+			f := outfmt.FromContext(cmd.Context())
+
 			if len(cards.Items) == 0 {
-				fmt.Fprintln(os.Stderr, "No cards found")
+				f.Empty("No cards found")
 				return nil
 			}
 
-			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-			fmt.Fprintln(tw, "CARD_ID\tSTATUS\tNICKNAME\tLAST4\tFORM_FACTOR\tCARDHOLDER")
+			f.StartTable([]string{"CARD_ID", "STATUS", "NICKNAME", "LAST4", "FORM_FACTOR", "CARDHOLDER"})
 			for _, c := range cards.Items {
 				last4 := ""
 				if len(c.CardNumber) >= 4 {
 					last4 = c.CardNumber[len(c.CardNumber)-4:]
 				}
-				fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\n",
-					c.CardID, c.CardStatus, c.NickName, last4, c.FormFactor, c.CardholderID)
+				f.Row(c.CardID, c.CardStatus, c.NickName, last4, c.FormFactor, c.CardholderID)
 			}
-			tw.Flush()
 
 			if cards.HasMore {
 				fmt.Fprintln(os.Stderr, "# More results available")
 			}
-			return nil
+			return f.EndTable()
 		},
 	}
 
@@ -430,14 +429,13 @@ func newCardsLimitsCmd() *cobra.Command {
 				return outfmt.WriteJSON(os.Stdout, limits)
 			}
 
-			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-			fmt.Fprintf(tw, "currency\t%s\n", limits.Currency)
-			fmt.Fprintln(tw, "\nINTERVAL\tLIMIT\tREMAINING")
+			f := outfmt.FromContext(cmd.Context())
+			fmt.Printf("currency\t%s\n\n", limits.Currency)
+			f.StartTable([]string{"INTERVAL", "LIMIT", "REMAINING"})
 			for _, l := range limits.Limits {
-				fmt.Fprintf(tw, "%s\t%.2f\t%.2f\n", l.Interval, l.Amount, l.Remaining)
+				f.Row(l.Interval, fmt.Sprintf("%.2f", l.Amount), fmt.Sprintf("%.2f", l.Remaining))
 			}
-			tw.Flush()
-			return nil
+			return f.EndTable()
 		},
 	}
 }

@@ -42,23 +42,22 @@ func newAccountsListCmd() *cobra.Command {
 				return outfmt.WriteJSON(os.Stdout, result)
 			}
 
+			f := outfmt.FromContext(cmd.Context())
+
 			if len(result.Items) == 0 {
-				fmt.Fprintln(os.Stderr, "No global accounts found")
+				f.Empty("No global accounts found")
 				return nil
 			}
 
-			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-			fmt.Fprintln(tw, "ACCOUNT_ID\tNAME\tCURRENCY\tCOUNTRY\tSTATUS")
+			f.StartTable([]string{"ACCOUNT_ID", "NAME", "CURRENCY", "COUNTRY", "STATUS"})
 			for _, a := range result.Items {
-				fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\n",
-					a.AccountID, a.AccountName, a.Currency, a.CountryCode, a.Status)
+				f.Row(a.AccountID, a.AccountName, a.Currency, a.CountryCode, a.Status)
 			}
-			tw.Flush()
 
 			if result.HasMore {
 				fmt.Fprintln(os.Stderr, "# More results available")
 			}
-			return nil
+			return f.EndTable()
 		},
 	}
 

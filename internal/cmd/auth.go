@@ -8,7 +8,6 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
-	"text/tabwriter"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -16,7 +15,6 @@ import (
 
 	"github.com/salmonumbrella/airwallex-cli/internal/api"
 	"github.com/salmonumbrella/airwallex-cli/internal/auth"
-	"github.com/salmonumbrella/airwallex-cli/internal/iocontext"
 	"github.com/salmonumbrella/airwallex-cli/internal/outfmt"
 	"github.com/salmonumbrella/airwallex-cli/internal/secrets"
 	"github.com/salmonumbrella/airwallex-cli/internal/ui"
@@ -189,27 +187,24 @@ func newAuthListCmd() *cobra.Command {
 				return fmt.Errorf("failed to list accounts: %w", err)
 			}
 
-			// Get IO streams from context
-			io := iocontext.GetIO(cmd.Context())
+			f := outfmt.FromContext(cmd.Context())
 
 			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(io.Out, map[string]interface{}{
+				return f.Output(map[string]interface{}{
 					"accounts": creds,
 				})
 			}
 
 			if len(creds) == 0 {
-				fmt.Fprintln(io.ErrOut, "No accounts configured")
+				f.Empty("No accounts configured")
 				return nil
 			}
 
-			tw := tabwriter.NewWriter(io.Out, 0, 4, 2, ' ', 0)
-			fmt.Fprintln(tw, "NAME\tCLIENT_ID\tCREATED")
+			f.StartTable([]string{"NAME", "CLIENT_ID", "CREATED"})
 			for _, c := range creds {
-				fmt.Fprintf(tw, "%s\t%s\t%s\n", c.Name, c.ClientID, c.CreatedAt.Format("2006-01-02"))
+				f.Row(c.Name, c.ClientID, c.CreatedAt.Format("2006-01-02"))
 			}
-			tw.Flush()
-			return nil
+			return f.EndTable()
 		},
 	}
 }
