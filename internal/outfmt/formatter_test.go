@@ -3,6 +3,7 @@ package outfmt
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"strings"
 	"testing"
 )
@@ -148,5 +149,141 @@ func TestFormatter_TableFormatting(t *testing.T) {
 	}
 	if !strings.Contains(lines[2], "Bob") {
 		t.Errorf("Second data row incorrect: %s", lines[2])
+	}
+}
+
+type testItem struct {
+	ID     int
+	Name   string
+	Status string
+}
+
+func TestFormatter_OutputList_TextMode(t *testing.T) {
+	ctx := WithFormat(context.Background(), "text")
+	var buf bytes.Buffer
+	f := FromContext(ctx, WithWriter(&buf))
+
+	items := []testItem{
+		{ID: 1, Name: "Alice", Status: "active"},
+		{ID: 2, Name: "Bob", Status: "inactive"},
+	}
+
+	headers := []string{"ID", "NAME", "STATUS"}
+	rowFn := func(item any) []string {
+		i := item.(testItem)
+		return []string{
+			fmt.Sprintf("%d", i.ID),
+			i.Name,
+			i.Status,
+		}
+	}
+
+	err := f.OutputList(items, headers, rowFn)
+	if err != nil {
+		t.Fatalf("OutputList() error = %v", err)
+	}
+
+	got := buf.String()
+	lines := strings.Split(strings.TrimSpace(got), "\n")
+
+	if len(lines) < 3 {
+		t.Fatalf("Expected at least 3 lines (header + 2 rows), got %d", len(lines))
+	}
+
+	// Check header
+	if !strings.Contains(lines[0], "ID") || !strings.Contains(lines[0], "NAME") {
+		t.Errorf("Header line incorrect: %s", lines[0])
+	}
+
+	// Check rows
+	if !strings.Contains(lines[1], "Alice") {
+		t.Errorf("First data row incorrect: %s", lines[1])
+	}
+	if !strings.Contains(lines[2], "Bob") {
+		t.Errorf("Second data row incorrect: %s", lines[2])
+	}
+}
+
+func TestFormatter_OutputList_JSONMode(t *testing.T) {
+	ctx := WithFormat(context.Background(), "json")
+	var buf bytes.Buffer
+	f := FromContext(ctx, WithWriter(&buf))
+
+	items := []testItem{
+		{ID: 1, Name: "Alice", Status: "active"},
+		{ID: 2, Name: "Bob", Status: "inactive"},
+	}
+
+	headers := []string{"ID", "NAME", "STATUS"}
+	rowFn := func(item any) []string {
+		i := item.(testItem)
+		return []string{
+			fmt.Sprintf("%d", i.ID),
+			i.Name,
+			i.Status,
+		}
+	}
+
+	err := f.OutputList(items, headers, rowFn)
+	if err != nil {
+		t.Fatalf("OutputList() error = %v", err)
+	}
+
+	got := buf.String()
+	// Should output JSON, not table
+	if !strings.Contains(got, `"ID": 1`) {
+		t.Errorf("OutputList() JSON missing expected content, got:\n%s", got)
+	}
+	if !strings.Contains(got, `"Name": "Alice"`) {
+		t.Errorf("OutputList() JSON missing expected content, got:\n%s", got)
+	}
+}
+
+func TestFormatter_OutputList_EmptySlice(t *testing.T) {
+	ctx := WithFormat(context.Background(), "text")
+	var buf bytes.Buffer
+	f := FromContext(ctx, WithWriter(&buf))
+
+	var items []testItem
+
+	headers := []string{"ID", "NAME"}
+	rowFn := func(item any) []string {
+		i := item.(testItem)
+		return []string{fmt.Sprintf("%d", i.ID), i.Name}
+	}
+
+	err := f.OutputList(items, headers, rowFn)
+	if err != nil {
+		t.Fatalf("OutputList() error = %v", err)
+	}
+
+	got := buf.String()
+	lines := strings.Split(strings.TrimSpace(got), "\n")
+
+	// Should only have header, no rows
+	if len(lines) != 1 {
+		t.Errorf("Expected only header line for empty slice, got %d lines", len(lines))
+	}
+}
+
+func TestFormatter_OutputList_InvalidInput(t *testing.T) {
+	ctx := WithFormat(context.Background(), "text")
+	var buf bytes.Buffer
+	f := FromContext(ctx, WithWriter(&buf))
+
+	// Pass a non-slice
+	notASlice := "not a slice"
+
+	headers := []string{"ID", "NAME"}
+	rowFn := func(item any) []string {
+		return []string{"", ""}
+	}
+
+	err := f.OutputList(notASlice, headers, rowFn)
+	if err == nil {
+		t.Error("OutputList() should return error for non-slice input")
+	}
+	if !strings.Contains(err.Error(), "must be a slice or array") {
+		t.Errorf("OutputList() error message incorrect: %v", err)
 	}
 }

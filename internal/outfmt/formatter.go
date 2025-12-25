@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"reflect"
 	"text/tabwriter"
 )
 
@@ -95,4 +96,31 @@ func (f *Formatter) EndTable() error {
 // Empty writes a message to stderr indicating no results were found.
 func (f *Formatter) Empty(message string) {
 	fmt.Fprintln(f.errOut, message)
+}
+
+// OutputList outputs a slice of items as either JSON or a text table.
+// In JSON mode, items are output directly. In text mode, headers define
+// columns and rowFn extracts column values from each item.
+func (f *Formatter) OutputList(items any, headers []string, rowFn func(item any) []string) error {
+	// If JSON mode, output items directly
+	if IsJSON(f.ctx) {
+		return f.Output(items)
+	}
+
+	// Text mode: use table methods
+	val := reflect.ValueOf(items)
+	if val.Kind() != reflect.Slice && val.Kind() != reflect.Array {
+		return fmt.Errorf("items must be a slice or array, got %T", items)
+	}
+
+	if !f.StartTable(headers) {
+		return nil
+	}
+
+	for i := 0; i < val.Len(); i++ {
+		item := val.Index(i).Interface()
+		f.Row(rowFn(item)...)
+	}
+
+	return f.EndTable()
 }
