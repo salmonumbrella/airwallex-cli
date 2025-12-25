@@ -62,6 +62,17 @@ const (
 	CircuitBreakerResetTime = 30 * time.Second
 )
 
+// financialEndpoints contains all endpoints that require idempotency keys.
+// This list is defined at package level to avoid allocating a new slice on every call.
+var financialEndpoints = []Endpoint{
+	Endpoints.TransfersCreate,
+	Endpoints.CardsCreate,
+	Endpoints.BeneficiariesCreate,
+	Endpoints.FXConversionsCreate,
+	Endpoints.LinkedAccountsCreate,
+	Endpoints.PaymentLinksCreate,
+}
+
 // withDefaultTimeout adds a timeout to the context if none exists.
 func withDefaultTimeout(ctx context.Context) (context.Context, context.CancelFunc) {
 	// Check if context already has a deadline
@@ -425,16 +436,6 @@ func generateIdempotencyKey() (string, error) {
 // isFinancialOperation checks if the path is a financial operation that needs idempotency.
 // It uses the centralized endpoint registry to determine which endpoints require idempotency keys.
 func isFinancialOperation(path string) bool {
-	// Extract all endpoints from the registry that require idempotency
-	financialEndpoints := []Endpoint{
-		Endpoints.TransfersCreate,
-		Endpoints.CardsCreate,
-		Endpoints.BeneficiariesCreate,
-		Endpoints.FXConversionsCreate,
-		Endpoints.LinkedAccountsCreate,
-		Endpoints.PaymentLinksCreate,
-	}
-
 	for _, ep := range financialEndpoints {
 		// Use exact match or suffix match to avoid false positives
 		// (e.g., /api/v1/transfers/create-preview shouldn't match /api/v1/transfers/create)
