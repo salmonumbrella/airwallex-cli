@@ -586,3 +586,26 @@ func TestRateLimiterConcurrency(t *testing.T) {
 		// Just checking it doesn't panic
 	}
 }
+
+func TestRateLimiter_Cleanup(t *testing.T) {
+	rl := newRateLimiter(10, 100*time.Millisecond)
+
+	// Add some entries
+	rl.check("1.1.1.1", "/test")
+	rl.check("2.2.2.2", "/test")
+	rl.check("3.3.3.3", "/test")
+
+	if rl.size() != 3 {
+		t.Errorf("size = %d, want 3", rl.size())
+	}
+
+	// Wait for entries to expire
+	time.Sleep(150 * time.Millisecond)
+
+	// Run cleanup
+	rl.cleanup()
+
+	if rl.size() != 0 {
+		t.Errorf("size after cleanup = %d, want 0", rl.size())
+	}
+}

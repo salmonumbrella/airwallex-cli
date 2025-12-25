@@ -77,6 +77,43 @@ func (rl *rateLimiter) check(clientIP, endpoint string) error {
 	return nil
 }
 
+// startCleanup starts a background goroutine that periodically removes expired entries
+func (rl *rateLimiter) startCleanup(interval time.Duration, stop <-chan struct{}) {
+	go func() {
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ticker.C:
+				rl.cleanup()
+			case <-stop:
+				return
+			}
+		}
+	}()
+}
+
+// cleanup removes all expired entries from the rate limiter
+func (rl *rateLimiter) cleanup() {
+	rl.mu.Lock()
+	defer rl.mu.Unlock()
+
+	now := time.Now()
+	for key, limit := range rl.attempts {
+		if now.After(limit.resetAt) {
+			delete(rl.attempts, key)
+		}
+	}
+}
+
+// size returns the number of entries in the rate limiter (for testing)
+func (rl *rateLimiter) size() int {
+	rl.mu.Lock()
+	defer rl.mu.Unlock()
+	return len(rl.attempts)
+}
+
 // getClientIP extracts the client IP from the request
 func getClientIP(r *http.Request) string {
 	// For localhost, use RemoteAddr
