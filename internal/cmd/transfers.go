@@ -83,22 +83,25 @@ func newTransfersListCmd() *cobra.Command {
 				return err
 			}
 
+			f := outfmt.FromContext(cmd.Context())
+
+			// Handle JSON output
 			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSONFiltered(os.Stdout, result, outfmt.GetQuery(cmd.Context()))
+				return f.Output(result)
 			}
 
+			// Handle empty results
 			if len(result.Items) == 0 {
-				fmt.Fprintln(os.Stderr, "No transfers found")
+				f.Empty("No transfers found")
 				return nil
 			}
 
-			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-			fmt.Fprintln(tw, "TRANSFER_ID\tAMOUNT\tCURRENCY\tSTATUS\tREFERENCE")
+			// Handle text table output
+			f.StartTable([]string{"TRANSFER_ID", "AMOUNT", "CURRENCY", "STATUS", "REFERENCE"})
 			for _, t := range result.Items {
-				fmt.Fprintf(tw, "%s\t%.2f\t%s\t%s\t%s\n",
-					t.TransferID, t.TransferAmount, t.TransferCurrency, t.Status, t.Reference)
+				f.Row(t.TransferID, fmt.Sprintf("%.2f", t.TransferAmount), t.TransferCurrency, t.Status, t.Reference)
 			}
-			tw.Flush()
+			f.EndTable()
 
 			if result.HasMore {
 				fmt.Fprintln(os.Stderr, "# More results available")
@@ -129,10 +132,13 @@ func newTransfersGetCmd() *cobra.Command {
 				return err
 			}
 
+			f := outfmt.FromContext(cmd.Context())
+
 			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, t)
+				return f.Output(t)
 			}
 
+			// For "get" commands, still use manual tabwriter for key-value format
 			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
 			fmt.Fprintf(tw, "transfer_id\t%s\n", t.TransferID)
 			fmt.Fprintf(tw, "beneficiary_id\t%s\n", t.BeneficiaryID)

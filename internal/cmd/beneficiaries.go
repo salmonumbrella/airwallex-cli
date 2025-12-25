@@ -51,17 +51,18 @@ func newBeneficiariesListCmd() *cobra.Command {
 				return err
 			}
 
+			f := outfmt.FromContext(cmd.Context())
+
 			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, result)
+				return f.Output(result)
 			}
 
 			if len(result.Items) == 0 {
-				fmt.Fprintln(os.Stderr, "No beneficiaries found")
+				f.Empty("No beneficiaries found")
 				return nil
 			}
 
-			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-			fmt.Fprintln(tw, "BENEFICIARY_ID\tTYPE\tNAME\tBANK_COUNTRY\tMETHODS")
+			f.StartTable([]string{"BENEFICIARY_ID", "TYPE", "NAME", "BANK_COUNTRY", "METHODS"})
 			for _, b := range result.Items {
 				name := b.Nickname
 				if name == "" {
@@ -71,10 +72,9 @@ func newBeneficiariesListCmd() *cobra.Command {
 				if len(b.TransferMethods) > 0 {
 					methods = b.TransferMethods[0]
 				}
-				fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\n",
-					b.BeneficiaryID, b.Beneficiary.EntityType, name, b.Beneficiary.BankDetails.BankCountryCode, methods)
+				f.Row(b.BeneficiaryID, b.Beneficiary.EntityType, name, b.Beneficiary.BankDetails.BankCountryCode, methods)
 			}
-			tw.Flush()
+			f.EndTable()
 
 			if result.HasMore {
 				fmt.Fprintln(os.Stderr, "# More results available")
@@ -104,10 +104,13 @@ func newBeneficiariesGetCmd() *cobra.Command {
 				return err
 			}
 
+			f := outfmt.FromContext(cmd.Context())
+
 			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, b)
+				return f.Output(b)
 			}
 
+			// For "get" commands, still use manual tabwriter for key-value format
 			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
 			fmt.Fprintf(tw, "beneficiary_id\t%s\n", b.BeneficiaryID)
 			fmt.Fprintf(tw, "nickname\t%s\n", b.Nickname)

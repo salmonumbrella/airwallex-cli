@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"text/tabwriter"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -27,22 +26,26 @@ func newBalancesCmd() *cobra.Command {
 				return err
 			}
 
+			f := outfmt.FromContext(cmd.Context())
+
 			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSONFiltered(os.Stdout, balances, outfmt.GetQuery(cmd.Context()))
+				return f.Output(balances)
 			}
 
 			if len(balances.Balances) == 0 {
-				fmt.Fprintln(os.Stderr, "No balances")
+				f.Empty("No balances")
 				return nil
 			}
 
-			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-			fmt.Fprintln(tw, "CURRENCY\tAVAILABLE\tPENDING\tRESERVED\tTOTAL")
+			f.StartTable([]string{"CURRENCY", "AVAILABLE", "PENDING", "RESERVED", "TOTAL"})
 			for _, b := range balances.Balances {
-				fmt.Fprintf(tw, "%s\t%.2f\t%.2f\t%.2f\t%.2f\n",
-					b.Currency, b.AvailableAmount, b.PendingAmount, b.ReservedAmount, b.TotalAmount)
+				f.Row(b.Currency,
+					fmt.Sprintf("%.2f", b.AvailableAmount),
+					fmt.Sprintf("%.2f", b.PendingAmount),
+					fmt.Sprintf("%.2f", b.ReservedAmount),
+					fmt.Sprintf("%.2f", b.TotalAmount))
 			}
-			tw.Flush()
+			f.EndTable()
 			return nil
 		},
 	}
@@ -131,23 +134,25 @@ Examples:
 				return err
 			}
 
+			f := outfmt.FromContext(cmd.Context())
+
 			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSONFiltered(os.Stdout, result, outfmt.GetQuery(cmd.Context()))
+				return f.Output(result)
 			}
 
 			if len(result.Items) == 0 {
-				fmt.Fprintln(os.Stderr, "No balance history found")
+				f.Empty("No balance history found")
 				return nil
 			}
 
-			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-			fmt.Fprintln(tw, "ID\tCURRENCY\tAMOUNT\tBALANCE\tTYPE\tCREATED_AT\tDESCRIPTION")
+			f.StartTable([]string{"ID", "CURRENCY", "AMOUNT", "BALANCE", "TYPE", "CREATED_AT", "DESCRIPTION"})
 			for _, item := range result.Items {
-				fmt.Fprintf(tw, "%s\t%s\t%.2f\t%.2f\t%s\t%s\t%s\n",
-					item.ID, item.Currency, item.Amount, item.Balance,
+				f.Row(item.ID, item.Currency,
+					fmt.Sprintf("%.2f", item.Amount),
+					fmt.Sprintf("%.2f", item.Balance),
 					item.TransactionType, item.CreatedAt, item.Description)
 			}
-			tw.Flush()
+			f.EndTable()
 
 			if result.HasMore {
 				fmt.Fprintln(os.Stderr, "# More results available")
