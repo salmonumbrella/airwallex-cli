@@ -101,7 +101,9 @@ func newTransfersListCmd() *cobra.Command {
 			for _, t := range result.Items {
 				f.Row(t.TransferID, fmt.Sprintf("%.2f", t.TransferAmount), t.TransferCurrency, t.Status, t.Reference)
 			}
-			f.EndTable()
+			if err := f.EndTable(); err != nil {
+				return err
+			}
 
 			if result.HasMore {
 				fmt.Fprintln(os.Stderr, "# More results available")

@@ -45,8 +45,7 @@ func newBalancesCmd() *cobra.Command {
 					fmt.Sprintf("%.2f", b.ReservedAmount),
 					fmt.Sprintf("%.2f", b.TotalAmount))
 			}
-			f.EndTable()
-			return nil
+			return f.EndTable()
 		},
 	}
 	cmd.AddCommand(newBalancesHistoryCmd())
@@ -152,7 +151,9 @@ Examples:
 					fmt.Sprintf("%.2f", item.Balance),
 					item.TransactionType, item.CreatedAt, item.Description)
 			}
-			f.EndTable()
+			if err := f.EndTable(); err != nil {
+				return err
+			}
 
 			if result.HasMore {
 				fmt.Fprintln(os.Stderr, "# More results available")

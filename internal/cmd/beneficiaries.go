@@ -74,7 +74,9 @@ func newBeneficiariesListCmd() *cobra.Command {
 				}
 				f.Row(b.BeneficiaryID, b.Beneficiary.EntityType, name, b.Beneficiary.BankDetails.BankCountryCode, methods)
 			}
-			f.EndTable()
+			if err := f.EndTable(); err != nil {
+				return err
+			}
 
 			if result.HasMore {
 				fmt.Fprintln(os.Stderr, "# More results available")
