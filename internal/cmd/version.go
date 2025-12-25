@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/salmonumbrella/airwallex-cli/internal/iocontext"
 	"github.com/salmonumbrella/airwallex-cli/internal/outfmt"
 	"github.com/salmonumbrella/airwallex-cli/internal/update"
 )
@@ -38,7 +39,7 @@ func newVersionCmd() *cobra.Command {
 			updateResult := update.CheckForUpdate(cmd.Context(), Version)
 
 			// Get IO streams - prefer context IO, fall back to cobra's writers
-			io := GetIO(cmd.Context())
+			io := iocontext.GetIO(cmd.Context())
 			out := io.Out
 			errOut := io.ErrOut
 

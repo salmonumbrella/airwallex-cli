@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/salmonumbrella/airwallex-cli/internal/debug"
+	"github.com/salmonumbrella/airwallex-cli/internal/iocontext"
 	"github.com/salmonumbrella/airwallex-cli/internal/outfmt"
 	"github.com/salmonumbrella/airwallex-cli/internal/ui"
 )
@@ -35,8 +36,8 @@ func NewRootCmd() *cobra.Command {
 			ctx := debug.WithDebug(cmd.Context(), flags.Debug)
 
 			// Inject IO streams (only if not already set, to support testing)
-			if ctx.Value(ioKey{}) == nil {
-				ctx = WithIO(ctx, DefaultIO())
+			if !iocontext.HasIO(ctx) {
+				ctx = iocontext.WithIO(ctx, iocontext.DefaultIO())
 			}
 
 			// Inject UI context

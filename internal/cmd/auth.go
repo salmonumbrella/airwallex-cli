@@ -16,6 +16,7 @@ import (
 
 	"github.com/salmonumbrella/airwallex-cli/internal/api"
 	"github.com/salmonumbrella/airwallex-cli/internal/auth"
+	"github.com/salmonumbrella/airwallex-cli/internal/iocontext"
 	"github.com/salmonumbrella/airwallex-cli/internal/outfmt"
 	"github.com/salmonumbrella/airwallex-cli/internal/secrets"
 	"github.com/salmonumbrella/airwallex-cli/internal/ui"
@@ -189,7 +190,7 @@ func newAuthListCmd() *cobra.Command {
 			}
 
 			// Get IO streams from context
-			io := GetIO(cmd.Context())
+			io := iocontext.GetIO(cmd.Context())
 
 			if outfmt.IsJSON(cmd.Context()) {
 				return outfmt.WriteJSON(io.Out, map[string]interface{}{

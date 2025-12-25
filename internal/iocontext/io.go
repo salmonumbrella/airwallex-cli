@@ -1,4 +1,4 @@
-package cmd
+package iocontext
 
 import (
 	"context"
@@ -36,4 +36,10 @@ func GetIO(ctx context.Context) *IO {
 		return io
 	}
 	return DefaultIO()
+}
+
+// HasIO checks if IO streams are already set in the context.
+func HasIO(ctx context.Context) bool {
+	_, ok := ctx.Value(ioKey{}).(*IO)
+	return ok
 }

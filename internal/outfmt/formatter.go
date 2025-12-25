@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
 	"reflect"
 	"text/tabwriter"
+
+	"github.com/salmonumbrella/airwallex-cli/internal/iocontext"
 )
 
 // Formatter handles output formatting for commands.
@@ -42,7 +43,7 @@ func WithErrWriter(w io.Writer) OutputOption {
 //  3. Else → fall back to os.Stdout/os.Stderr
 func FromContext(ctx context.Context, opts ...OutputOption) *Formatter {
 	// Start with context IO if available, otherwise use defaults
-	io := getIO(ctx)
+	io := iocontext.GetIO(ctx)
 	f := &Formatter{
 		ctx:    ctx,
 		out:    io.Out,
@@ -130,61 +131,4 @@ func (f *Formatter) OutputList(items any, headers []string, rowFn func(item any)
 	}
 
 	return f.EndTable()
-}
-
-// getIO is a local helper to avoid import cycle with cmd package.
-// It extracts the IO from context using the same key pattern as cmd.GetIO.
-type ioKey struct{}
-
-// ioStreams is an interface matching the cmd.IO struct to avoid import cycles.
-type ioStreams interface {
-	// Out, ErrOut, In are expected to be public fields on the struct
-	// We use reflection-like approach via type assertion
-}
-
-func getIO(ctx context.Context) struct {
-	Out    io.Writer
-	ErrOut io.Writer
-} {
-	// Use the same key type as cmd package to access IO
-	if val := ctx.Value(ioKey{}); val != nil {
-		// Try to extract IO using reflection to avoid import cycle
-		// The cmd.IO type has Out, ErrOut, In fields
-		// We use a type switch to handle the struct
-		type cmdIO struct {
-			Out    io.Writer
-			ErrOut io.Writer
-			In     io.Reader
-		}
-		if streams, ok := val.(*cmdIO); ok {
-			return struct {
-				Out    io.Writer
-				ErrOut io.Writer
-			}{Out: streams.Out, ErrOut: streams.ErrOut}
-		}
-		// Also try to handle the actual cmd.IO struct through its fields
-		// Use reflection to access fields if needed
-		v := reflect.ValueOf(val)
-		if v.Kind() == reflect.Ptr {
-			v = v.Elem()
-		}
-		if v.Kind() == reflect.Struct {
-			outField := v.FieldByName("Out")
-			errOutField := v.FieldByName("ErrOut")
-			if outField.IsValid() && errOutField.IsValid() {
-				if out, ok := outField.Interface().(io.Writer); ok {
-					if errOut, ok := errOutField.Interface().(io.Writer); ok {
-						return struct {
-							Out    io.Writer
-							ErrOut io.Writer
-						}{Out: out, ErrOut: errOut}
-					}
-				}
-			}
-		}
-	}
-	return struct {
-		Out    io.Writer
-		ErrOut io.Writer
-	}{Out: os.Stdout, ErrOut: os.Stderr}
 }
