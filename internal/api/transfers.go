@@ -126,7 +126,7 @@ func (c *Client) CreateTransfer(ctx context.Context, req map[string]interface{})
 	ctx, cancel := withDefaultTimeout(ctx)
 	defer cancel()
 
-	resp, err := c.Post(ctx, "/api/v1/transfers/create", req)
+	resp, err := c.Post(ctx, Endpoints.TransfersCreate.Path, req)
 	if err != nil {
 		return nil, err
 	}

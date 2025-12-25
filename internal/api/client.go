@@ -359,9 +359,9 @@ func (c *Client) fetchToken(ctx context.Context) error {
 		return nil
 	}
 
-	url := c.baseURL + "/api/v1/authentication/login"
+	url := c.baseURL + Endpoints.Login.Path
 
-	req, err := http.NewRequestWithContext(ctx, "POST", url, nil)
+	req, err := http.NewRequestWithContext(ctx, Endpoints.Login.Method, url, nil)
 	if err != nil {
 		return err
 	}
@@ -423,19 +423,22 @@ func generateIdempotencyKey() (string, error) {
 }
 
 // isFinancialOperation checks if the path is a financial operation that needs idempotency.
+// It uses the centralized endpoint registry to determine which endpoints require idempotency keys.
 func isFinancialOperation(path string) bool {
-	financialPaths := []string{
-		"/api/v1/transfers/create",
-		"/api/v1/issuing/cards/create",
-		"/api/v1/beneficiaries/create",
-		"/api/v1/fx/conversions/create",
-		"/api/v1/linked_accounts/create",
-		"/api/v1/pa/payment_links/create",
+	// Extract all endpoints from the registry that require idempotency
+	financialEndpoints := []Endpoint{
+		Endpoints.TransfersCreate,
+		Endpoints.CardsCreate,
+		Endpoints.BeneficiariesCreate,
+		Endpoints.FXConversionsCreate,
+		Endpoints.LinkedAccountsCreate,
+		Endpoints.PaymentLinksCreate,
 	}
-	for _, fp := range financialPaths {
+
+	for _, ep := range financialEndpoints {
 		// Use exact match or suffix match to avoid false positives
 		// (e.g., /api/v1/transfers/create-preview shouldn't match /api/v1/transfers/create)
-		if path == fp || strings.HasSuffix(path, fp) {
+		if path == ep.Path || strings.HasSuffix(path, ep.Path) {
 			return true
 		}
 	}

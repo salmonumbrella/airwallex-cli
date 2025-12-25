@@ -36,13 +36,13 @@ type BalanceHistoryResponse struct {
 }
 
 func (c *Client) GetBalances(ctx context.Context) (*BalancesResponse, error) {
-	resp, err := c.Get(ctx, "/api/v1/balances/current")
+	resp, err := c.Get(ctx, Endpoints.BalancesCurrent.Path)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != Endpoints.BalancesCurrent.ExpectedStatus {
 		body, _ := io.ReadAll(resp.Body)
 		return nil, ParseAPIError(body)
 	}
@@ -73,7 +73,7 @@ func (c *Client) GetBalanceHistory(ctx context.Context, currency string, from, t
 		params.Set("page_size", fmt.Sprintf("%d", pageSize))
 	}
 
-	path := "/api/v1/balances/history"
+	path := Endpoints.BalancesHistory.Path
 	if len(params) > 0 {
 		path += "?" + params.Encode()
 	}
@@ -84,7 +84,7 @@ func (c *Client) GetBalanceHistory(ctx context.Context, currency string, from, t
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != Endpoints.BalancesHistory.ExpectedStatus {
 		body, _ := io.ReadAll(resp.Body)
 		return nil, ParseAPIError(body)
 	}

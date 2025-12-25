@@ -101,12 +101,13 @@ func (c *Client) CreateQuote(ctx context.Context, req map[string]interface{}) (*
 	ctx, cancel := withDefaultTimeout(ctx)
 	defer cancel()
 
-	resp, err := c.Post(ctx, "/api/v1/fx/quotes/create", req)
+	resp, err := c.Post(ctx, Endpoints.FXQuotesCreate.Path, req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
+	// Accept both 200 and 201 for backward compatibility
 	if resp.StatusCode != 200 && resp.StatusCode != 201 {
 		body, _ := io.ReadAll(resp.Body)
 		return nil, ParseAPIError(body)
@@ -214,12 +215,13 @@ func (c *Client) CreateConversion(ctx context.Context, req map[string]interface{
 	ctx, cancel := withDefaultTimeout(ctx)
 	defer cancel()
 
-	resp, err := c.Post(ctx, "/api/v1/fx/conversions/create", req)
+	resp, err := c.Post(ctx, Endpoints.FXConversionsCreate.Path, req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
+	// Accept both 200 and 201 for backward compatibility
 	if resp.StatusCode != 200 && resp.StatusCode != 201 {
 		body, _ := io.ReadAll(resp.Body)
 		return nil, ParseAPIError(body)
