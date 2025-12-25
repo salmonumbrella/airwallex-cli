@@ -392,7 +392,7 @@ func (c *Client) fetchToken(ctx context.Context) error {
 	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
 		apiErr := ParseAPIError(body)
-		return fmt.Errorf("authentication failed: %s", apiErr.Error())
+		return WrapError(req.Method, url, resp.StatusCode, fmt.Errorf("authentication failed: %s", apiErr.Error()))
 	}
 
 	var result struct {

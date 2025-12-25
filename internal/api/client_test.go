@@ -3,8 +3,10 @@ package api
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 )
@@ -1466,5 +1468,59 @@ func TestNewClientWithAccount_configuresConnectionPooling(t *testing.T) {
 
 	if transport.IdleConnTimeout != IdleConnTimeout {
 		t.Errorf("IdleConnTimeout = %v, want %v", transport.IdleConnTimeout, IdleConnTimeout)
+	}
+}
+
+// TestClient_fetchToken_wrapsErrorWithHTTPContext verifies that auth errors include HTTP context
+func TestClient_fetchToken_wrapsErrorWithHTTPContext(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnauthorized)
+		_, _ = w.Write([]byte(`{"code": "invalid_credentials", "message": "Invalid API key"}`))
+	}))
+	defer server.Close()
+
+	c := &Client{
+		baseURL:        server.URL,
+		clientID:       "test-id",
+		apiKey:         "invalid-key",
+		httpClient:     http.DefaultClient,
+		circuitBreaker: &circuitBreaker{},
+	}
+
+	err := c.fetchToken(context.Background())
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+
+	// Verify error contains HTTP context
+	var contextualErr *ContextualError
+	if !errors.As(err, &contextualErr) {
+		t.Fatalf("expected ContextualError, got %T: %v", err, err)
+	}
+
+	if contextualErr.Method != "POST" {
+		t.Errorf("Method = %q, want POST", contextualErr.Method)
+	}
+
+	if !strings.Contains(contextualErr.URL, "/api/v1/authentication/login") {
+		t.Errorf("URL = %q, want to contain /api/v1/authentication/login", contextualErr.URL)
+	}
+
+	if contextualErr.StatusCode != http.StatusUnauthorized {
+		t.Errorf("StatusCode = %d, want %d", contextualErr.StatusCode, http.StatusUnauthorized)
+	}
+
+	// Verify wrapped error message contains auth failure details
+	if !strings.Contains(err.Error(), "authentication failed") {
+		t.Errorf("error message %q should contain 'authentication failed'", err.Error())
+	}
+
+	if !strings.Contains(err.Error(), "POST") {
+		t.Errorf("error message %q should contain HTTP method", err.Error())
+	}
+
+	if !strings.Contains(err.Error(), "401") {
+		t.Errorf("error message %q should contain status code", err.Error())
 	}
 }
