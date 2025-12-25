@@ -1058,12 +1058,31 @@ func TestIsFinancialOperation(t *testing.T) {
 		path     string
 		expected bool
 	}{
+		// Should match
 		{"/api/v1/transfers/create", true},
 		{"/api/v1/issuing/cards/create", true},
 		{"/api/v1/beneficiaries/create", true},
-		{"/api/v1/accounts/list", false},
-		{"/api/v1/balances", false},
+		{"/api/v1/fx/conversions/create", true},
+		{"/api/v1/linked_accounts/create", true},
+		{"/api/v1/pa/payment_links/create", true},
+
+		// Should match - query parameters should be ignored
+		{"/api/v1/transfers/create?foo=bar", true},
+		{"/api/v1/issuing/cards/create?id=123&type=test", true},
+
+		// Should NOT match - false positive cases with HasSuffix
+		{"/prefix/api/v1/transfers/create", false},
+		{"/custom/api/v1/issuing/cards/create", false},
+
+		// Should NOT match - similar but different paths
+		{"/api/v1/transfers/create-preview", false},
+		{"/api/v1/custom/transfers/create", false},
+		{"/api/v1/issuing/cards/create/something", false},
+
+		// Should NOT match - different endpoints
 		{"/api/v1/transfers/list", false},
+		{"/api/v1/transfers", false},
+		{"/api/v1/balances/current", false},
 	}
 
 	for _, tt := range tests {

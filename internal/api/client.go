@@ -434,12 +434,15 @@ func generateIdempotencyKey() (string, error) {
 }
 
 // isFinancialOperation checks if the path is a financial operation that needs idempotency.
-// It uses the centralized endpoint registry to determine which endpoints require idempotency keys.
+// Uses exact path matching to avoid false positives.
 func isFinancialOperation(path string) bool {
+	// Remove query parameters if present
+	if idx := strings.Index(path, "?"); idx != -1 {
+		path = path[:idx]
+	}
+
 	for _, ep := range financialEndpoints {
-		// Use exact match or suffix match to avoid false positives
-		// (e.g., /api/v1/transfers/create-preview shouldn't match /api/v1/transfers/create)
-		if path == ep.Path || strings.HasSuffix(path, ep.Path) {
+		if path == ep.Path {
 			return true
 		}
 	}
