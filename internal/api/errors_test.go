@@ -1,6 +1,7 @@
 package api
 
 import (
+	"errors"
 	"strings"
 	"testing"
 )
@@ -61,5 +62,22 @@ func TestParseAPIError_EmptyFields(t *testing.T) {
 	}
 	if err.Message != "An error occurred but no details were provided" {
 		t.Errorf("Message = %q, want generic error message", err.Message)
+	}
+}
+
+func TestContextualError(t *testing.T) {
+	inner := &APIError{Code: "not_found", Message: "Transfer not found"}
+	err := WrapError("GET", "/api/v1/transfers/123", 404, inner)
+
+	// Check error message format
+	expected := "GET /api/v1/transfers/123 failed (status 404): not_found: Transfer not found"
+	if err.Error() != expected {
+		t.Errorf("error = %q, want %q", err.Error(), expected)
+	}
+
+	// Check unwrap
+	var apiErr *APIError
+	if !errors.As(err, &apiErr) {
+		t.Error("expected to unwrap to APIError")
 	}
 }

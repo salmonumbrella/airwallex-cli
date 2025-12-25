@@ -120,3 +120,29 @@ func IsNotFoundError(err error) bool {
 	}
 	return strings.Contains(strings.ToLower(err.Error()), "not found")
 }
+
+// ContextualError wraps an API error with request context
+type ContextualError struct {
+	Method     string
+	URL        string
+	StatusCode int
+	Err        error
+}
+
+func (e *ContextualError) Error() string {
+	return fmt.Sprintf("%s %s failed (status %d): %v", e.Method, e.URL, e.StatusCode, e.Err)
+}
+
+func (e *ContextualError) Unwrap() error {
+	return e.Err
+}
+
+// WrapError adds request context to an API error
+func WrapError(method, url string, statusCode int, err error) error {
+	return &ContextualError{
+		Method:     method,
+		URL:        url,
+		StatusCode: statusCode,
+		Err:        err,
+	}
+}
