@@ -7,6 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/salmonumbrella/airwallex-cli/internal/api"
 	"github.com/salmonumbrella/airwallex-cli/internal/outfmt"
 )
 
@@ -38,31 +39,35 @@ func newAccountsListCmd() *cobra.Command {
 				return err
 			}
 
-			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, result)
-			}
-
 			f := outfmt.FromContext(cmd.Context())
 
 			if len(result.Items) == 0 {
+				if outfmt.IsJSON(cmd.Context()) {
+					return f.Output(result)
+				}
 				f.Empty("No global accounts found")
 				return nil
 			}
 
-			f.StartTable([]string{"ACCOUNT_ID", "NAME", "CURRENCY", "COUNTRY", "STATUS"})
-			for _, a := range result.Items {
-				f.Row(a.AccountID, a.AccountName, a.Currency, a.CountryCode, a.Status)
+			headers := []string{"ACCOUNT_ID", "NAME", "CURRENCY", "COUNTRY", "STATUS"}
+			rowFn := func(item any) []string {
+				a := item.(api.GlobalAccount)
+				return []string{a.AccountID, a.AccountName, a.Currency, a.CountryCode, a.Status}
 			}
 
-			if result.HasMore {
+			if err := f.OutputList(result.Items, headers, rowFn); err != nil {
+				return err
+			}
+
+			if !outfmt.IsJSON(cmd.Context()) && result.HasMore {
 				fmt.Fprintln(os.Stderr, "# More results available")
 			}
-			return f.EndTable()
+			return nil
 		},
 	}
 
 	cmd.Flags().IntVar(&page, "page", 0, "Page number (0 = first page)")
-	cmd.Flags().IntVar(&pageSize, "limit", 20, "Max results")
+	cmd.Flags().IntVar(&pageSize, "page-size", 20, "API page size")
 	return cmd
 }
 

@@ -62,30 +62,30 @@ func NewListCommand[T any](cfg ListConfig[T], getClient func(context.Context) (*
 
 			f := outfmt.FromContext(cmd.Context())
 
-			// Handle JSON output
-			if outfmt.IsJSON(cmd.Context()) {
-				return f.Output(map[string]interface{}{
-					"items":    result.Items,
-					"has_more": result.HasMore,
-				})
-			}
-
 			// Handle empty results
 			if len(result.Items) == 0 {
+				if outfmt.IsJSON(cmd.Context()) {
+					return f.Output(map[string]interface{}{
+						"items":    result.Items,
+						"has_more": result.HasMore,
+					})
+				}
 				f.Empty(cfg.EmptyMessage)
 				return nil
 			}
 
-			// Handle text table output
-			f.StartTable(cfg.Headers)
-			for _, item := range result.Items {
-				f.Row(cfg.RowFunc(item)...)
+			// Use OutputList for consistent sort/limit handling
+			// Wrap RowFunc to match OutputList's signature
+			rowFn := func(item any) []string {
+				return cfg.RowFunc(item.(T))
 			}
-			if err := f.EndTable(); err != nil {
+
+			if err := f.OutputList(result.Items, cfg.Headers, rowFn); err != nil {
 				return err
 			}
 
-			if result.HasMore {
+			// Show pagination hint for text output
+			if !outfmt.IsJSON(cmd.Context()) && result.HasMore {
 				fmt.Fprintln(os.Stderr, "# More results available")
 			}
 			return nil
@@ -93,6 +93,6 @@ func NewListCommand[T any](cfg ListConfig[T], getClient func(context.Context) (*
 	}
 
 	cmd.Flags().IntVar(&page, "page", 0, "Page number (0 = first page)")
-	cmd.Flags().IntVar(&pageSize, "limit", 20, "Max results (min 10)")
+	cmd.Flags().IntVar(&pageSize, "page-size", 20, "API page size (min 10)")
 	return cmd
 }

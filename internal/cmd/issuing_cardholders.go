@@ -7,6 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/salmonumbrella/airwallex-cli/internal/api"
 	"github.com/salmonumbrella/airwallex-cli/internal/outfmt"
 	"github.com/salmonumbrella/airwallex-cli/internal/ui"
 )
@@ -41,32 +42,36 @@ func newCardholdersListCmd() *cobra.Command {
 				return err
 			}
 
-			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, result)
-			}
-
 			f := outfmt.FromContext(cmd.Context())
 
 			if len(result.Items) == 0 {
+				if outfmt.IsJSON(cmd.Context()) {
+					return f.Output(result)
+				}
 				f.Empty("No cardholders found")
 				return nil
 			}
 
-			f.StartTable([]string{"CARDHOLDER_ID", "TYPE", "NAME", "EMAIL", "STATUS"})
-			for _, ch := range result.Items {
+			headers := []string{"CARDHOLDER_ID", "TYPE", "NAME", "EMAIL", "STATUS"}
+			rowFn := func(item any) []string {
+				ch := item.(api.Cardholder)
 				name := fmt.Sprintf("%s %s", ch.FirstName, ch.LastName)
-				f.Row(ch.CardholderID, ch.Type, name, ch.Email, ch.Status)
+				return []string{ch.CardholderID, ch.Type, name, ch.Email, ch.Status}
 			}
 
-			if result.HasMore {
+			if err := f.OutputList(result.Items, headers, rowFn); err != nil {
+				return err
+			}
+
+			if !outfmt.IsJSON(cmd.Context()) && result.HasMore {
 				fmt.Fprintln(os.Stderr, "# More results available")
 			}
-			return f.EndTable()
+			return nil
 		},
 	}
 
 	cmd.Flags().IntVar(&page, "page", 0, "Page number (0 = first page)")
-	cmd.Flags().IntVar(&pageSize, "limit", 20, "Max results")
+	cmd.Flags().IntVar(&pageSize, "page-size", 20, "API page size")
 	return cmd
 }
 

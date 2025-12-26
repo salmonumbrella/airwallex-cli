@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 
+	"github.com/salmonumbrella/airwallex-cli/internal/api"
 	"github.com/salmonumbrella/airwallex-cli/internal/outfmt"
 	"github.com/salmonumbrella/airwallex-cli/internal/ui"
 )
@@ -57,26 +58,30 @@ func newFXConversionsListCmd() *cobra.Command {
 				return err
 			}
 
-			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, result)
-			}
-
 			f := outfmt.FromContext(cmd.Context())
 
 			if len(result.Items) == 0 {
+				if outfmt.IsJSON(cmd.Context()) {
+					return f.Output(result)
+				}
 				f.Empty("No conversions found")
 				return nil
 			}
 
-			f.StartTable([]string{"CONVERSION_ID", "SELL", "BUY", "RATE", "STATUS"})
-			for _, c := range result.Items {
-				f.Row(c.ID, fmt.Sprintf("%.2f %s", c.SellAmount, c.SellCurrency), fmt.Sprintf("%.2f %s", c.BuyAmount, c.BuyCurrency), fmt.Sprintf("%.6f", c.Rate), c.Status)
+			headers := []string{"CONVERSION_ID", "SELL", "BUY", "RATE", "STATUS"}
+			rowFn := func(item any) []string {
+				c := item.(api.Conversion)
+				return []string{c.ID, fmt.Sprintf("%.2f %s", c.SellAmount, c.SellCurrency), fmt.Sprintf("%.2f %s", c.BuyAmount, c.BuyCurrency), fmt.Sprintf("%.6f", c.Rate), c.Status}
 			}
 
-			if result.HasMore {
+			if err := f.OutputList(result.Items, headers, rowFn); err != nil {
+				return err
+			}
+
+			if !outfmt.IsJSON(cmd.Context()) && result.HasMore {
 				fmt.Fprintln(os.Stderr, "# More results available")
 			}
-			return f.EndTable()
+			return nil
 		},
 	}
 
@@ -84,7 +89,7 @@ func newFXConversionsListCmd() *cobra.Command {
 	cmd.Flags().StringVar(&fromDate, "from", "", "From date (YYYY-MM-DD)")
 	cmd.Flags().StringVar(&toDate, "to", "", "To date (YYYY-MM-DD)")
 	cmd.Flags().IntVar(&page, "page", 0, "Page number (0 = first page)")
-	cmd.Flags().IntVar(&pageSize, "limit", 20, "Max results (min 10)")
+	cmd.Flags().IntVar(&pageSize, "page-size", 20, "API page size (min 10)")
 	return cmd
 }
 

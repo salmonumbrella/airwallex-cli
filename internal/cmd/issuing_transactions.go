@@ -7,6 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/salmonumbrella/airwallex-cli/internal/api"
 	"github.com/salmonumbrella/airwallex-cli/internal/outfmt"
 )
 
@@ -58,26 +59,30 @@ func newTransactionsListCmd() *cobra.Command {
 				return err
 			}
 
-			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, result)
-			}
-
 			f := outfmt.FromContext(cmd.Context())
 
 			if len(result.Items) == 0 {
+				if outfmt.IsJSON(cmd.Context()) {
+					return f.Output(result)
+				}
 				f.Empty("No transactions found")
 				return nil
 			}
 
-			f.StartTable([]string{"TRANSACTION_ID", "TYPE", "AMOUNT", "CURRENCY", "MERCHANT", "STATUS"})
-			for _, txn := range result.Items {
-				f.Row(txn.TransactionID, txn.TransactionType, fmt.Sprintf("%.2f", txn.Amount), txn.Currency, txn.Merchant.Name, txn.Status)
+			headers := []string{"TRANSACTION_ID", "TYPE", "AMOUNT", "CURRENCY", "MERCHANT", "STATUS"}
+			rowFn := func(item any) []string {
+				txn := item.(api.Transaction)
+				return []string{txn.TransactionID, txn.TransactionType, fmt.Sprintf("%.2f", txn.Amount), txn.Currency, txn.Merchant.Name, txn.Status}
 			}
 
-			if result.HasMore {
+			if err := f.OutputList(result.Items, headers, rowFn); err != nil {
+				return err
+			}
+
+			if !outfmt.IsJSON(cmd.Context()) && result.HasMore {
 				fmt.Fprintln(os.Stderr, "# More results available")
 			}
-			return f.EndTable()
+			return nil
 		},
 	}
 
@@ -85,7 +90,7 @@ func newTransactionsListCmd() *cobra.Command {
 	cmd.Flags().StringVar(&from, "from", "", "From date (YYYY-MM-DD)")
 	cmd.Flags().StringVar(&to, "to", "", "To date (YYYY-MM-DD)")
 	cmd.Flags().IntVar(&page, "page", 0, "Page number (0 = first page)")
-	cmd.Flags().IntVar(&pageSize, "limit", 20, "Max results")
+	cmd.Flags().IntVar(&pageSize, "page-size", 20, "API page size")
 	return cmd
 }
 

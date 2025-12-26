@@ -7,6 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/salmonumbrella/airwallex-cli/internal/api"
 	"github.com/salmonumbrella/airwallex-cli/internal/outfmt"
 )
 
@@ -26,7 +27,7 @@ func newDepositsListCmd() *cobra.Command {
 	var page int
 	var pageSize int
 
-	cmd := &cobra.Command {
+	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List deposits",
 		Long: `List inbound deposits with optional filters.
@@ -61,26 +62,30 @@ Examples:
 				return err
 			}
 
-			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, result)
-			}
-
 			f := outfmt.FromContext(cmd.Context())
 
 			if len(result.Items) == 0 {
+				if outfmt.IsJSON(cmd.Context()) {
+					return f.Output(result)
+				}
 				f.Empty("No deposits found")
 				return nil
 			}
 
-			f.StartTable([]string{"DEPOSIT_ID", "AMOUNT", "CURRENCY", "STATUS", "SOURCE", "CREATED"})
-			for _, d := range result.Items {
-				f.Row(d.ID, fmt.Sprintf("%.2f", d.Amount), d.Currency, d.Status, d.Source, d.CreatedAt)
+			headers := []string{"DEPOSIT_ID", "AMOUNT", "CURRENCY", "STATUS", "SOURCE", "CREATED"}
+			rowFn := func(item any) []string {
+				d := item.(api.Deposit)
+				return []string{d.ID, fmt.Sprintf("%.2f", d.Amount), d.Currency, d.Status, d.Source, d.CreatedAt}
 			}
 
-			if result.HasMore {
+			if err := f.OutputList(result.Items, headers, rowFn); err != nil {
+				return err
+			}
+
+			if !outfmt.IsJSON(cmd.Context()) && result.HasMore {
 				fmt.Fprintln(os.Stderr, "# More results available")
 			}
-			return f.EndTable()
+			return nil
 		},
 	}
 
@@ -88,7 +93,7 @@ Examples:
 	cmd.Flags().StringVar(&fromDate, "from", "", "From date (YYYY-MM-DD)")
 	cmd.Flags().StringVar(&toDate, "to", "", "To date (YYYY-MM-DD)")
 	cmd.Flags().IntVar(&page, "page", 0, "Page number (0 = first page)")
-	cmd.Flags().IntVar(&pageSize, "limit", 20, "Max results (min 10)")
+	cmd.Flags().IntVar(&pageSize, "page-size", 20, "API page size (min 10)")
 	return cmd
 }
 

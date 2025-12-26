@@ -7,6 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/salmonumbrella/airwallex-cli/internal/api"
 	"github.com/salmonumbrella/airwallex-cli/internal/outfmt"
 	"github.com/salmonumbrella/airwallex-cli/internal/ui"
 )
@@ -46,35 +47,39 @@ func newPaymentLinksListCmd() *cobra.Command {
 				return err
 			}
 
-			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, result)
-			}
-
 			f := outfmt.FromContext(cmd.Context())
 
 			if len(result.Items) == 0 {
+				if outfmt.IsJSON(cmd.Context()) {
+					return f.Output(result)
+				}
 				f.Empty("No payment links found")
 				return nil
 			}
 
-			f.StartTable([]string{"ID", "AMOUNT", "CURRENCY", "STATUS", "DESCRIPTION"})
-			for _, pl := range result.Items {
+			headers := []string{"ID", "AMOUNT", "CURRENCY", "STATUS", "DESCRIPTION"}
+			rowFn := func(item any) []string {
+				pl := item.(api.PaymentLink)
 				desc := pl.Description
 				if len(desc) > 30 {
 					desc = desc[:27] + "..."
 				}
-				f.Row(pl.ID, fmt.Sprintf("%.2f", pl.Amount), pl.Currency, pl.Status, desc)
+				return []string{pl.ID, fmt.Sprintf("%.2f", pl.Amount), pl.Currency, pl.Status, desc}
 			}
 
-			if result.HasMore {
+			if err := f.OutputList(result.Items, headers, rowFn); err != nil {
+				return err
+			}
+
+			if !outfmt.IsJSON(cmd.Context()) && result.HasMore {
 				fmt.Fprintln(os.Stderr, "# More results available")
 			}
-			return f.EndTable()
+			return nil
 		},
 	}
 
 	cmd.Flags().IntVar(&page, "page", 0, "Page number (0 = first page)")
-	cmd.Flags().IntVar(&pageSize, "limit", 20, "Max results (min 10)")
+	cmd.Flags().IntVar(&pageSize, "page-size", 20, "API page size (min 10)")
 	return cmd
 }
 

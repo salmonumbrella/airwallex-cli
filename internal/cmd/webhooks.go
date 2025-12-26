@@ -8,6 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/salmonumbrella/airwallex-cli/internal/api"
 	"github.com/salmonumbrella/airwallex-cli/internal/outfmt"
 	"github.com/salmonumbrella/airwallex-cli/internal/ui"
 )
@@ -122,35 +123,39 @@ func newWebhooksListCmd() *cobra.Command {
 				return err
 			}
 
-			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, result)
-			}
-
 			f := outfmt.FromContext(cmd.Context())
 
 			if len(result.Items) == 0 {
+				if outfmt.IsJSON(cmd.Context()) {
+					return f.Output(result)
+				}
 				f.Empty("No webhooks found")
 				return nil
 			}
 
-			f.StartTable([]string{"ID", "URL", "EVENTS", "STATUS"})
-			for _, wh := range result.Items {
+			headers := []string{"ID", "URL", "EVENTS", "STATUS"}
+			rowFn := func(item any) []string {
+				wh := item.(api.Webhook)
 				events := strings.Join(wh.Events, ", ")
 				if len(events) > 40 {
 					events = events[:37] + "..."
 				}
-				f.Row(wh.ID, wh.URL, events, wh.Status)
+				return []string{wh.ID, wh.URL, events, wh.Status}
 			}
 
-			if result.HasMore {
+			if err := f.OutputList(result.Items, headers, rowFn); err != nil {
+				return err
+			}
+
+			if !outfmt.IsJSON(cmd.Context()) && result.HasMore {
 				fmt.Fprintln(os.Stderr, "# More results available")
 			}
-			return f.EndTable()
+			return nil
 		},
 	}
 
 	cmd.Flags().IntVar(&page, "page", 0, "Page number (0 = first page)")
-	cmd.Flags().IntVar(&pageSize, "limit", 20, "Max results (min 10)")
+	cmd.Flags().IntVar(&pageSize, "page-size", 20, "API page size (min 10)")
 	return cmd
 }
 

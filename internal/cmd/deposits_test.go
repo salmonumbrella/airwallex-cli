@@ -61,23 +61,23 @@ func TestDepositsListCommand(t *testing.T) {
 				"--status", "SETTLED",
 				"--from", "2024-01-01",
 				"--to", "2024-01-31",
-				"--limit", "50",
+				"--page-size", "50",
 			},
 			wantErr: false,
 		},
 		{
 			name:    "list with custom page size",
-			args:    []string{"--limit", "100"},
+			args:    []string{"--page-size", "100"},
 			wantErr: false,
 		},
 		{
 			name:    "list with minimum page size",
-			args:    []string{"--limit", "10"},
+			args:    []string{"--page-size", "10"},
 			wantErr: false,
 		},
 		{
 			name:    "list with page size below minimum (should adjust to 10)",
-			args:    []string{"--limit", "5"},
+			args:    []string{"--page-size", "5"},
 			wantErr: false,
 		},
 	}
@@ -142,19 +142,19 @@ func TestDepositsListCommand_PageSizeValidation(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cmd := newDepositsListCmd()
-			if err := cmd.Flags().Set("limit", intToString(tt.pageSize)); err != nil {
-				t.Fatalf("failed to set limit flag: %v", err)
+			if err := cmd.Flags().Set("page-size", intToString(tt.pageSize)); err != nil {
+				t.Fatalf("failed to set page-size flag: %v", err)
 			}
 
 			// Verify the flag is set
-			limitFlag := cmd.Flags().Lookup("limit")
-			if limitFlag == nil {
-				t.Fatal("limit flag not found")
+			pageSizeFlag := cmd.Flags().Lookup("page-size")
+			if pageSizeFlag == nil {
+				t.Fatal("page-size flag not found")
 			}
 
 			// Verify the help text mentions minimum
-			if !strings.Contains(limitFlag.Usage, "min 10") {
-				t.Errorf("limit flag help text should mention minimum of 10")
+			if !strings.Contains(pageSizeFlag.Usage, "min 10") {
+				t.Errorf("page-size flag help text should mention minimum of 10")
 			}
 		})
 	}
@@ -260,7 +260,7 @@ func TestDepositsListCommand_FlagDefaults(t *testing.T) {
 			hasDefault:   false,
 		},
 		{
-			flagName:     "limit",
+			flagName:     "page-size",
 			expectedType: "int",
 			hasDefault:   true,
 		},

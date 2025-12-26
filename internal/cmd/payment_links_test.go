@@ -24,22 +24,22 @@ func TestPaymentLinksListCommand(t *testing.T) {
 		},
 		{
 			name:    "with limit",
-			args:    []string{"--limit", "50"},
+			args:    []string{"--page-size", "50"},
 			wantErr: false,
 		},
 		{
 			name:    "with small limit",
-			args:    []string{"--limit", "5"},
+			args:    []string{"--page-size", "5"},
 			wantErr: false, // Should be adjusted to minimum 10
 		},
 		{
 			name:    "with minimum limit",
-			args:    []string{"--limit", "10"},
+			args:    []string{"--page-size", "10"},
 			wantErr: false,
 		},
 		{
 			name:    "with large limit",
-			args:    []string{"--limit", "100"},
+			args:    []string{"--page-size", "100"},
 			wantErr: false,
 		},
 	}
@@ -77,17 +77,17 @@ func TestPaymentLinksListCommand_PageSizeMinimum(t *testing.T) {
 	cmd := newPaymentLinksListCmd()
 
 	// Verify the help text mentions minimum
-	limitFlag := cmd.Flags().Lookup("limit")
-	if limitFlag == nil {
-		t.Fatal("limit flag not found")
+	pageSizeFlag := cmd.Flags().Lookup("page-size")
+	if pageSizeFlag == nil {
+		t.Fatal("page-size flag not found")
 	}
 
-	if !strings.Contains(limitFlag.Usage, "min 10") {
-		t.Errorf("limit flag help text should mention minimum of 10, got: %s", limitFlag.Usage)
+	if !strings.Contains(pageSizeFlag.Usage, "min 10") {
+		t.Errorf("page-size flag help text should mention minimum of 10, got: %s", pageSizeFlag.Usage)
 	}
 
 	// Verify default value
-	defaultVal := limitFlag.DefValue
+	defaultVal := pageSizeFlag.DefValue
 	if defaultVal != "20" {
 		t.Errorf("expected default limit of 20, got: %s", defaultVal)
 	}

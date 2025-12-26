@@ -24,28 +24,28 @@ func TestLinkedAccountsListCommand(t *testing.T) {
 		},
 		{
 			name:    "custom limit above minimum",
-			args:    []string{"--limit", "50"},
+			args:    []string{"--page-size", "50"},
 			wantErr: false,
 		},
 		{
 			name:    "limit below minimum (should be adjusted to 10)",
-			args:    []string{"--limit", "5"},
+			args:    []string{"--page-size", "5"},
 			wantErr: false,
 		},
 		{
 			name:    "limit at minimum",
-			args:    []string{"--limit", "10"},
+			args:    []string{"--page-size", "10"},
 			wantErr: false,
 		},
 		{
 			name:        "invalid limit (non-numeric)",
-			args:        []string{"--limit", "abc"},
+			args:        []string{"--page-size", "abc"},
 			wantErr:     true,
 			errContains: "invalid argument",
 		},
 		{
 			name:    "limit with negative value (accepted by cobra)",
-			args:    []string{"--limit", "-10"},
+			args:    []string{"--page-size", "-10"},
 			wantErr: false,
 		},
 	}

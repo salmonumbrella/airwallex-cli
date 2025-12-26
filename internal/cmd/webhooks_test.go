@@ -246,12 +246,12 @@ func TestWebhooksListCommand(t *testing.T) {
 		},
 		{
 			name:    "with limit",
-			args:    []string{"--limit", "50"},
+			args:    []string{"--page-size", "50"},
 			wantErr: false,
 		},
 		{
 			name:    "with small limit",
-			args:    []string{"--limit", "5"},
+			args:    []string{"--page-size", "5"},
 			wantErr: false, // Should be adjusted to minimum 10
 		},
 	}

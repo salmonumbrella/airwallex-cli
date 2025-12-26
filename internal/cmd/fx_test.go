@@ -326,8 +326,8 @@ func TestFXConversionsListCommand(t *testing.T) {
 				}
 			}
 			if tt.limit > 0 {
-				if err := cmd.Flags().Set("limit", intToString(tt.limit)); err != nil {
-					t.Fatalf("failed to set limit flag: %v", err)
+				if err := cmd.Flags().Set("page-size", intToString(tt.limit)); err != nil {
+					t.Fatalf("failed to set page-size flag: %v", err)
 				}
 			}
 
@@ -537,12 +537,12 @@ func TestFXConversionsListCommand_PageSizeValidation(t *testing.T) {
 	cmd := newFXConversionsListCmd()
 
 	// Verify the help text mentions minimum
-	limitFlag := cmd.Flags().Lookup("limit")
-	if limitFlag == nil {
-		t.Fatal("limit flag not found")
+	pageSizeFlag := cmd.Flags().Lookup("page-size")
+	if pageSizeFlag == nil {
+		t.Fatal("page-size flag not found")
 	}
 
-	if !strings.Contains(limitFlag.Usage, "min 10") {
-		t.Errorf("limit flag help text should mention minimum of 10")
+	if !strings.Contains(pageSizeFlag.Usage, "min 10") {
+		t.Errorf("page-size flag help text should mention minimum of 10")
 	}
 }

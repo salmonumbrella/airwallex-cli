@@ -38,20 +38,20 @@ func TestTransfersListCmd_PageSizeValidation(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cmd := newTransfersListCmd()
-			if err := cmd.Flags().Set("limit", intToString(tt.pageSize)); err != nil {
-				t.Fatalf("failed to set limit flag: %v", err)
+			if err := cmd.Flags().Set("page-size", intToString(tt.pageSize)); err != nil {
+				t.Fatalf("failed to set page-size flag: %v", err)
 			}
 
 			// We can't easily test the actual API call without mocking,
 			// but we can verify the flag is set and the command validates it
-			limitFlag := cmd.Flags().Lookup("limit")
-			if limitFlag == nil {
-				t.Fatal("limit flag not found")
+			pageSizeFlag := cmd.Flags().Lookup("page-size")
+			if pageSizeFlag == nil {
+				t.Fatal("page-size flag not found")
 			}
 
 			// Verify the help text mentions minimum
-			if !strings.Contains(limitFlag.Usage, "min 10") {
-				t.Errorf("limit flag help text should mention minimum of 10")
+			if !strings.Contains(pageSizeFlag.Usage, "min 10") {
+				t.Errorf("page-size flag help text should mention minimum of 10")
 			}
 		})
 	}

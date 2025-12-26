@@ -57,36 +57,40 @@ func newReportsListCmd() *cobra.Command {
 				return err
 			}
 
-			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, result)
-			}
-
 			f := outfmt.FromContext(cmd.Context())
 
 			if len(result.Items) == 0 {
+				if outfmt.IsJSON(cmd.Context()) {
+					return f.Output(result)
+				}
 				f.Empty("No reports found")
 				return nil
 			}
 
-			f.StartTable([]string{"ID", "TYPE", "STATUS", "DATE_RANGE", "FORMAT", "EXPIRES_AT"})
-			for _, r := range result.Items {
+			headers := []string{"ID", "TYPE", "STATUS", "DATE_RANGE", "FORMAT", "EXPIRES_AT"}
+			rowFn := func(item any) []string {
+				r := item.(api.FinancialReport)
 				dateRange := fmt.Sprintf("%s to %s", r.FromDate, r.ToDate)
 				expiresAt := r.ReportExpiresAt
 				if expiresAt == "" {
 					expiresAt = "N/A"
 				}
-				f.Row(r.ID, r.Type, r.Status, dateRange, r.FileFormat, expiresAt)
+				return []string{r.ID, r.Type, r.Status, dateRange, r.FileFormat, expiresAt}
 			}
 
-			if result.HasMore {
+			if err := f.OutputList(result.Items, headers, rowFn); err != nil {
+				return err
+			}
+
+			if !outfmt.IsJSON(cmd.Context()) && result.HasMore {
 				fmt.Fprintln(os.Stderr, "# More results available")
 			}
-			return f.EndTable()
+			return nil
 		},
 	}
 
 	cmd.Flags().IntVar(&page, "page", 0, "Page number (0 = first page)")
-	cmd.Flags().IntVar(&pageSize, "limit", 20, "Max results (min 10)")
+	cmd.Flags().IntVar(&pageSize, "page-size", 20, "API page size (min 10)")
 	return cmd
 }
 

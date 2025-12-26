@@ -98,7 +98,7 @@ func TestNewListCommand_PageSizeMinimumEnforcement(t *testing.T) {
 			cmd.SetContext(ctx)
 
 			if tt.inputPageSize != "" {
-				cmd.SetArgs([]string{"--limit", tt.inputPageSize})
+				cmd.SetArgs([]string{"--page-size", tt.inputPageSize})
 			} else {
 				cmd.SetArgs([]string{})
 			}
