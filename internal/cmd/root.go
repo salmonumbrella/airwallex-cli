@@ -20,6 +20,11 @@ type rootFlags struct {
 	Color   string
 	Debug   bool
 	Query   string
+	// Agent-friendly flags
+	Yes    bool   // skip confirmation prompts
+	Limit  int    // limit number of results (0 = no limit)
+	SortBy string // field name to sort by
+	Desc   bool   // sort descending (only valid with --sort-by)
 }
 
 var flags rootFlags
@@ -31,6 +36,11 @@ func NewRootCmd() *cobra.Command {
 		Long:         "A command-line interface for the Airwallex API.",
 		SilenceUsage: true,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			// Validate flag combinations
+			if flags.Desc && flags.SortBy == "" {
+				return fmt.Errorf("--desc requires --sort-by to be specified")
+			}
+
 			// Setup debug mode
 			debug.SetupLogger(flags.Debug)
 			ctx := debug.WithDebug(cmd.Context(), flags.Debug)
@@ -50,6 +60,12 @@ func NewRootCmd() *cobra.Command {
 			// Inject query filter context
 			ctx = outfmt.WithQuery(ctx, flags.Query)
 
+			// Inject agent-friendly flags
+			ctx = outfmt.WithYes(ctx, flags.Yes)
+			ctx = outfmt.WithLimit(ctx, flags.Limit)
+			ctx = outfmt.WithSortBy(ctx, flags.SortBy)
+			ctx = outfmt.WithDesc(ctx, flags.Desc)
+
 			cmd.SetContext(ctx)
 			return nil
 		},
@@ -60,6 +76,13 @@ func NewRootCmd() *cobra.Command {
 	cmd.PersistentFlags().StringVar(&flags.Color, "color", getEnvOrDefault("AWX_COLOR", "auto"), "Color output: auto|always|never")
 	cmd.PersistentFlags().BoolVar(&flags.Debug, "debug", false, "Enable debug output (shows API requests/responses)")
 	cmd.PersistentFlags().StringVar(&flags.Query, "query", "", "JQ filter expression for JSON output")
+
+	// Agent-friendly flags
+	cmd.PersistentFlags().BoolVarP(&flags.Yes, "yes", "y", false, "Skip confirmation prompts")
+	cmd.PersistentFlags().BoolVar(&flags.Yes, "force", false, "Skip confirmation prompts (alias for --yes)")
+	cmd.PersistentFlags().IntVar(&flags.Limit, "limit", 0, "Limit number of results (0 = no limit)")
+	cmd.PersistentFlags().StringVar(&flags.SortBy, "sort-by", "", "Field name to sort results by")
+	cmd.PersistentFlags().BoolVar(&flags.Desc, "desc", false, "Sort descending (requires --sort-by)")
 
 	cmd.AddCommand(newAuthCmd())
 	cmd.AddCommand(newBalancesCmd())
