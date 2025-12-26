@@ -448,31 +448,28 @@ Examples:
 }
 
 func newTransfersCancelCmd() *cobra.Command {
-	var skipConfirm bool
-
 	cmd := &cobra.Command{
 		Use:   "cancel <transferId>",
 		Short: "Cancel a transfer",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			u := ui.FromContext(cmd.Context())
-			client, err := getClient(cmd.Context())
+			transferID := args[0]
+
+			// Prompt for confirmation (respects --yes flag and TTY detection)
+			prompt := fmt.Sprintf("Are you sure you want to cancel transfer %s?", transferID)
+			confirmed, err := ConfirmOrYes(cmd.Context(), prompt)
 			if err != nil {
 				return err
 			}
+			if !confirmed {
+				fmt.Println("Cancellation aborted.")
+				return nil
+			}
 
-			transferID := args[0]
-
-			// Prompt for confirmation unless --yes flag is set
-			if !skipConfirm {
-				fmt.Printf("Are you sure you want to cancel transfer %s? [y/N]: ", transferID)
-				var response string
-				fmt.Scanln(&response)
-				response = strings.ToLower(strings.TrimSpace(response))
-				if response != "y" && response != "yes" {
-					fmt.Println("Cancellation aborted.")
-					return nil
-				}
+			client, err := getClient(cmd.Context())
+			if err != nil {
+				return err
 			}
 
 			t, err := client.CancelTransfer(cmd.Context(), transferID)
@@ -489,7 +486,6 @@ func newTransfersCancelCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().BoolVarP(&skipConfirm, "yes", "y", false, "Skip confirmation prompt")
 	return cmd
 }
 

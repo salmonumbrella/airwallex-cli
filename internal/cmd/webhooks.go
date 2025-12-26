@@ -4,11 +4,9 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"syscall"
 	"text/tabwriter"
 
 	"github.com/spf13/cobra"
-	"golang.org/x/term"
 
 	"github.com/salmonumbrella/airwallex-cli/internal/outfmt"
 	"github.com/salmonumbrella/airwallex-cli/internal/ui"
@@ -25,19 +23,19 @@ var validWebhookEvents = map[string]bool{
 	"transfer.processing": true,
 
 	// Payment events
-	"payment.completed":              true,
-	"payment.failed":                 true,
-	"payment.created":                true,
-	"payment.updated":                true,
-	"payment.cancelled":              true,
-	"payment.authorization_failed":   true,
-	"payment.capture_failed":         true,
-	"payment.refund_completed":       true,
-	"payment.refund_failed":          true,
-	"payment.chargeback_received":    true,
-	"payment.chargeback_reversed":    true,
-	"payment.dispute_opened":         true,
-	"payment.dispute_resolved":       true,
+	"payment.completed":            true,
+	"payment.failed":               true,
+	"payment.created":              true,
+	"payment.updated":              true,
+	"payment.cancelled":            true,
+	"payment.authorization_failed": true,
+	"payment.capture_failed":       true,
+	"payment.refund_completed":     true,
+	"payment.refund_failed":        true,
+	"payment.chargeback_received":  true,
+	"payment.chargeback_reversed":  true,
+	"payment.dispute_opened":       true,
+	"payment.dispute_resolved":     true,
 
 	// Deposit events
 	"deposit.settled":    true,
@@ -52,13 +50,13 @@ var validWebhookEvents = map[string]bool{
 	"beneficiary.verified": true,
 
 	// Card events
-	"card.activated":              true,
-	"card.deactivated":            true,
-	"card.transaction.completed":  true,
-	"card.transaction.declined":   true,
-	"card.transaction.reversed":   true,
-	"card.created":                true,
-	"card.updated":                true,
+	"card.activated":             true,
+	"card.deactivated":           true,
+	"card.transaction.completed": true,
+	"card.transaction.declined":  true,
+	"card.transaction.reversed":  true,
+	"card.created":               true,
+	"card.updated":               true,
 
 	// Payout events
 	"payout.completed":  true,
@@ -72,10 +70,10 @@ var validWebhookEvents = map[string]bool{
 	"account.balance.updated": true,
 
 	// Invoice events
-	"invoice.created":  true,
-	"invoice.paid":     true,
-	"invoice.overdue":  true,
-	"invoice.voided":   true,
+	"invoice.created": true,
+	"invoice.paid":    true,
+	"invoice.overdue": true,
+	"invoice.voided":  true,
 
 	// Verification events
 	"verification.completed": true,
@@ -273,8 +271,6 @@ Common events:
 }
 
 func newWebhooksDeleteCmd() *cobra.Command {
-	var skipConfirm bool
-
 	cmd := &cobra.Command{
 		Use:   "delete <webhookId>",
 		Short: "Delete a webhook subscription",
@@ -283,26 +279,15 @@ func newWebhooksDeleteCmd() *cobra.Command {
 			u := ui.FromContext(cmd.Context())
 			webhookID := args[0]
 
-			// Skip confirmation prompt if JSON output mode is enabled
-			isJSON := outfmt.IsJSON(cmd.Context())
-
-			if !skipConfirm && !isJSON {
-				// Check if stdin is a terminal
-				if !term.IsTerminal(int(syscall.Stdin)) {
-					return fmt.Errorf("cannot prompt for confirmation: stdin is not a terminal (use -y to skip confirmation)")
-				}
-
-				fmt.Printf("Are you sure you want to delete webhook %s? [y/N]: ", webhookID)
-				var response string
-				_, err := fmt.Scanln(&response)
-				if err != nil && err.Error() != "unexpected newline" {
-					return fmt.Errorf("failed to read confirmation: %w", err)
-				}
-				response = strings.ToLower(strings.TrimSpace(response))
-				if response != "y" && response != "yes" {
-					fmt.Println("Deletion aborted.")
-					return nil
-				}
+			// Prompt for confirmation (respects --yes flag, JSON mode, and TTY detection)
+			prompt := fmt.Sprintf("Are you sure you want to delete webhook %s?", webhookID)
+			confirmed, err := ConfirmOrYes(cmd.Context(), prompt)
+			if err != nil {
+				return err
+			}
+			if !confirmed {
+				fmt.Println("Deletion aborted.")
+				return nil
 			}
 
 			client, err := getClient(cmd.Context())
@@ -314,7 +299,7 @@ func newWebhooksDeleteCmd() *cobra.Command {
 				return err
 			}
 
-			if isJSON {
+			if outfmt.IsJSON(cmd.Context()) {
 				return outfmt.WriteJSON(os.Stdout, map[string]string{
 					"id":     webhookID,
 					"status": "deleted",
@@ -326,6 +311,5 @@ func newWebhooksDeleteCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().BoolVarP(&skipConfirm, "yes", "y", false, "Skip confirmation prompt")
 	return cmd
 }

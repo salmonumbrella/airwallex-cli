@@ -475,31 +475,28 @@ func newBeneficiariesUpdateCmd() *cobra.Command {
 }
 
 func newBeneficiariesDeleteCmd() *cobra.Command {
-	var skipConfirm bool
-
 	cmd := &cobra.Command{
 		Use:   "delete <beneficiaryId>",
 		Short: "Delete a beneficiary",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			u := ui.FromContext(cmd.Context())
-			client, err := getClient(cmd.Context())
+			beneficiaryID := args[0]
+
+			// Prompt for confirmation (respects --yes flag and TTY detection)
+			prompt := fmt.Sprintf("Are you sure you want to delete beneficiary %s?", beneficiaryID)
+			confirmed, err := ConfirmOrYes(cmd.Context(), prompt)
 			if err != nil {
 				return err
 			}
+			if !confirmed {
+				fmt.Println("Deletion cancelled.")
+				return nil
+			}
 
-			beneficiaryID := args[0]
-
-			// Prompt for confirmation unless --yes flag is set
-			if !skipConfirm {
-				fmt.Printf("Are you sure you want to delete beneficiary %s? [y/N]: ", beneficiaryID)
-				var response string
-				fmt.Scanln(&response)
-				response = strings.ToLower(strings.TrimSpace(response))
-				if response != "y" && response != "yes" {
-					fmt.Println("Deletion cancelled.")
-					return nil
-				}
+			client, err := getClient(cmd.Context())
+			if err != nil {
+				return err
 			}
 
 			if err := client.DeleteBeneficiary(cmd.Context(), beneficiaryID); err != nil {
@@ -511,7 +508,6 @@ func newBeneficiariesDeleteCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().BoolVarP(&skipConfirm, "yes", "y", false, "Skip confirmation prompt")
 	return cmd
 }
 

@@ -1,10 +1,13 @@
 package cmd
 
 import (
+	"context"
 	"strings"
 	"testing"
 
 	"github.com/spf13/cobra"
+
+	"github.com/salmonumbrella/airwallex-cli/internal/outfmt"
 )
 
 func TestParseEvents(t *testing.T) {
@@ -377,7 +380,20 @@ func TestWebhooksDeleteCommand(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			webhooksCmd := newWebhooksCmd()
-			rootCmd := &cobra.Command{Use: "root"}
+			var yesFlag bool
+			rootCmd := &cobra.Command{
+				Use: "root",
+				PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+					// Set up context with yes flag like the real root command does
+					ctx := context.Background()
+					ctx = outfmt.WithYes(ctx, yesFlag)
+					cmd.SetContext(ctx)
+					return nil
+				},
+			}
+			// Add persistent flags that normally come from root command
+			rootCmd.PersistentFlags().BoolVarP(&yesFlag, "yes", "y", false, "Skip confirmation prompts")
+			rootCmd.PersistentFlags().BoolVar(&yesFlag, "force", false, "Skip confirmation prompts (alias for --yes)")
 			rootCmd.AddCommand(webhooksCmd)
 
 			fullArgs := append([]string{"webhooks", "delete"}, tt.args...)

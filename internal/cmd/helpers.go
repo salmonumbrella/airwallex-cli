@@ -1,13 +1,19 @@
 package cmd
 
 import (
+	"bufio"
 	"context"
 	"fmt"
+	"strings"
+	"syscall"
 	"time"
 
 	"github.com/spf13/cobra"
+	"golang.org/x/term"
 
 	"github.com/salmonumbrella/airwallex-cli/internal/api"
+	"github.com/salmonumbrella/airwallex-cli/internal/iocontext"
+	"github.com/salmonumbrella/airwallex-cli/internal/outfmt"
 	"github.com/salmonumbrella/airwallex-cli/internal/secrets"
 )
 
@@ -113,4 +119,45 @@ func validateDateRange(from, to string) error {
 	}
 
 	return nil
+}
+
+// isTerminal is a variable that can be overridden in tests
+var isTerminal = func() bool {
+	return term.IsTerminal(syscall.Stdin)
+}
+
+// ConfirmOrYes prompts for confirmation unless --yes/--force flag is set.
+// Returns true if confirmed, false if declined.
+// Returns an error if stdin is not a TTY and confirmation is needed.
+func ConfirmOrYes(ctx context.Context, prompt string) (bool, error) {
+	// If --yes or --force flag is set, skip confirmation
+	if outfmt.GetYes(ctx) {
+		return true, nil
+	}
+
+	// If JSON output mode, skip confirmation (scripts expect non-interactive)
+	if outfmt.IsJSON(ctx) {
+		return true, nil
+	}
+
+	// Check if stdin is a terminal
+	if !isTerminal() {
+		return false, fmt.Errorf("cannot prompt for confirmation: stdin is not a terminal (use --yes to skip)")
+	}
+
+	// Get IO from context
+	io := iocontext.GetIO(ctx)
+
+	// Print prompt to stderr (so it doesn't interfere with stdout output)
+	_, _ = fmt.Fprint(io.ErrOut, prompt+" [y/N]: ")
+
+	// Read response from stdin
+	reader := bufio.NewReader(io.In)
+	response, err := reader.ReadString('\n')
+	if err != nil {
+		return false, fmt.Errorf("failed to read confirmation: %w", err)
+	}
+
+	response = strings.TrimSpace(strings.ToLower(response))
+	return response == "y" || response == "yes", nil
 }
