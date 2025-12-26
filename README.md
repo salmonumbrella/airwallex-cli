@@ -344,6 +344,29 @@ export AWX_ACCOUNT=prod
 airwallex balances
 ```
 
+### Automation and scripting
+
+Use `--yes` to skip confirmations, `--limit` to control result size, and `--sort-by` for ordering:
+
+```bash
+# Delete a beneficiary without confirmation prompt
+airwallex beneficiaries delete ben_xxx --yes
+
+# Get the 5 most recent transfers
+airwallex transfers list --limit 5 --sort-by created_at --desc --output json
+
+# Fetch all cards (no pagination limit)
+airwallex issuing cards list --limit 0 --output json
+
+# Pipeline: cancel all pending transfers older than 30 days
+airwallex transfers list --status PENDING --output json \
+  | jq -r '.items[] | select(.created_at < "2024-01-01") | .id' \
+  | xargs -I{} airwallex transfers cancel {} --yes
+
+# Agent-friendly: get latest 10 transactions sorted by amount
+airwallex issuing transactions list --limit 10 --sort-by amount --desc --output json
+```
+
 ## Advanced Features
 
 ### Debug Mode
@@ -440,6 +463,11 @@ All commands support these flags:
 - `--color <mode>` - Color mode: `auto`, `always`, or `never` (default: auto)
 - `--debug` - Enable debug output (shows API requests/responses)
 - `--query <expr>` - JQ filter expression for JSON output
+- `--yes`, `-y` - Skip confirmation prompts (useful for scripts and automation)
+- `--force` - Alias for `--yes`
+- `--limit <n>` - Limit number of results returned (0 = no limit, fetches all)
+- `--sort-by <field>` - Sort results by field name (e.g., `created_at`, `amount`)
+- `--desc` - Sort descending (requires `--sort-by`)
 - `--help` - Show help for any command
 - `--version` - Show version information (via `airwallex version`)
 
