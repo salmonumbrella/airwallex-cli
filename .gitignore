@@ -1,0 +1,37 @@
+# Build output
+/airwallex
+bin/
+dist/
+
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work
+
+# IDE
+.cursor/
+.cursorindexingignore
+.specstory/
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Tools
+.tools/
+
+# Environment
+.env
+.env.local
+
+# Docs
+/docs/

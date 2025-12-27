@@ -1,0 +1,116 @@
+version: 2
+
+project_name: airwallex-cli
+
+builds:
+  - id: airwallex
+    main: ./cmd/airwallex
+    binary: airwallex
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X github.com/salmonumbrella/airwallex-cli/internal/cmd.Version={{.Version}}
+      - -X github.com/salmonumbrella/airwallex-cli/internal/cmd.Commit={{.ShortCommit}}
+      - -X github.com/salmonumbrella/airwallex-cli/internal/cmd.BuildDate={{.Date}}
+
+archives:
+  - id: default
+    formats:
+      - tar.gz
+    format_overrides:
+      - goos: windows
+        formats:
+          - zip
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - README.md
+      - LICENSE
+
+# Binary checksums for integrity verification
+# SHA256 ensures binaries haven't been tampered with during distribution
+checksum:
+  name_template: "checksums.txt"
+  algorithm: sha256
+
+# Code signing for supply chain security (disabled - requires cosign setup)
+# Signs checksums with cosign/sigstore for verifiable provenance
+# Requires: COSIGN_PRIVATE_KEY environment variable in CI/CD
+# Verify signatures with: cosign verify-blob --signature checksums.txt.sig checksums.txt
+# signs:
+#   - cmd: cosign
+#     signature: "${artifact}.sig"
+#     certificate: "${artifact}.pem"
+#     args:
+#       - sign-blob
+#       - "--yes"
+#       - "--output-signature=${signature}"
+#       - "--output-certificate=${certificate}"
+#       - "${artifact}"
+#     artifacts: checksum
+#     output: true
+
+# Software Bill of Materials (SBOM) (disabled - requires syft setup)
+# Generates SBOM for dependency tracking and vulnerability scanning
+# Format: SPDX (industry standard for SBOM)
+# Consumers can use this to audit dependencies and check for CVEs
+# sboms:
+#   - artifacts: archive
+#     documents:
+#       - "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}.sbom"
+
+# Additional signing options for future implementation:
+#
+# macOS Code Signing & Notarization:
+# - Requires: Apple Developer account ($99/year)
+# - Requires: Developer ID Application certificate
+# - Tool: gon (https://github.com/mitchellh/gon)
+# - Purpose: Bypass macOS Gatekeeper warnings
+# - Config would go in: gon.hcl
+# - Add to builds ldflags: -X main.AppleSigningIdentity="Developer ID Application: Your Name (TEAM_ID)"
+#
+# Windows Code Signing:
+# - Requires: Code signing certificate from trusted CA (e.g., DigiCert, Sectigo)
+# - Tool: osslsigncode or signtool.exe
+# - Purpose: Bypass Windows SmartScreen warnings
+# - Certificate cost: ~$100-400/year
+# - Can be added via signs section targeting .exe artifacts
+#
+# To enable full platform signing, set these environment variables in CI:
+# - COSIGN_PRIVATE_KEY: For checksum signing (required for current config)
+# - APPLE_DEVELOPER_ID: For macOS notarization (future)
+# - WINDOWS_CERT_PATH: For Windows Authenticode (future)
+# - WINDOWS_CERT_PASSWORD: For Windows certificate (future)
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^ci:"
+      - Merge pull request
+      - Merge branch
+
+# Homebrew formula (disabled - HOMEBREW_TAP_TOKEN needs to be configured)
+# brews:
+#   - name: airwallex-cli
+#     repository:
+#       owner: salmonumbrella
+#       name: homebrew-tap
+#       token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+#     directory: Formula
+#     homepage: "https://github.com/salmonumbrella/airwallex-cli"
+#     description: "CLI for Airwallex to manage transfers, beneficiaries, and balances"
+#     license: "MIT"
+#     install: |
+#       bin.install "airwallex"
+#     test: |
+#       system "#{bin}/airwallex", "--help"
