@@ -116,17 +116,17 @@ func newTransfersGetCmd() *cobra.Command {
 
 			// For "get" commands, still use manual tabwriter for key-value format
 			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-			fmt.Fprintf(tw, "transfer_id\t%s\n", t.TransferID)
-			fmt.Fprintf(tw, "beneficiary_id\t%s\n", t.BeneficiaryID)
-			fmt.Fprintf(tw, "transfer_amount\t%.2f\n", t.TransferAmount)
-			fmt.Fprintf(tw, "transfer_currency\t%s\n", t.TransferCurrency)
-			fmt.Fprintf(tw, "source_amount\t%.2f\n", t.SourceAmount)
-			fmt.Fprintf(tw, "source_currency\t%s\n", t.SourceCurrency)
-			fmt.Fprintf(tw, "status\t%s\n", t.Status)
-			fmt.Fprintf(tw, "reference\t%s\n", t.Reference)
-			fmt.Fprintf(tw, "reason\t%s\n", t.Reason)
-			fmt.Fprintf(tw, "created_at\t%s\n", t.CreatedAt)
-			tw.Flush()
+			_, _ = fmt.Fprintf(tw, "transfer_id\t%s\n", t.TransferID)
+			_, _ = fmt.Fprintf(tw, "beneficiary_id\t%s\n", t.BeneficiaryID)
+			_, _ = fmt.Fprintf(tw, "transfer_amount\t%.2f\n", t.TransferAmount)
+			_, _ = fmt.Fprintf(tw, "transfer_currency\t%s\n", t.TransferCurrency)
+			_, _ = fmt.Fprintf(tw, "source_amount\t%.2f\n", t.SourceAmount)
+			_, _ = fmt.Fprintf(tw, "source_currency\t%s\n", t.SourceCurrency)
+			_, _ = fmt.Fprintf(tw, "status\t%s\n", t.Status)
+			_, _ = fmt.Fprintf(tw, "reference\t%s\n", t.Reference)
+			_, _ = fmt.Fprintf(tw, "reason\t%s\n", t.Reason)
+			_, _ = fmt.Fprintf(tw, "created_at\t%s\n", t.CreatedAt)
+			_ = tw.Flush()
 			return nil
 		},
 	}
@@ -286,7 +286,7 @@ Interac e-Transfer notes:
 					},
 				}
 
-				preview.Write(os.Stderr)
+				preview.Write(os.Stderr) //nolint:errcheck // preview output to stderr is best-effort
 				return nil
 			}
 

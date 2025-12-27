@@ -114,18 +114,18 @@ func newFXConversionsGetCmd() *cobra.Command {
 			}
 
 			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-			fmt.Fprintf(tw, "conversion_id\t%s\n", conv.ID)
+			_, _ = fmt.Fprintf(tw, "conversion_id\t%s\n", conv.ID)
 			if conv.QuoteID != "" {
-				fmt.Fprintf(tw, "quote_id\t%s\n", conv.QuoteID)
+				_, _ = fmt.Fprintf(tw, "quote_id\t%s\n", conv.QuoteID)
 			}
-			fmt.Fprintf(tw, "sell_currency\t%s\n", conv.SellCurrency)
-			fmt.Fprintf(tw, "buy_currency\t%s\n", conv.BuyCurrency)
-			fmt.Fprintf(tw, "sell_amount\t%.2f\n", conv.SellAmount)
-			fmt.Fprintf(tw, "buy_amount\t%.2f\n", conv.BuyAmount)
-			fmt.Fprintf(tw, "rate\t%.6f\n", conv.Rate)
-			fmt.Fprintf(tw, "status\t%s\n", conv.Status)
-			fmt.Fprintf(tw, "created_at\t%s\n", conv.CreatedAt)
-			tw.Flush()
+			_, _ = fmt.Fprintf(tw, "sell_currency\t%s\n", conv.SellCurrency)
+			_, _ = fmt.Fprintf(tw, "buy_currency\t%s\n", conv.BuyCurrency)
+			_, _ = fmt.Fprintf(tw, "sell_amount\t%.2f\n", conv.SellAmount)
+			_, _ = fmt.Fprintf(tw, "buy_amount\t%.2f\n", conv.BuyAmount)
+			_, _ = fmt.Fprintf(tw, "rate\t%.6f\n", conv.Rate)
+			_, _ = fmt.Fprintf(tw, "status\t%s\n", conv.Status)
+			_, _ = fmt.Fprintf(tw, "created_at\t%s\n", conv.CreatedAt)
+			_ = tw.Flush()
 			return nil
 		},
 	}
@@ -212,12 +212,12 @@ Examples:
 
 			u.Success(fmt.Sprintf("Conversion executed: %s", conv.ID))
 			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-			fmt.Fprintf(tw, "conversion_id\t%s\n", conv.ID)
-			fmt.Fprintf(tw, "sold\t%.2f %s\n", conv.SellAmount, conv.SellCurrency)
-			fmt.Fprintf(tw, "bought\t%.2f %s\n", conv.BuyAmount, conv.BuyCurrency)
-			fmt.Fprintf(tw, "rate\t%.6f\n", conv.Rate)
-			fmt.Fprintf(tw, "status\t%s\n", conv.Status)
-			tw.Flush()
+			_, _ = fmt.Fprintf(tw, "conversion_id\t%s\n", conv.ID)
+			_, _ = fmt.Fprintf(tw, "sold\t%.2f %s\n", conv.SellAmount, conv.SellCurrency)
+			_, _ = fmt.Fprintf(tw, "bought\t%.2f %s\n", conv.BuyAmount, conv.BuyCurrency)
+			_, _ = fmt.Fprintf(tw, "rate\t%.6f\n", conv.Rate)
+			_, _ = fmt.Fprintf(tw, "status\t%s\n", conv.Status)
+			_ = tw.Flush()
 			return nil
 		},
 	}

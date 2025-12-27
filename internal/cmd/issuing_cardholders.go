@@ -96,14 +96,14 @@ func newCardholdersGetCmd() *cobra.Command {
 			}
 
 			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-			fmt.Fprintf(tw, "cardholder_id\t%s\n", ch.CardholderID)
-			fmt.Fprintf(tw, "type\t%s\n", ch.Type)
-			fmt.Fprintf(tw, "first_name\t%s\n", ch.FirstName)
-			fmt.Fprintf(tw, "last_name\t%s\n", ch.LastName)
-			fmt.Fprintf(tw, "email\t%s\n", ch.Email)
-			fmt.Fprintf(tw, "status\t%s\n", ch.Status)
-			fmt.Fprintf(tw, "created_at\t%s\n", ch.CreatedAt)
-			tw.Flush()
+			_, _ = fmt.Fprintf(tw, "cardholder_id\t%s\n", ch.CardholderID)
+			_, _ = fmt.Fprintf(tw, "type\t%s\n", ch.Type)
+			_, _ = fmt.Fprintf(tw, "first_name\t%s\n", ch.FirstName)
+			_, _ = fmt.Fprintf(tw, "last_name\t%s\n", ch.LastName)
+			_, _ = fmt.Fprintf(tw, "email\t%s\n", ch.Email)
+			_, _ = fmt.Fprintf(tw, "status\t%s\n", ch.Status)
+			_, _ = fmt.Fprintf(tw, "created_at\t%s\n", ch.CreatedAt)
+			_ = tw.Flush()
 			return nil
 		},
 	}

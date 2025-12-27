@@ -118,25 +118,25 @@ func newDepositsGetCmd() *cobra.Command {
 			}
 
 			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-			fmt.Fprintf(tw, "deposit_id\t%s\n", d.ID)
-			fmt.Fprintf(tw, "amount\t%.2f\n", d.Amount)
-			fmt.Fprintf(tw, "currency\t%s\n", d.Currency)
-			fmt.Fprintf(tw, "status\t%s\n", d.Status)
-			fmt.Fprintf(tw, "source\t%s\n", d.Source)
+			_, _ = fmt.Fprintf(tw, "deposit_id\t%s\n", d.ID)
+			_, _ = fmt.Fprintf(tw, "amount\t%.2f\n", d.Amount)
+			_, _ = fmt.Fprintf(tw, "currency\t%s\n", d.Currency)
+			_, _ = fmt.Fprintf(tw, "status\t%s\n", d.Status)
+			_, _ = fmt.Fprintf(tw, "source\t%s\n", d.Source)
 			if d.LinkedAccountID != "" {
-				fmt.Fprintf(tw, "linked_account_id\t%s\n", d.LinkedAccountID)
+				_, _ = fmt.Fprintf(tw, "linked_account_id\t%s\n", d.LinkedAccountID)
 			}
 			if d.GlobalAccountID != "" {
-				fmt.Fprintf(tw, "global_account_id\t%s\n", d.GlobalAccountID)
+				_, _ = fmt.Fprintf(tw, "global_account_id\t%s\n", d.GlobalAccountID)
 			}
 			if d.Reference != "" {
-				fmt.Fprintf(tw, "reference\t%s\n", d.Reference)
+				_, _ = fmt.Fprintf(tw, "reference\t%s\n", d.Reference)
 			}
-			fmt.Fprintf(tw, "created_at\t%s\n", d.CreatedAt)
+			_, _ = fmt.Fprintf(tw, "created_at\t%s\n", d.CreatedAt)
 			if d.SettledAt != "" {
-				fmt.Fprintf(tw, "settled_at\t%s\n", d.SettledAt)
+				_, _ = fmt.Fprintf(tw, "settled_at\t%s\n", d.SettledAt)
 			}
-			tw.Flush()
+			_ = tw.Flush()
 			return nil
 		},
 	}

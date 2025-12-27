@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"os"
 	"strings"
 	"testing"
 
@@ -11,8 +10,7 @@ import (
 )
 
 func TestAccountsGetValidation(t *testing.T) {
-	os.Setenv("AWX_ACCOUNT", "test-account")
-	defer os.Unsetenv("AWX_ACCOUNT")
+	t.Setenv("AWX_ACCOUNT", "test-account")
 
 	originalOpenSecretsStore := openSecretsStore
 	defer func() { openSecretsStore = originalOpenSecretsStore }()

@@ -80,11 +80,11 @@ func (f *Formatter) StartTable(headers []string) bool {
 
 	for i, h := range headers {
 		if i > 0 {
-			fmt.Fprint(f.tabWriter, "\t")
+			_, _ = fmt.Fprint(f.tabWriter, "\t")
 		}
-		fmt.Fprint(f.tabWriter, h)
+		_, _ = fmt.Fprint(f.tabWriter, h)
 	}
-	fmt.Fprintln(f.tabWriter)
+	_, _ = fmt.Fprintln(f.tabWriter)
 	return true
 }
 
@@ -92,11 +92,11 @@ func (f *Formatter) StartTable(headers []string) bool {
 func (f *Formatter) Row(columns ...string) {
 	for i, col := range columns {
 		if i > 0 {
-			fmt.Fprint(f.tabWriter, "\t")
+			_, _ = fmt.Fprint(f.tabWriter, "\t")
 		}
-		fmt.Fprint(f.tabWriter, col)
+		_, _ = fmt.Fprint(f.tabWriter, col)
 	}
-	fmt.Fprintln(f.tabWriter)
+	_, _ = fmt.Fprintln(f.tabWriter)
 }
 
 // EndTable flushes the table output.
@@ -106,7 +106,7 @@ func (f *Formatter) EndTable() error {
 
 // Empty writes a message to stderr indicating no results were found.
 func (f *Formatter) Empty(message string) {
-	fmt.Fprintln(f.errOut, message)
+	_, _ = fmt.Fprintln(f.errOut, message)
 }
 
 // OutputList outputs a slice of items as either JSON or a text table.

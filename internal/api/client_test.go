@@ -326,7 +326,7 @@ func TestClient_doWithRetry_contextCancellationDuringRetry(t *testing.T) {
 	elapsed := time.Since(start)
 
 	if err == nil {
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		t.Fatal("expected context.Canceled error, got nil")
 	}
 	if err != context.Canceled {
@@ -1205,7 +1205,7 @@ func TestCircuitBreaker_opensAfterThreshold(t *testing.T) {
 			t.Fatalf("request %d: unexpected error: %v", i+1, err)
 		}
 		if resp != nil {
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}
 	}
 
@@ -1219,7 +1219,7 @@ func TestCircuitBreaker_opensAfterThreshold(t *testing.T) {
 	req, _ := http.NewRequest("GET", server.URL+"/test", nil)
 	resp, err := c.doWithRetry(context.Background(), req)
 	if err == nil {
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		t.Fatal("expected circuit breaker error, got nil")
 	}
 	if err.Error() != "circuit breaker open: API experiencing issues, retry later" {
@@ -1295,7 +1295,7 @@ func TestCircuitBreaker_resetsOnSuccess(t *testing.T) {
 		if err != nil {
 			t.Fatalf("request %d: doWithRetry() error: %v", i+1, err)
 		}
-		resp.Body.Close()
+		_ = resp.Body.Close()
 	}
 
 	// Verify circuit is not yet open (need 5 failures)
@@ -1309,7 +1309,7 @@ func TestCircuitBreaker_resetsOnSuccess(t *testing.T) {
 	if err != nil {
 		t.Fatalf("doWithRetry() error: %v", err)
 	}
-	resp.Body.Close()
+	_ = resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("status = %d, want %d", resp.StatusCode, http.StatusOK)
@@ -1360,7 +1360,7 @@ func TestCircuitBreaker_tracksOnlyConsecutiveFailures(t *testing.T) {
 		if err != nil {
 			t.Fatalf("request %d: doWithRetry() error: %v", i+1, err)
 		}
-		resp.Body.Close()
+		_ = resp.Body.Close()
 	}
 
 	// Circuit should still be closed (no consecutive failures)
@@ -1403,7 +1403,7 @@ func TestCircuitBreaker_onlyTracksServerErrors(t *testing.T) {
 		if err != nil {
 			t.Fatalf("request %d: doWithRetry() error: %v", i+1, err)
 		}
-		resp.Body.Close()
+		_ = resp.Body.Close()
 	}
 
 	// Circuit should still be closed (4xx errors don't count)

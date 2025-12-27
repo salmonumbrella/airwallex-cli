@@ -104,19 +104,19 @@ func newPaymentLinksGetCmd() *cobra.Command {
 			}
 
 			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-			fmt.Fprintf(tw, "id\t%s\n", pl.ID)
-			fmt.Fprintf(tw, "url\t%s\n", pl.URL)
-			fmt.Fprintf(tw, "amount\t%.2f\n", pl.Amount)
-			fmt.Fprintf(tw, "currency\t%s\n", pl.Currency)
+			_, _ = fmt.Fprintf(tw, "id\t%s\n", pl.ID)
+			_, _ = fmt.Fprintf(tw, "url\t%s\n", pl.URL)
+			_, _ = fmt.Fprintf(tw, "amount\t%.2f\n", pl.Amount)
+			_, _ = fmt.Fprintf(tw, "currency\t%s\n", pl.Currency)
 			if pl.Description != "" {
-				fmt.Fprintf(tw, "description\t%s\n", pl.Description)
+				_, _ = fmt.Fprintf(tw, "description\t%s\n", pl.Description)
 			}
-			fmt.Fprintf(tw, "status\t%s\n", pl.Status)
+			_, _ = fmt.Fprintf(tw, "status\t%s\n", pl.Status)
 			if pl.ExpiresAt != "" {
-				fmt.Fprintf(tw, "expires_at\t%s\n", pl.ExpiresAt)
+				_, _ = fmt.Fprintf(tw, "expires_at\t%s\n", pl.ExpiresAt)
 			}
-			fmt.Fprintf(tw, "created_at\t%s\n", pl.CreatedAt)
-			tw.Flush()
+			_, _ = fmt.Fprintf(tw, "created_at\t%s\n", pl.CreatedAt)
+			_ = tw.Flush()
 			return nil
 		},
 	}
@@ -171,7 +171,7 @@ Examples:
 			}
 
 			u.Success(fmt.Sprintf("Created payment link: %s", pl.ID))
-			fmt.Fprintf(os.Stdout, "URL: %s\n", pl.URL)
+			_, _ = fmt.Fprintf(os.Stdout, "URL: %s\n", pl.URL)
 			return nil
 		},
 	}

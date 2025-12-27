@@ -164,9 +164,9 @@ func NewClient(clientID, apiKey string) (*Client, error) {
 		httpClient: &http.Client{
 			Timeout: DefaultHTTPTimeout,
 			Transport: &http.Transport{
-				MaxIdleConns:        MaxIdleConns,
-				MaxConnsPerHost:     MaxConnsPerHost,
-				IdleConnTimeout:     IdleConnTimeout,
+				MaxIdleConns:    MaxIdleConns,
+				MaxConnsPerHost: MaxConnsPerHost,
+				IdleConnTimeout: IdleConnTimeout,
 				TLSClientConfig: &tls.Config{
 					MinVersion:         tls.VersionTLS12,
 					InsecureSkipVerify: false, // Explicit: always verify certificates
@@ -191,9 +191,9 @@ func NewClientWithAccount(clientID, apiKey, accountID string) (*Client, error) {
 		httpClient: &http.Client{
 			Timeout: DefaultHTTPTimeout,
 			Transport: &http.Transport{
-				MaxIdleConns:        MaxIdleConns,
-				MaxConnsPerHost:     MaxConnsPerHost,
-				IdleConnTimeout:     IdleConnTimeout,
+				MaxIdleConns:    MaxIdleConns,
+				MaxConnsPerHost: MaxConnsPerHost,
+				IdleConnTimeout: IdleConnTimeout,
 				TLSClientConfig: &tls.Config{
 					MinVersion:         tls.VersionTLS12,
 					InsecureSkipVerify: false, // Explicit: always verify certificates
@@ -276,6 +276,7 @@ func (c *Client) doWithRetry(ctx context.Context, req *http.Request) (*http.Resp
 
 			// Calculate backoff: 1s, 2s, 4s with jitter
 			baseDelay := RateLimitBaseDelay * time.Duration(1<<retries429)
+			//nolint:gosec // G404: jitter doesn't need crypto-strength randomness
 			jitter := time.Duration(mathrand.Int63n(int64(baseDelay / 2)))
 			delay := baseDelay + jitter
 

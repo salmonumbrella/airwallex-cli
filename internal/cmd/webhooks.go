@@ -180,12 +180,12 @@ func newWebhooksGetCmd() *cobra.Command {
 			}
 
 			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-			fmt.Fprintf(tw, "id\t%s\n", wh.ID)
-			fmt.Fprintf(tw, "url\t%s\n", wh.URL)
-			fmt.Fprintf(tw, "events\t%s\n", strings.Join(wh.Events, ", "))
-			fmt.Fprintf(tw, "status\t%s\n", wh.Status)
-			fmt.Fprintf(tw, "created_at\t%s\n", wh.CreatedAt)
-			tw.Flush()
+			_, _ = fmt.Fprintf(tw, "id\t%s\n", wh.ID)
+			_, _ = fmt.Fprintf(tw, "url\t%s\n", wh.URL)
+			_, _ = fmt.Fprintf(tw, "events\t%s\n", strings.Join(wh.Events, ", "))
+			_, _ = fmt.Fprintf(tw, "status\t%s\n", wh.Status)
+			_, _ = fmt.Fprintf(tw, "created_at\t%s\n", wh.CreatedAt)
+			_ = tw.Flush()
 			return nil
 		},
 	}
@@ -262,8 +262,8 @@ Common events:
 			}
 
 			u.Success(fmt.Sprintf("Created webhook: %s", wh.ID))
-			fmt.Fprintf(os.Stdout, "URL: %s\n", wh.URL)
-			fmt.Fprintf(os.Stdout, "Events: %s\n", strings.Join(wh.Events, ", "))
+			_, _ = fmt.Fprintf(os.Stdout, "URL: %s\n", wh.URL)
+			_, _ = fmt.Fprintf(os.Stdout, "Events: %s\n", strings.Join(wh.Events, ", "))
 			return nil
 		},
 	}

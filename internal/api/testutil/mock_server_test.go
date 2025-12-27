@@ -24,7 +24,7 @@ func TestMockServer_BasicUsage(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to make request: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusNotFound {
 		t.Errorf("status = %d, want 404", resp.StatusCode)
@@ -47,7 +47,7 @@ func TestMockServer_HandleJSON(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to make request: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("status = %d, want 200", resp.StatusCode)
@@ -67,7 +67,7 @@ func TestMockServer_HandleError(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to make request: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Errorf("status = %d, want 400", resp.StatusCode)
@@ -85,7 +85,7 @@ func TestMockServer_CustomHandler(t *testing.T) {
 	ms.Handle("POST", "/api/v1/custom", func(w http.ResponseWriter, r *http.Request) {
 		callCount++
 		w.WriteHeader(http.StatusCreated)
-		w.Write([]byte(`{"count": ` + string(rune(callCount)) + `}`))
+		_, _ = w.Write([]byte(`{"count": ` + string(rune(callCount)) + `}`))
 	})
 
 	// Make first request
@@ -93,14 +93,14 @@ func TestMockServer_CustomHandler(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to make request: %v", err)
 	}
-	resp1.Body.Close()
+	_ = resp1.Body.Close()
 
 	// Make second request
 	resp2, err := http.Post(ms.URL()+"/api/v1/custom", "application/json", nil)
 	if err != nil {
 		t.Fatalf("failed to make request: %v", err)
 	}
-	resp2.Body.Close()
+	_ = resp2.Body.Close()
 
 	if callCount != 2 {
 		t.Errorf("callCount = %d, want 2", callCount)
@@ -117,7 +117,7 @@ func TestMockServer_DefaultAuthHandler(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to make request: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("status = %d, want 200", resp.StatusCode)
@@ -204,7 +204,7 @@ func TestMockServer_MultipleEndpoints(t *testing.T) {
 			if err != nil {
 				t.Fatalf("failed to make request: %v", err)
 			}
-			defer resp.Body.Close()
+			defer func() { _ = resp.Body.Close() }()
 
 			if resp.StatusCode != tt.wantStatus {
 				t.Errorf("status = %d, want %d", resp.StatusCode, tt.wantStatus)
@@ -230,7 +230,7 @@ func TestMockServer_ConcurrentRequests(t *testing.T) {
 			if err != nil {
 				t.Errorf("request failed: %v", err)
 			} else {
-				resp.Body.Close()
+				_ = resp.Body.Close()
 				if resp.StatusCode != http.StatusOK {
 					t.Errorf("status = %d, want 200", resp.StatusCode)
 				}
@@ -277,7 +277,7 @@ func TestMockServer_MethodRouting(t *testing.T) {
 			if err != nil {
 				t.Fatalf("failed to make request: %v", err)
 			}
-			defer resp.Body.Close()
+			defer func() { _ = resp.Body.Close() }()
 
 			if resp.StatusCode != tt.wantStatus {
 				t.Errorf("status = %d, want %d", resp.StatusCode, tt.wantStatus)

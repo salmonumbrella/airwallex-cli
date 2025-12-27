@@ -25,11 +25,12 @@ func ReadItems(filename string) ([]map[string]interface{}, error) {
 	if filename == "" || filename == "-" {
 		reader = os.Stdin
 	} else {
+		//nolint:gosec // G304: filename comes from user input, intentional
 		f, err := os.Open(filename)
 		if err != nil {
 			return nil, fmt.Errorf("failed to open file: %w", err)
 		}
-		defer f.Close()
+		defer func() { _ = f.Close() }()
 		reader = f
 	}
 

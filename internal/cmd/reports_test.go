@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"os"
 	"strings"
 	"testing"
 
@@ -11,8 +10,7 @@ import (
 )
 
 func TestReportsSettlementValidation(t *testing.T) {
-	os.Setenv("AWX_ACCOUNT", "test-account")
-	defer os.Unsetenv("AWX_ACCOUNT")
+	t.Setenv("AWX_ACCOUNT", "test-account")
 
 	originalOpenSecretsStore := openSecretsStore
 	defer func() { openSecretsStore = originalOpenSecretsStore }()
@@ -103,8 +101,7 @@ func TestReportsSettlementValidation(t *testing.T) {
 }
 
 func TestReportsBalanceActivityValidation(t *testing.T) {
-	os.Setenv("AWX_ACCOUNT", "test-account")
-	defer os.Unsetenv("AWX_ACCOUNT")
+	t.Setenv("AWX_ACCOUNT", "test-account")
 
 	originalOpenSecretsStore := openSecretsStore
 	defer func() { openSecretsStore = originalOpenSecretsStore }()
@@ -170,8 +167,7 @@ func TestReportsBalanceActivityValidation(t *testing.T) {
 }
 
 func TestReportsTransactionReconValidation(t *testing.T) {
-	os.Setenv("AWX_ACCOUNT", "test-account")
-	defer os.Unsetenv("AWX_ACCOUNT")
+	t.Setenv("AWX_ACCOUNT", "test-account")
 
 	originalOpenSecretsStore := openSecretsStore
 	defer func() { openSecretsStore = originalOpenSecretsStore }()
@@ -228,8 +224,7 @@ func TestReportsTransactionReconValidation(t *testing.T) {
 }
 
 func TestReportsAccountStatementValidation(t *testing.T) {
-	os.Setenv("AWX_ACCOUNT", "test-account")
-	defer os.Unsetenv("AWX_ACCOUNT")
+	t.Setenv("AWX_ACCOUNT", "test-account")
 
 	originalOpenSecretsStore := openSecretsStore
 	defer func() { openSecretsStore = originalOpenSecretsStore }()

@@ -115,29 +115,29 @@ func newReportsGetCmd() *cobra.Command {
 			}
 
 			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-			fmt.Fprintf(tw, "id\t%s\n", r.ID)
-			fmt.Fprintf(tw, "type\t%s\n", r.Type)
-			fmt.Fprintf(tw, "status\t%s\n", r.Status)
-			fmt.Fprintf(tw, "file_format\t%s\n", r.FileFormat)
-			fmt.Fprintf(tw, "from_date\t%s\n", r.FromDate)
-			fmt.Fprintf(tw, "to_date\t%s\n", r.ToDate)
+			_, _ = fmt.Fprintf(tw, "id\t%s\n", r.ID)
+			_, _ = fmt.Fprintf(tw, "type\t%s\n", r.Type)
+			_, _ = fmt.Fprintf(tw, "status\t%s\n", r.Status)
+			_, _ = fmt.Fprintf(tw, "file_format\t%s\n", r.FileFormat)
+			_, _ = fmt.Fprintf(tw, "from_date\t%s\n", r.FromDate)
+			_, _ = fmt.Fprintf(tw, "to_date\t%s\n", r.ToDate)
 			if len(r.Currencies) > 0 {
-				fmt.Fprintf(tw, "currencies\t%v\n", r.Currencies)
+				_, _ = fmt.Fprintf(tw, "currencies\t%v\n", r.Currencies)
 			}
 			if len(r.TransactionTypes) > 0 {
-				fmt.Fprintf(tw, "transaction_types\t%v\n", r.TransactionTypes)
+				_, _ = fmt.Fprintf(tw, "transaction_types\t%v\n", r.TransactionTypes)
 			}
 			if r.ReportVersion != "" {
-				fmt.Fprintf(tw, "report_version\t%s\n", r.ReportVersion)
+				_, _ = fmt.Fprintf(tw, "report_version\t%s\n", r.ReportVersion)
 			}
-			fmt.Fprintf(tw, "created_at\t%s\n", r.CreatedAt)
+			_, _ = fmt.Fprintf(tw, "created_at\t%s\n", r.CreatedAt)
 			if r.ReportExpiresAt != "" {
-				fmt.Fprintf(tw, "report_expires_at\t%s\n", r.ReportExpiresAt)
+				_, _ = fmt.Fprintf(tw, "report_expires_at\t%s\n", r.ReportExpiresAt)
 			}
 			if r.ErrorMessage != "" {
-				fmt.Fprintf(tw, "error_message\t%s\n", r.ErrorMessage)
+				_, _ = fmt.Fprintf(tw, "error_message\t%s\n", r.ErrorMessage)
 			}
-			tw.Flush()
+			_ = tw.Flush()
 			return nil
 		},
 	}

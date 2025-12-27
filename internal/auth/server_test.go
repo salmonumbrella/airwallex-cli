@@ -570,7 +570,8 @@ func TestRateLimiterConcurrency(t *testing.T) {
 					done <- true
 					return
 				default:
-					_ = rl.check(ip, "/validate")
+					//nolint:errcheck,gosec // intentionally ignoring error in concurrent stress test
+					rl.check(ip, "/validate")
 				}
 			}
 		}(clientIP)
@@ -585,19 +586,17 @@ func TestRateLimiterConcurrency(t *testing.T) {
 		<-done
 	}
 
-	// Verify the map isn't corrupted
-	if err := rl.check("127.0.0.1", "/test"); err != nil {
-		// Just checking it doesn't panic
-	}
+	// Verify the map isn't corrupted - just checking it doesn't panic
+	_ = rl.check("127.0.0.1", "/test")
 }
 
 func TestRateLimiter_Cleanup(t *testing.T) {
 	rl := newRateLimiter(10, 100*time.Millisecond)
 
 	// Add some entries
-	rl.check("1.1.1.1", "/test")
-	rl.check("2.2.2.2", "/test")
-	rl.check("3.3.3.3", "/test")
+	_ = rl.check("1.1.1.1", "/test")
+	_ = rl.check("2.2.2.2", "/test")
+	_ = rl.check("3.3.3.3", "/test")
 
 	if rl.size() != 3 {
 		t.Errorf("size = %d, want 3", rl.size())

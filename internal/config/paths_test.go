@@ -30,7 +30,7 @@ func TestConfigDir(t *testing.T) {
 		if runtime.GOOS != "darwin" {
 			t.Skip("skipping darwin-specific test")
 		}
-		os.Unsetenv("XDG_CONFIG_HOME")
+		_ = os.Unsetenv("XDG_CONFIG_HOME")
 		home, err := os.UserHomeDir()
 		if err != nil {
 			t.Fatalf("UserHomeDir() error = %v", err)
@@ -49,7 +49,7 @@ func TestConfigDir(t *testing.T) {
 		if runtime.GOOS != "linux" {
 			t.Skip("skipping linux-specific test")
 		}
-		os.Unsetenv("XDG_CONFIG_HOME")
+		_ = os.Unsetenv("XDG_CONFIG_HOME")
 		home, err := os.UserHomeDir()
 		if err != nil {
 			t.Fatalf("UserHomeDir() error = %v", err)
@@ -82,7 +82,7 @@ func TestDataDir(t *testing.T) {
 		if runtime.GOOS != "darwin" {
 			t.Skip("skipping darwin-specific test")
 		}
-		os.Unsetenv("XDG_DATA_HOME")
+		_ = os.Unsetenv("XDG_DATA_HOME")
 		home, err := os.UserHomeDir()
 		if err != nil {
 			t.Fatalf("UserHomeDir() error = %v", err)
@@ -101,7 +101,7 @@ func TestDataDir(t *testing.T) {
 		if runtime.GOOS != "linux" {
 			t.Skip("skipping linux-specific test")
 		}
-		os.Unsetenv("XDG_DATA_HOME")
+		_ = os.Unsetenv("XDG_DATA_HOME")
 		home, err := os.UserHomeDir()
 		if err != nil {
 			t.Fatalf("UserHomeDir() error = %v", err)
@@ -134,7 +134,7 @@ func TestCacheDir(t *testing.T) {
 		if runtime.GOOS != "darwin" {
 			t.Skip("skipping darwin-specific test")
 		}
-		os.Unsetenv("XDG_CACHE_HOME")
+		_ = os.Unsetenv("XDG_CACHE_HOME")
 		home, err := os.UserHomeDir()
 		if err != nil {
 			t.Fatalf("UserHomeDir() error = %v", err)
@@ -153,7 +153,7 @@ func TestCacheDir(t *testing.T) {
 		if runtime.GOOS != "linux" {
 			t.Skip("skipping linux-specific test")
 		}
-		os.Unsetenv("XDG_CACHE_HOME")
+		_ = os.Unsetenv("XDG_CACHE_HOME")
 		home, err := os.UserHomeDir()
 		if err != nil {
 			t.Fatalf("UserHomeDir() error = %v", err)

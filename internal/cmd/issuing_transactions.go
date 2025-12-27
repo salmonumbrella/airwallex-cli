@@ -80,7 +80,7 @@ func newTransactionsListCmd() *cobra.Command {
 			}
 
 			if !outfmt.IsJSON(cmd.Context()) && result.HasMore {
-				fmt.Fprintln(os.Stderr, "# More results available")
+				_, _ = fmt.Fprintln(os.Stderr, "# More results available")
 			}
 			return nil
 		},
@@ -115,16 +115,16 @@ func newTransactionsGetCmd() *cobra.Command {
 			}
 
 			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-			fmt.Fprintf(tw, "transaction_id\t%s\n", txn.TransactionID)
-			fmt.Fprintf(tw, "card_id\t%s\n", txn.CardID)
-			fmt.Fprintf(tw, "card_nickname\t%s\n", txn.CardNickname)
-			fmt.Fprintf(tw, "type\t%s\n", txn.TransactionType)
-			fmt.Fprintf(tw, "amount\t%.2f %s\n", txn.Amount, txn.Currency)
-			fmt.Fprintf(tw, "billing\t%.2f %s\n", txn.BillingAmount, txn.BillingCurrency)
-			fmt.Fprintf(tw, "merchant\t%s\n", txn.Merchant.Name)
-			fmt.Fprintf(tw, "status\t%s\n", txn.Status)
-			fmt.Fprintf(tw, "date\t%s\n", txn.TransactionDate)
-			tw.Flush()
+			_, _ = fmt.Fprintf(tw, "transaction_id\t%s\n", txn.TransactionID)
+			_, _ = fmt.Fprintf(tw, "card_id\t%s\n", txn.CardID)
+			_, _ = fmt.Fprintf(tw, "card_nickname\t%s\n", txn.CardNickname)
+			_, _ = fmt.Fprintf(tw, "type\t%s\n", txn.TransactionType)
+			_, _ = fmt.Fprintf(tw, "amount\t%.2f %s\n", txn.Amount, txn.Currency)
+			_, _ = fmt.Fprintf(tw, "billing\t%.2f %s\n", txn.BillingAmount, txn.BillingCurrency)
+			_, _ = fmt.Fprintf(tw, "merchant\t%s\n", txn.Merchant.Name)
+			_, _ = fmt.Fprintf(tw, "status\t%s\n", txn.Status)
+			_, _ = fmt.Fprintf(tw, "date\t%s\n", txn.TransactionDate)
+			_ = tw.Flush()
 			return nil
 		},
 	}

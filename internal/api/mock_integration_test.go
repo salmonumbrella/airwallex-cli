@@ -147,14 +147,14 @@ func TestMockIntegration_RateLimitRetry(t *testing.T) {
 		if callCount == 1 {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusTooManyRequests)
-			w.Write([]byte(`{"code": "rate_limit", "message": "Rate limit exceeded"}`))
+			_, _ = w.Write([]byte(`{"code": "rate_limit", "message": "Rate limit exceeded"}`))
 			return
 		}
 
 		// Success on retry
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`[{"currency": "USD", "available_amount": 100, "pending_amount": 0, "reserved_amount": 0, "total_amount": 100}]`))
+		_, _ = w.Write([]byte(`[{"currency": "USD", "available_amount": 100, "pending_amount": 0, "reserved_amount": 0, "total_amount": 100}]`))
 	})
 
 	client := &Client{
@@ -212,7 +212,7 @@ func TestMockIntegration_Authentication(t *testing.T) {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"token": "custom-token", "expires_at": "2099-01-01T00:00:00Z"}`))
+		_, _ = w.Write([]byte(`{"token": "custom-token", "expires_at": "2099-01-01T00:00:00Z"}`))
 	})
 
 	// Mock the API endpoint
@@ -320,7 +320,7 @@ func TestMockIntegration_CustomResponseHeaders(t *testing.T) {
 		w.Header().Set("X-Rate-Limit-Reset", "1234567890")
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`[]`))
+		_, _ = w.Write([]byte(`[]`))
 	})
 
 	client := &Client{
@@ -378,7 +378,7 @@ func TestMockIntegration_RequestValidation(t *testing.T) {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`[]`))
+		_, _ = w.Write([]byte(`[]`))
 	})
 
 	client := &Client{

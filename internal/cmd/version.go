@@ -64,14 +64,14 @@ func newVersionCmd() *cobra.Command {
 				return outfmt.WriteJSON(out, info)
 			}
 
-			fmt.Fprintf(out, "airwallex-cli %s\n", Version)
-			fmt.Fprintf(out, "  commit:     %s\n", Commit)
-			fmt.Fprintf(out, "  build date: %s\n", BuildDate)
+			_, _ = fmt.Fprintf(out, "airwallex-cli %s\n", Version)
+			_, _ = fmt.Fprintf(out, "  commit:     %s\n", Commit)
+			_, _ = fmt.Fprintf(out, "  build date: %s\n", BuildDate)
 
 			if updateResult != nil && updateResult.UpdateAvailable {
-				fmt.Fprintf(errOut, "\nUpdate available: %s → %s\n",
+				_, _ = fmt.Fprintf(errOut, "\nUpdate available: %s → %s\n",
 					updateResult.CurrentVersion, updateResult.LatestVersion)
-				fmt.Fprintf(errOut, "Run: brew upgrade airwallex-cli\n")
+				_, _ = fmt.Fprintf(errOut, "Run: brew upgrade airwallex-cli\n")
 			}
 
 			return nil

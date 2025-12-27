@@ -101,19 +101,19 @@ func newLinkedAccountsGetCmd() *cobra.Command {
 			}
 
 			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-			fmt.Fprintf(tw, "id\t%s\n", la.ID)
-			fmt.Fprintf(tw, "type\t%s\n", la.Type)
-			fmt.Fprintf(tw, "status\t%s\n", la.Status)
-			fmt.Fprintf(tw, "account_name\t%s\n", la.AccountName)
+			_, _ = fmt.Fprintf(tw, "id\t%s\n", la.ID)
+			_, _ = fmt.Fprintf(tw, "type\t%s\n", la.Type)
+			_, _ = fmt.Fprintf(tw, "status\t%s\n", la.Status)
+			_, _ = fmt.Fprintf(tw, "account_name\t%s\n", la.AccountName)
 			if la.BankName != "" {
-				fmt.Fprintf(tw, "bank_name\t%s\n", la.BankName)
+				_, _ = fmt.Fprintf(tw, "bank_name\t%s\n", la.BankName)
 			}
 			if la.AccountNumber != "" {
-				fmt.Fprintf(tw, "account_number\t****%s\n", la.AccountNumber)
+				_, _ = fmt.Fprintf(tw, "account_number\t****%s\n", la.AccountNumber)
 			}
-			fmt.Fprintf(tw, "currency\t%s\n", la.Currency)
-			fmt.Fprintf(tw, "created_at\t%s\n", la.CreatedAt)
-			tw.Flush()
+			_, _ = fmt.Fprintf(tw, "currency\t%s\n", la.Currency)
+			_, _ = fmt.Fprintf(tw, "created_at\t%s\n", la.CreatedAt)
+			_ = tw.Flush()
 			return nil
 		},
 	}

@@ -61,11 +61,11 @@ var Endpoints = struct {
 	CardTransactionsGet  Endpoint
 
 	// FX
-	FXRatesCurrent     Endpoint
-	FXQuotesCreate     Endpoint
-	FXQuotesGet        Endpoint
-	FXConversionsList  Endpoint
-	FXConversionsGet   Endpoint
+	FXRatesCurrent      Endpoint
+	FXQuotesCreate      Endpoint
+	FXQuotesGet         Endpoint
+	FXConversionsList   Endpoint
+	FXConversionsGet    Endpoint
 	FXConversionsCreate Endpoint
 
 	// Deposits
@@ -73,10 +73,10 @@ var Endpoints = struct {
 	DepositsGet  Endpoint
 
 	// Reports
-	ReportsCreate      Endpoint
-	ReportsList        Endpoint
-	ReportsGet         Endpoint
-	ReportsGetContent  Endpoint
+	ReportsCreate     Endpoint
+	ReportsList       Endpoint
+	ReportsGet        Endpoint
+	ReportsGetContent Endpoint
 
 	// Webhooks
 	WebhooksList   Endpoint
@@ -93,9 +93,9 @@ var Endpoints = struct {
 	AccountsGet  Endpoint
 
 	// Linked Accounts
-	LinkedAccountsList          Endpoint
-	LinkedAccountsGet           Endpoint
-	LinkedAccountsCreate        Endpoint
+	LinkedAccountsList            Endpoint
+	LinkedAccountsGet             Endpoint
+	LinkedAccountsCreate          Endpoint
 	LinkedAccountsInitiateDeposit Endpoint
 
 	// Payment Links

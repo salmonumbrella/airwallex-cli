@@ -92,25 +92,25 @@ func newAccountsGetCmd() *cobra.Command {
 			}
 
 			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-			fmt.Fprintf(tw, "account_id\t%s\n", a.AccountID)
-			fmt.Fprintf(tw, "account_name\t%s\n", a.AccountName)
-			fmt.Fprintf(tw, "currency\t%s\n", a.Currency)
-			fmt.Fprintf(tw, "country_code\t%s\n", a.CountryCode)
-			fmt.Fprintf(tw, "status\t%s\n", a.Status)
+			_, _ = fmt.Fprintf(tw, "account_id\t%s\n", a.AccountID)
+			_, _ = fmt.Fprintf(tw, "account_name\t%s\n", a.AccountName)
+			_, _ = fmt.Fprintf(tw, "currency\t%s\n", a.Currency)
+			_, _ = fmt.Fprintf(tw, "country_code\t%s\n", a.CountryCode)
+			_, _ = fmt.Fprintf(tw, "status\t%s\n", a.Status)
 			if a.AccountNumber != "" {
-				fmt.Fprintf(tw, "account_number\t%s\n", a.AccountNumber)
+				_, _ = fmt.Fprintf(tw, "account_number\t%s\n", a.AccountNumber)
 			}
 			if a.RoutingCode != "" {
-				fmt.Fprintf(tw, "routing_code\t%s\n", a.RoutingCode)
+				_, _ = fmt.Fprintf(tw, "routing_code\t%s\n", a.RoutingCode)
 			}
 			if a.IBAN != "" {
-				fmt.Fprintf(tw, "iban\t%s\n", a.IBAN)
+				_, _ = fmt.Fprintf(tw, "iban\t%s\n", a.IBAN)
 			}
 			if a.SwiftCode != "" {
-				fmt.Fprintf(tw, "swift_code\t%s\n", a.SwiftCode)
+				_, _ = fmt.Fprintf(tw, "swift_code\t%s\n", a.SwiftCode)
 			}
-			fmt.Fprintf(tw, "created_at\t%s\n", a.CreatedAt)
-			tw.Flush()
+			_, _ = fmt.Fprintf(tw, "created_at\t%s\n", a.CreatedAt)
+			_ = tw.Flush()
 			return nil
 		},
 	}

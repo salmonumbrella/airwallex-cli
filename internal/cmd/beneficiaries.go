@@ -90,20 +90,20 @@ func newBeneficiariesGetCmd() *cobra.Command {
 
 			// For "get" commands, still use manual tabwriter for key-value format
 			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-			fmt.Fprintf(tw, "beneficiary_id\t%s\n", b.BeneficiaryID)
-			fmt.Fprintf(tw, "nickname\t%s\n", b.Nickname)
-			fmt.Fprintf(tw, "entity_type\t%s\n", b.Beneficiary.EntityType)
+			_, _ = fmt.Fprintf(tw, "beneficiary_id\t%s\n", b.BeneficiaryID)
+			_, _ = fmt.Fprintf(tw, "nickname\t%s\n", b.Nickname)
+			_, _ = fmt.Fprintf(tw, "entity_type\t%s\n", b.Beneficiary.EntityType)
 			if b.Beneficiary.CompanyName != "" {
-				fmt.Fprintf(tw, "company_name\t%s\n", b.Beneficiary.CompanyName)
+				_, _ = fmt.Fprintf(tw, "company_name\t%s\n", b.Beneficiary.CompanyName)
 			}
 			if b.Beneficiary.FirstName != "" {
-				fmt.Fprintf(tw, "first_name\t%s\n", b.Beneficiary.FirstName)
-				fmt.Fprintf(tw, "last_name\t%s\n", b.Beneficiary.LastName)
+				_, _ = fmt.Fprintf(tw, "first_name\t%s\n", b.Beneficiary.FirstName)
+				_, _ = fmt.Fprintf(tw, "last_name\t%s\n", b.Beneficiary.LastName)
 			}
-			fmt.Fprintf(tw, "bank_country\t%s\n", b.Beneficiary.BankDetails.BankCountryCode)
-			fmt.Fprintf(tw, "bank_name\t%s\n", b.Beneficiary.BankDetails.BankName)
-			fmt.Fprintf(tw, "account_name\t%s\n", b.Beneficiary.BankDetails.AccountName)
-			tw.Flush()
+			_, _ = fmt.Fprintf(tw, "bank_country\t%s\n", b.Beneficiary.BankDetails.BankCountryCode)
+			_, _ = fmt.Fprintf(tw, "bank_name\t%s\n", b.Beneficiary.BankDetails.BankName)
+			_, _ = fmt.Fprintf(tw, "account_name\t%s\n", b.Beneficiary.BankDetails.AccountName)
+			_ = tw.Flush()
 			return nil
 		},
 	}
@@ -163,11 +163,12 @@ Examples:
 				return fmt.Errorf("--account-currency is required")
 			}
 
-			if entityType == "COMPANY" {
+			switch entityType {
+			case "COMPANY":
 				if companyName == "" {
 					return fmt.Errorf("--company-name is required when entity-type is COMPANY")
 				}
-			} else if entityType == "PERSONAL" {
+			case "PERSONAL":
 				if firstName == "" {
 					return fmt.Errorf("--first-name is required when entity-type is PERSONAL")
 				}

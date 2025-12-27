@@ -289,7 +289,7 @@ func (s *SetupServer) handleSetup(w http.ResponseWriter, r *http.Request) {
 // validateCredentials tests credentials against the Airwallex API
 func (s *SetupServer) validateCredentials(ctx context.Context, accountName, clientID, apiKey, accountID string) error {
 	if accountName == "" || clientID == "" || apiKey == "" {
-		return fmt.Errorf("Account name, Client ID, and API Key are required")
+		return fmt.Errorf("account name, Client ID, and API Key are required")
 	}
 
 	var client *api.Client
@@ -304,7 +304,7 @@ func (s *SetupServer) validateCredentials(ctx context.Context, accountName, clie
 	}
 
 	if _, err := client.Get(ctx, "/api/v1/balances/current"); err != nil {
-		return fmt.Errorf("Connection failed: %v", err)
+		return fmt.Errorf("connection failed: %v", err)
 	}
 
 	return nil

@@ -7,10 +7,10 @@ import (
 	"os"
 	"os/signal"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/spf13/cobra"
+	"golang.org/x/sys/unix"
 	"golang.org/x/term"
 
 	"github.com/salmonumbrella/airwallex-cli/internal/api"
@@ -63,7 +63,7 @@ Examples:
 
 			// Handle interrupt
 			sigChan := make(chan os.Signal, 1)
-			signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+			signal.Notify(sigChan, os.Interrupt, unix.SIGTERM)
 			go func() {
 				<-sigChan
 				cancel()
@@ -130,7 +130,7 @@ Examples:
 
 			if apiKey == "" {
 				fmt.Fprint(os.Stderr, "API Key: ")
-				key, err := term.ReadPassword(int(syscall.Stdin))
+				key, err := term.ReadPassword(int(os.Stdin.Fd()))
 				if err != nil {
 					// Fallback for non-terminal
 					reader := bufio.NewReader(os.Stdin)

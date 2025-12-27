@@ -35,30 +35,30 @@ type Preview struct {
 
 // Write outputs the preview to the writer
 func (p *Preview) Write(w io.Writer) {
-	fmt.Fprintf(w, "\n[DRY-RUN] Would %s %s\n", p.Operation, p.Resource)
-	fmt.Fprintf(w, "─────────────────────────────────────\n")
+	_, _ = fmt.Fprintf(w, "\n[DRY-RUN] Would %s %s\n", p.Operation, p.Resource)
+	_, _ = fmt.Fprintf(w, "─────────────────────────────────────\n")
 
 	if p.Description != "" {
-		fmt.Fprintf(w, "%s\n\n", p.Description)
+		_, _ = fmt.Fprintf(w, "%s\n\n", p.Description)
 	}
 
 	if len(p.Details) > 0 {
 		for k, v := range p.Details {
-			fmt.Fprintf(w, "  %s: %v\n", k, v)
+			_, _ = fmt.Fprintf(w, "  %s: %v\n", k, v)
 		}
-		fmt.Fprintln(w)
+		_, _ = fmt.Fprintln(w)
 	}
 
 	if len(p.Warnings) > 0 {
-		fmt.Fprintln(w, "Warnings:")
+		_, _ = fmt.Fprintln(w, "Warnings:")
 		for _, warning := range p.Warnings {
-			fmt.Fprintf(w, "  ⚠ %s\n", warning)
+			_, _ = fmt.Fprintf(w, "  ⚠ %s\n", warning)
 		}
-		fmt.Fprintln(w)
+		_, _ = fmt.Fprintln(w)
 	}
 
-	fmt.Fprintf(w, "─────────────────────────────────────\n")
-	fmt.Fprintln(w, "No changes made (dry-run mode)")
+	_, _ = fmt.Fprintf(w, "─────────────────────────────────────\n")
+	_, _ = fmt.Fprintln(w, "No changes made (dry-run mode)")
 }
 
 // FormatAmount formats a currency amount for display

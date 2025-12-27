@@ -4,8 +4,8 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"os"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -123,7 +123,7 @@ func validateDateRange(from, to string) error {
 
 // isTerminal is a variable that can be overridden in tests
 var isTerminal = func() bool {
-	return term.IsTerminal(syscall.Stdin)
+	return term.IsTerminal(int(os.Stdin.Fd()))
 }
 
 // ConfirmOrYes prompts for confirmation unless --yes/--force flag is set.

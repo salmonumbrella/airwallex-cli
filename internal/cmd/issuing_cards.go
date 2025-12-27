@@ -72,7 +72,7 @@ func newCardsListCmd() *cobra.Command {
 			}
 
 			if !outfmt.IsJSON(cmd.Context()) && cards.HasMore {
-				fmt.Fprintln(os.Stderr, "# More results available")
+				_, _ = fmt.Fprintln(os.Stderr, "# More results available")
 			}
 			return nil
 		},
@@ -106,15 +106,15 @@ func newCardsGetCmd() *cobra.Command {
 			}
 
 			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-			fmt.Fprintf(tw, "card_id\t%s\n", card.CardID)
-			fmt.Fprintf(tw, "status\t%s\n", card.CardStatus)
-			fmt.Fprintf(tw, "nickname\t%s\n", card.NickName)
-			fmt.Fprintf(tw, "card_number\t%s\n", card.CardNumber)
-			fmt.Fprintf(tw, "brand\t%s\n", card.Brand)
-			fmt.Fprintf(tw, "form_factor\t%s\n", card.FormFactor)
-			fmt.Fprintf(tw, "cardholder_id\t%s\n", card.CardholderID)
-			fmt.Fprintf(tw, "created_at\t%s\n", card.CreatedAt)
-			tw.Flush()
+			_, _ = fmt.Fprintf(tw, "card_id\t%s\n", card.CardID)
+			_, _ = fmt.Fprintf(tw, "status\t%s\n", card.CardStatus)
+			_, _ = fmt.Fprintf(tw, "nickname\t%s\n", card.NickName)
+			_, _ = fmt.Fprintf(tw, "card_number\t%s\n", card.CardNumber)
+			_, _ = fmt.Fprintf(tw, "brand\t%s\n", card.Brand)
+			_, _ = fmt.Fprintf(tw, "form_factor\t%s\n", card.FormFactor)
+			_, _ = fmt.Fprintf(tw, "cardholder_id\t%s\n", card.CardholderID)
+			_, _ = fmt.Fprintf(tw, "created_at\t%s\n", card.CreatedAt)
+			_ = tw.Flush()
 			return nil
 		},
 	}
@@ -273,11 +273,11 @@ Program types: PREPAID, DEBIT, CREDIT, DEFERRED_DEBIT`,
 					defer details.Zeroize()
 					fmt.Println()
 					tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-					fmt.Fprintln(tw, "CARD DETAILS (Company Card)")
-					fmt.Fprintf(tw, "card_number\t%s\n", details.CardNumber)
-					fmt.Fprintf(tw, "cvv\t%s\n", details.Cvv)
-					fmt.Fprintf(tw, "expiry\t%02d/%d\n", details.ExpiryMonth, details.ExpiryYear)
-					tw.Flush()
+					_, _ = fmt.Fprintln(tw, "CARD DETAILS (Company Card)")
+					_, _ = fmt.Fprintf(tw, "card_number\t%s\n", details.CardNumber)
+					_, _ = fmt.Fprintf(tw, "cvv\t%s\n", details.Cvv)
+					_, _ = fmt.Fprintf(tw, "expiry\t%02d/%d\n", details.ExpiryMonth, details.ExpiryYear)
+					_ = tw.Flush()
 				}
 			}
 
@@ -397,15 +397,15 @@ func newCardsDetailsCmd() *cobra.Command {
 			}
 
 			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-			fmt.Fprintf(tw, "card_id\t%s\n", details.CardID)
+			_, _ = fmt.Fprintf(tw, "card_id\t%s\n", details.CardID)
 			if showPAN {
-				fmt.Fprintf(tw, "card_number\t%s\n", details.CardNumber)
+				_, _ = fmt.Fprintf(tw, "card_number\t%s\n", details.CardNumber)
 			} else {
-				fmt.Fprintf(tw, "card_number\t%s\n", details.MaskedPAN())
+				_, _ = fmt.Fprintf(tw, "card_number\t%s\n", details.MaskedPAN())
 			}
-			fmt.Fprintf(tw, "cvv\t%s\n", details.Cvv)
-			fmt.Fprintf(tw, "expiry\t%02d/%d\n", details.ExpiryMonth, details.ExpiryYear)
-			tw.Flush()
+			_, _ = fmt.Fprintf(tw, "cvv\t%s\n", details.Cvv)
+			_, _ = fmt.Fprintf(tw, "expiry\t%02d/%d\n", details.ExpiryMonth, details.ExpiryYear)
+			_ = tw.Flush()
 			return nil
 		},
 	}

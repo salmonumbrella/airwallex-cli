@@ -63,7 +63,7 @@ func TestFormatter_StartTable_TextMode(t *testing.T) {
 
 	f.Row("a", "b", "c")
 	f.Row("d", "e", "f")
-	f.EndTable()
+	_ = f.EndTable()
 
 	got := buf.String()
 	if !strings.Contains(got, "COL1") {
@@ -116,7 +116,7 @@ func TestFormatter_WithCustomWriters(t *testing.T) {
 
 	if f.StartTable([]string{"H1"}) {
 		f.Row("val")
-		f.EndTable()
+		_ = f.EndTable()
 	}
 	if outBuf.Len() == 0 {
 		t.Error("WithWriter() not used")
@@ -131,7 +131,7 @@ func TestFormatter_TableFormatting(t *testing.T) {
 	f.StartTable([]string{"ID", "NAME", "STATUS"})
 	f.Row("1", "Alice", "active")
 	f.Row("2", "Bob", "inactive")
-	f.EndTable()
+	_ = f.EndTable()
 
 	got := buf.String()
 	lines := strings.Split(strings.TrimSpace(got), "\n")

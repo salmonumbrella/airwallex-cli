@@ -120,14 +120,14 @@ Validity periods: 1m, 5m, 15m, 30m, 1h, 2h, 4h, 12h, 24h`,
 
 			u.Success(fmt.Sprintf("Created quote: %s (expires: %s)", quote.ID, quote.RateExpiry))
 			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-			fmt.Fprintf(tw, "quote_id\t%s\n", quote.ID)
-			fmt.Fprintf(tw, "sell_currency\t%s\n", quote.SellCurrency)
-			fmt.Fprintf(tw, "buy_currency\t%s\n", quote.BuyCurrency)
-			fmt.Fprintf(tw, "sell_amount\t%.2f\n", quote.SellAmount)
-			fmt.Fprintf(tw, "buy_amount\t%.2f\n", quote.BuyAmount)
-			fmt.Fprintf(tw, "rate\t%.6f\n", quote.Rate)
-			fmt.Fprintf(tw, "expires\t%s\n", quote.RateExpiry)
-			tw.Flush()
+			_, _ = fmt.Fprintf(tw, "quote_id\t%s\n", quote.ID)
+			_, _ = fmt.Fprintf(tw, "sell_currency\t%s\n", quote.SellCurrency)
+			_, _ = fmt.Fprintf(tw, "buy_currency\t%s\n", quote.BuyCurrency)
+			_, _ = fmt.Fprintf(tw, "sell_amount\t%.2f\n", quote.SellAmount)
+			_, _ = fmt.Fprintf(tw, "buy_amount\t%.2f\n", quote.BuyAmount)
+			_, _ = fmt.Fprintf(tw, "rate\t%.6f\n", quote.Rate)
+			_, _ = fmt.Fprintf(tw, "expires\t%s\n", quote.RateExpiry)
+			_ = tw.Flush()
 			return nil
 		},
 	}
@@ -163,15 +163,15 @@ func newFXQuotesGetCmd() *cobra.Command {
 			}
 
 			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-			fmt.Fprintf(tw, "quote_id\t%s\n", quote.ID)
-			fmt.Fprintf(tw, "sell_currency\t%s\n", quote.SellCurrency)
-			fmt.Fprintf(tw, "buy_currency\t%s\n", quote.BuyCurrency)
-			fmt.Fprintf(tw, "sell_amount\t%.2f\n", quote.SellAmount)
-			fmt.Fprintf(tw, "buy_amount\t%.2f\n", quote.BuyAmount)
-			fmt.Fprintf(tw, "rate\t%.6f\n", quote.Rate)
-			fmt.Fprintf(tw, "status\t%s\n", quote.Status)
-			fmt.Fprintf(tw, "expires\t%s\n", quote.RateExpiry)
-			tw.Flush()
+			_, _ = fmt.Fprintf(tw, "quote_id\t%s\n", quote.ID)
+			_, _ = fmt.Fprintf(tw, "sell_currency\t%s\n", quote.SellCurrency)
+			_, _ = fmt.Fprintf(tw, "buy_currency\t%s\n", quote.BuyCurrency)
+			_, _ = fmt.Fprintf(tw, "sell_amount\t%.2f\n", quote.SellAmount)
+			_, _ = fmt.Fprintf(tw, "buy_amount\t%.2f\n", quote.BuyAmount)
+			_, _ = fmt.Fprintf(tw, "rate\t%.6f\n", quote.Rate)
+			_, _ = fmt.Fprintf(tw, "status\t%s\n", quote.Status)
+			_, _ = fmt.Fprintf(tw, "expires\t%s\n", quote.RateExpiry)
+			_ = tw.Flush()
 			return nil
 		},
 	}

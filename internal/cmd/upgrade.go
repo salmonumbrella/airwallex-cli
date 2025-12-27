@@ -56,10 +56,10 @@ On other systems:
 
 			// Fallback: show manual instructions
 			u.Info("To upgrade manually, run:")
-			fmt.Fprintln(cmd.OutOrStdout(), "  go install github.com/salmonumbrella/airwallex-cli/cmd/airwallex@latest")
-			fmt.Fprintln(cmd.OutOrStdout(), "")
-			fmt.Fprintln(cmd.OutOrStdout(), "Or download from:")
-			fmt.Fprintln(cmd.OutOrStdout(), "  "+result.UpdateURL)
+			_, _ = fmt.Fprintln(cmd.OutOrStdout(), "  go install github.com/salmonumbrella/airwallex-cli/cmd/airwallex@latest")
+			_, _ = fmt.Fprintln(cmd.OutOrStdout(), "")
+			_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Or download from:")
+			_, _ = fmt.Fprintln(cmd.OutOrStdout(), "  "+result.UpdateURL)
 
 			return nil
 		},

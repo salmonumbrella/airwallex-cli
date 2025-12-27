@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 	"strings"
 	"testing"
 	"time"
@@ -69,13 +68,12 @@ func isExpectedTestError(err error) bool {
 // Returns a cleanup function that should be deferred to restore the original state.
 func setupTestEnvironment(t *testing.T) func() {
 	t.Helper()
-	os.Setenv("AWX_ACCOUNT", "test-account")
+	t.Setenv("AWX_ACCOUNT", "test-account")
 	original := openSecretsStore
 	openSecretsStore = func() (secrets.Store, error) {
 		return &mockStore{}, nil
 	}
 	return func() {
-		os.Unsetenv("AWX_ACCOUNT")
 		openSecretsStore = original
 	}
 }

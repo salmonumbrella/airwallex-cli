@@ -14,11 +14,11 @@ import (
 
 func TestVersionCommand(t *testing.T) {
 	tests := []struct {
-		name          string
-		version       string
-		commit        string
-		buildDate     string
-		wantContains  []string
+		name         string
+		version      string
+		commit       string
+		buildDate    string
+		wantContains []string
 	}{
 		{
 			name:      "with all version info",
@@ -99,11 +99,11 @@ func TestVersionCommand(t *testing.T) {
 
 func TestVersionCommand_DefaultValues(t *testing.T) {
 	tests := []struct {
-		name          string
-		version       string
-		commit        string
-		buildDate     string
-		wantContains  []string
+		name         string
+		version      string
+		commit       string
+		buildDate    string
+		wantContains []string
 	}{
 		{
 			name:      "all default values",
