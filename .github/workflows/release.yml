@@ -10,7 +10,9 @@ permissions:
 
 jobs:
   goreleaser:
-    runs-on: ubuntu-latest
+    # Run on macOS to enable CGO for darwin keychain support
+    # macOS can cross-compile to Linux/Windows with CGO_ENABLED=0
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
         with:

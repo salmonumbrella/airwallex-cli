@@ -3,14 +3,31 @@ version: 2
 project_name: airwallex-cli
 
 builds:
-  - id: airwallex
+  # macOS builds - require CGO for keychain access (99designs/keyring uses go-keychain)
+  - id: airwallex-darwin
+    main: ./cmd/airwallex
+    binary: airwallex
+    env:
+      - CGO_ENABLED=1
+    goos:
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X github.com/salmonumbrella/airwallex-cli/internal/cmd.Version={{.Version}}
+      - -X github.com/salmonumbrella/airwallex-cli/internal/cmd.Commit={{.ShortCommit}}
+      - -X github.com/salmonumbrella/airwallex-cli/internal/cmd.BuildDate={{.Date}}
+
+  # Linux and Windows builds - no CGO needed
+  - id: airwallex-other
     main: ./cmd/airwallex
     binary: airwallex
     env:
       - CGO_ENABLED=0
     goos:
       - linux
-      - darwin
       - windows
     goarch:
       - amd64

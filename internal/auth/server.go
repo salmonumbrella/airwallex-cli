@@ -477,9 +477,10 @@ func (s *SetupServer) handleSubmit(w http.ResponseWriter, r *http.Request) {
 		AccountID: req.AccountID,
 	})
 	if err != nil {
+		slog.Error("failed to save credentials", "error", err)
 		writeJSON(w, http.StatusOK, map[string]any{
 			"success": false,
-			"error":   "Failed to save credentials to secure storage",
+			"error":   fmt.Sprintf("Failed to save credentials: %v", err),
 		})
 		return
 	}
