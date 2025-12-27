@@ -7,10 +7,10 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/spf13/cobra"
-	"golang.org/x/sys/unix"
 	"golang.org/x/term"
 
 	"github.com/salmonumbrella/airwallex-cli/internal/api"
@@ -63,7 +63,7 @@ Examples:
 
 			// Handle interrupt
 			sigChan := make(chan os.Signal, 1)
-			signal.Notify(sigChan, os.Interrupt, unix.SIGTERM)
+			signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 			go func() {
 				<-sigChan
 				cancel()
