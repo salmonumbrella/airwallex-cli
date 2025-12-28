@@ -116,17 +116,3 @@ changelog:
       - Merge pull request
       - Merge branch
 
-brews:
-  - name: airwallex-cli
-    repository:
-      owner: salmonumbrella
-      name: homebrew-tap
-      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
-    directory: Formula
-    homepage: "https://github.com/salmonumbrella/airwallex-cli"
-    description: "CLI for Airwallex to manage transfers, beneficiaries, and balances"
-    license: "MIT"
-    install: |
-      bin.install "airwallex"
-    test: |
-      system "#{bin}/airwallex", "--help"
