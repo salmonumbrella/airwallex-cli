@@ -118,6 +118,7 @@ changelog:
 
 brews:
   - name: airwallex-cli
+    skip_upload: true
     repository:
       owner: salmonumbrella
       name: homebrew-tap
