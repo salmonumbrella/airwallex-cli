@@ -644,12 +644,12 @@ func TestGetBalanceHistory_InvalidJSON(t *testing.T) {
 
 func TestGetBalanceHistory_PartialPagination(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Verify only page_size is set when page_num is 0
+		// Verify both page_num and page_size are set (API requires both)
 		pageNum := r.URL.Query().Get("page_num")
 		pageSize := r.URL.Query().Get("page_size")
 
-		if pageNum != "" {
-			t.Errorf("page_num = %q, want empty", pageNum)
+		if pageNum != "1" {
+			t.Errorf("page_num = %q, want '1'", pageNum)
 		}
 		if pageSize != "20" {
 			t.Errorf("page_size = %q, want '20'", pageSize)

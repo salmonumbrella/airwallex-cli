@@ -68,10 +68,12 @@ func (c *Client) ListTransfers(ctx context.Context, status string, pageNum, page
 	if status != "" {
 		params.Set("status", status)
 	}
-	if pageNum > 0 {
-		params.Set("page_num", fmt.Sprintf("%d", pageNum))
-	}
+	// Airwallex API requires both page_num and page_size together
 	if pageSize > 0 {
+		if pageNum < 1 {
+			pageNum = 1 // API uses 1-based page numbering
+		}
+		params.Set("page_num", fmt.Sprintf("%d", pageNum))
 		params.Set("page_size", fmt.Sprintf("%d", pageSize))
 	}
 
@@ -202,10 +204,12 @@ func (c *Client) WaitForTransfer(ctx context.Context, transferID string, timeout
 // ListBeneficiaries lists all beneficiaries
 func (c *Client) ListBeneficiaries(ctx context.Context, pageNum, pageSize int) (*BeneficiariesResponse, error) {
 	params := url.Values{}
-	if pageNum > 0 {
-		params.Set("page_num", fmt.Sprintf("%d", pageNum))
-	}
+	// Airwallex API requires both page_num and page_size together
 	if pageSize > 0 {
+		if pageNum < 1 {
+			pageNum = 1 // API uses 1-based page numbering
+		}
+		params.Set("page_num", fmt.Sprintf("%d", pageNum))
 		params.Set("page_size", fmt.Sprintf("%d", pageSize))
 	}
 

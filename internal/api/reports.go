@@ -88,10 +88,12 @@ func (c *Client) CreateFinancialReport(ctx context.Context, req *CreateReportReq
 // ListFinancialReports lists all financial reports
 func (c *Client) ListFinancialReports(ctx context.Context, pageNum, pageSize int) (*FinancialReportsResponse, error) {
 	params := url.Values{}
-	if pageNum > 0 {
-		params.Set("page_num", fmt.Sprintf("%d", pageNum))
-	}
+	// Airwallex API requires both page_num and page_size together
 	if pageSize > 0 {
+		if pageNum < 1 {
+			pageNum = 1 // API uses 1-based page numbering
+		}
+		params.Set("page_num", fmt.Sprintf("%d", pageNum))
 		params.Set("page_size", fmt.Sprintf("%d", pageSize))
 	}
 

@@ -119,10 +119,12 @@ func (c *Client) ListCards(ctx context.Context, status, cardholderID string, pag
 	if cardholderID != "" {
 		params.Set("cardholder_id", cardholderID)
 	}
-	if pageNum > 0 {
-		params.Set("page_num", fmt.Sprintf("%d", pageNum))
-	}
+	// Airwallex API requires both page_num and page_size together
 	if pageSize > 0 {
+		if pageNum < 1 {
+			pageNum = 1 // API uses 1-based page numbering
+		}
+		params.Set("page_num", fmt.Sprintf("%d", pageNum))
 		params.Set("page_size", fmt.Sprintf("%d", pageSize))
 	}
 
@@ -295,10 +297,12 @@ func (c *Client) CreateCard(ctx context.Context, req map[string]interface{}) (*C
 // ListCardholders lists all cardholders
 func (c *Client) ListCardholders(ctx context.Context, pageNum, pageSize int) (*CardholdersResponse, error) {
 	params := url.Values{}
-	if pageNum > 0 {
-		params.Set("page_num", fmt.Sprintf("%d", pageNum))
-	}
+	// Airwallex API requires both page_num and page_size together
 	if pageSize > 0 {
+		if pageNum < 1 {
+			pageNum = 1 // API uses 1-based page numbering
+		}
+		params.Set("page_num", fmt.Sprintf("%d", pageNum))
 		params.Set("page_size", fmt.Sprintf("%d", pageSize))
 	}
 
@@ -408,10 +412,12 @@ func (c *Client) ListTransactions(ctx context.Context, cardID string, from, to s
 	if to != "" {
 		params.Set("to_created_at", to)
 	}
-	if pageNum > 0 {
-		params.Set("page_num", fmt.Sprintf("%d", pageNum))
-	}
+	// Airwallex API requires both page_num and page_size together
 	if pageSize > 0 {
+		if pageNum < 1 {
+			pageNum = 1 // API uses 1-based page numbering
+		}
+		params.Set("page_num", fmt.Sprintf("%d", pageNum))
 		params.Set("page_size", fmt.Sprintf("%d", pageSize))
 	}
 

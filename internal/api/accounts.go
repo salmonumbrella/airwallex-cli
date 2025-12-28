@@ -30,10 +30,12 @@ type GlobalAccountsResponse struct {
 // ListGlobalAccounts lists all global accounts
 func (c *Client) ListGlobalAccounts(ctx context.Context, pageNum, pageSize int) (*GlobalAccountsResponse, error) {
 	params := url.Values{}
-	if pageNum > 0 {
-		params.Set("page_num", strconv.Itoa(pageNum))
-	}
+	// Airwallex API requires both page_num and page_size together
 	if pageSize > 0 {
+		if pageNum < 1 {
+			pageNum = 1 // API uses 1-based page numbering
+		}
+		params.Set("page_num", strconv.Itoa(pageNum))
 		params.Set("page_size", strconv.Itoa(pageSize))
 	}
 
