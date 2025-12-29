@@ -10,5 +10,7 @@ func newIssuingCmd() *cobra.Command {
 	cmd.AddCommand(newCardsCmd())
 	cmd.AddCommand(newCardholdersCmd())
 	cmd.AddCommand(newTransactionsCmd())
+	cmd.AddCommand(newAuthorizationsCmd())
+	cmd.AddCommand(newDisputesCmd())
 	return cmd
 }

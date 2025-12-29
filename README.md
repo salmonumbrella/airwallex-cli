@@ -137,6 +137,25 @@ airwallex issuing transactions list [--card-id <id>] [--from <date>] [--to <date
 airwallex issuing transactions get <transactionId>
 ```
 
+### Issuing - Authorizations
+
+```bash
+airwallex issuing authorizations list [--status <status>] [--card-id <id>] [--cardholder-id <id>] \
+  [--from <date>] [--to <date>]
+airwallex issuing authorizations get <transactionId>
+```
+
+### Issuing - Disputes
+
+```bash
+airwallex issuing disputes list
+airwallex issuing disputes get <disputeId>
+airwallex issuing disputes create --data '{...}'
+airwallex issuing disputes update <disputeId> --data '{...}'
+airwallex issuing disputes submit <disputeId>
+airwallex issuing disputes cancel <disputeId>
+```
+
 ### Transfers
 
 ```bash
@@ -156,6 +175,17 @@ airwallex beneficiaries create --entity-type COMPANY|PERSONAL --bank-country <co
 airwallex beneficiaries update <beneficiaryId> ...
 airwallex beneficiaries delete <beneficiaryId>
 airwallex beneficiaries validate --entity-type ... --bank-country ...
+```
+
+### Payers
+
+```bash
+airwallex payers list
+airwallex payers get <payerId>
+airwallex payers create --data '{...}'
+airwallex payers update <payerId> --data '{...}'
+airwallex payers delete <payerId>
+airwallex payers validate --data '{...}'
 ```
 
 ### FX / Conversions
@@ -204,6 +234,33 @@ airwallex schemas transfer --source-currency USD --dest-currency EUR
 airwallex payment-links list
 airwallex payment-links get <linkId>
 airwallex payment-links create --amount 100 --currency USD --description "Invoice #123"
+```
+
+### Billing
+
+```bash
+airwallex billing customers list
+airwallex billing customers get <customerId>
+airwallex billing customers create --data '{...}'
+airwallex billing customers update <customerId> --data '{...}'
+
+airwallex billing products list
+airwallex billing products get <productId>
+airwallex billing products create --data '{...}'
+airwallex billing products update <productId> --data '{...}'
+
+airwallex billing prices list
+airwallex billing prices get <priceId>
+airwallex billing prices create --data '{...}'
+airwallex billing prices update <priceId> --data '{...}'
+
+airwallex billing invoices list
+airwallex billing invoices get <invoiceId>
+airwallex billing invoices create --data '{...}'
+
+airwallex billing subscriptions list
+airwallex billing subscriptions get <subscriptionId>
+airwallex billing subscriptions create --data '{...}'
 ```
 
 ### Webhooks

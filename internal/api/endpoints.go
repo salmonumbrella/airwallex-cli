@@ -34,6 +34,14 @@ var Endpoints = struct {
 	BeneficiariesDelete   Endpoint
 	BeneficiariesValidate Endpoint
 
+	// Payers
+	PayersList     Endpoint
+	PayersGet      Endpoint
+	PayersCreate   Endpoint
+	PayersUpdate   Endpoint
+	PayersDelete   Endpoint
+	PayersValidate Endpoint
+
 	// Confirmation Letters
 	ConfirmationLettersCreate Endpoint
 
@@ -59,6 +67,18 @@ var Endpoints = struct {
 	// Card Transactions
 	CardTransactionsList Endpoint
 	CardTransactionsGet  Endpoint
+
+	// Issuing Authorizations
+	AuthorizationsList Endpoint
+	AuthorizationsGet  Endpoint
+
+	// Issuing Transaction Disputes
+	TransactionDisputesList   Endpoint
+	TransactionDisputesGet    Endpoint
+	TransactionDisputesCreate Endpoint
+	TransactionDisputesUpdate Endpoint
+	TransactionDisputesSubmit Endpoint
+	TransactionDisputesCancel Endpoint
 
 	// FX
 	FXRatesCurrent      Endpoint
@@ -102,6 +122,34 @@ var Endpoints = struct {
 	PaymentLinksList   Endpoint
 	PaymentLinksGet    Endpoint
 	PaymentLinksCreate Endpoint
+
+	// Billing Customers
+	BillingCustomersList   Endpoint
+	BillingCustomersGet    Endpoint
+	BillingCustomersCreate Endpoint
+	BillingCustomersUpdate Endpoint
+
+	// Billing Products
+	BillingProductsList   Endpoint
+	BillingProductsGet    Endpoint
+	BillingProductsCreate Endpoint
+	BillingProductsUpdate Endpoint
+
+	// Billing Prices
+	BillingPricesList   Endpoint
+	BillingPricesGet    Endpoint
+	BillingPricesCreate Endpoint
+	BillingPricesUpdate Endpoint
+
+	// Billing Invoices
+	BillingInvoicesList   Endpoint
+	BillingInvoicesGet    Endpoint
+	BillingInvoicesCreate Endpoint
+
+	// Billing Subscriptions
+	BillingSubscriptionsList   Endpoint
+	BillingSubscriptionsGet    Endpoint
+	BillingSubscriptionsCreate Endpoint
 }{
 	// Authentication
 	Login: Endpoint{
@@ -170,6 +218,44 @@ var Endpoints = struct {
 	},
 	BeneficiariesValidate: Endpoint{
 		Path:           "/api/v1/beneficiaries/validate",
+		Method:         http.MethodPost,
+		RequiresIdem:   false,
+		ExpectedStatus: http.StatusOK,
+	},
+
+	// Payers
+	PayersList: Endpoint{
+		Path:           "/api/v1/payers",
+		Method:         http.MethodGet,
+		RequiresIdem:   false,
+		ExpectedStatus: http.StatusOK,
+	},
+	PayersGet: Endpoint{
+		Path:           "/api/v1/payers/{id}",
+		Method:         http.MethodGet,
+		RequiresIdem:   false,
+		ExpectedStatus: http.StatusOK,
+	},
+	PayersCreate: Endpoint{
+		Path:           "/api/v1/payers/create",
+		Method:         http.MethodPost,
+		RequiresIdem:   false,
+		ExpectedStatus: http.StatusCreated,
+	},
+	PayersUpdate: Endpoint{
+		Path:           "/api/v1/payers/update/{id}",
+		Method:         http.MethodPost,
+		RequiresIdem:   false,
+		ExpectedStatus: http.StatusOK,
+	},
+	PayersDelete: Endpoint{
+		Path:           "/api/v1/payers/delete/{id}",
+		Method:         http.MethodPost,
+		RequiresIdem:   false,
+		ExpectedStatus: http.StatusOK,
+	},
+	PayersValidate: Endpoint{
+		Path:           "/api/v1/payers/validate",
 		Method:         http.MethodPost,
 		RequiresIdem:   false,
 		ExpectedStatus: http.StatusOK,
@@ -277,6 +363,58 @@ var Endpoints = struct {
 	CardTransactionsGet: Endpoint{
 		Path:           "/api/v1/issuing/transactions/{id}",
 		Method:         http.MethodGet,
+		RequiresIdem:   false,
+		ExpectedStatus: http.StatusOK,
+	},
+
+	// Issuing Authorizations
+	AuthorizationsList: Endpoint{
+		Path:           "/api/v1/issuing/authorizations",
+		Method:         http.MethodGet,
+		RequiresIdem:   false,
+		ExpectedStatus: http.StatusOK,
+	},
+	AuthorizationsGet: Endpoint{
+		Path:           "/api/v1/issuing/authorizations/{id}",
+		Method:         http.MethodGet,
+		RequiresIdem:   false,
+		ExpectedStatus: http.StatusOK,
+	},
+
+	// Issuing Transaction Disputes
+	TransactionDisputesList: Endpoint{
+		Path:           "/api/v1/issuing/transaction_disputes",
+		Method:         http.MethodGet,
+		RequiresIdem:   false,
+		ExpectedStatus: http.StatusOK,
+	},
+	TransactionDisputesGet: Endpoint{
+		Path:           "/api/v1/issuing/transaction_disputes/{id}",
+		Method:         http.MethodGet,
+		RequiresIdem:   false,
+		ExpectedStatus: http.StatusOK,
+	},
+	TransactionDisputesCreate: Endpoint{
+		Path:           "/api/v1/issuing/transaction_disputes/create",
+		Method:         http.MethodPost,
+		RequiresIdem:   false,
+		ExpectedStatus: http.StatusCreated,
+	},
+	TransactionDisputesUpdate: Endpoint{
+		Path:           "/api/v1/issuing/transaction_disputes/{id}/update",
+		Method:         http.MethodPost,
+		RequiresIdem:   false,
+		ExpectedStatus: http.StatusOK,
+	},
+	TransactionDisputesSubmit: Endpoint{
+		Path:           "/api/v1/issuing/transaction_disputes/{id}/submit",
+		Method:         http.MethodPost,
+		RequiresIdem:   false,
+		ExpectedStatus: http.StatusOK,
+	},
+	TransactionDisputesCancel: Endpoint{
+		Path:           "/api/v1/issuing/transaction_disputes/{id}/cancel",
+		Method:         http.MethodPost,
 		RequiresIdem:   false,
 		ExpectedStatus: http.StatusOK,
 	},
@@ -456,6 +594,124 @@ var Endpoints = struct {
 		Path:           "/api/v1/pa/payment_links/create",
 		Method:         http.MethodPost,
 		RequiresIdem:   true,
+		ExpectedStatus: http.StatusCreated,
+	},
+
+	// Billing Customers
+	BillingCustomersList: Endpoint{
+		Path:           "/api/v1/billing_customers",
+		Method:         http.MethodGet,
+		RequiresIdem:   false,
+		ExpectedStatus: http.StatusOK,
+	},
+	BillingCustomersGet: Endpoint{
+		Path:           "/api/v1/billing_customers/{id}",
+		Method:         http.MethodGet,
+		RequiresIdem:   false,
+		ExpectedStatus: http.StatusOK,
+	},
+	BillingCustomersCreate: Endpoint{
+		Path:           "/api/v1/billing_customers/create",
+		Method:         http.MethodPost,
+		RequiresIdem:   false,
+		ExpectedStatus: http.StatusCreated,
+	},
+	BillingCustomersUpdate: Endpoint{
+		Path:           "/api/v1/billing_customers/{id}/update",
+		Method:         http.MethodPost,
+		RequiresIdem:   false,
+		ExpectedStatus: http.StatusOK,
+	},
+
+	// Billing Products
+	BillingProductsList: Endpoint{
+		Path:           "/api/v1/products",
+		Method:         http.MethodGet,
+		RequiresIdem:   false,
+		ExpectedStatus: http.StatusOK,
+	},
+	BillingProductsGet: Endpoint{
+		Path:           "/api/v1/products/{id}",
+		Method:         http.MethodGet,
+		RequiresIdem:   false,
+		ExpectedStatus: http.StatusOK,
+	},
+	BillingProductsCreate: Endpoint{
+		Path:           "/api/v1/products/create",
+		Method:         http.MethodPost,
+		RequiresIdem:   false,
+		ExpectedStatus: http.StatusCreated,
+	},
+	BillingProductsUpdate: Endpoint{
+		Path:           "/api/v1/products/{id}/update",
+		Method:         http.MethodPost,
+		RequiresIdem:   false,
+		ExpectedStatus: http.StatusOK,
+	},
+
+	// Billing Prices
+	BillingPricesList: Endpoint{
+		Path:           "/api/v1/prices",
+		Method:         http.MethodGet,
+		RequiresIdem:   false,
+		ExpectedStatus: http.StatusOK,
+	},
+	BillingPricesGet: Endpoint{
+		Path:           "/api/v1/prices/{id}",
+		Method:         http.MethodGet,
+		RequiresIdem:   false,
+		ExpectedStatus: http.StatusOK,
+	},
+	BillingPricesCreate: Endpoint{
+		Path:           "/api/v1/prices/create",
+		Method:         http.MethodPost,
+		RequiresIdem:   false,
+		ExpectedStatus: http.StatusCreated,
+	},
+	BillingPricesUpdate: Endpoint{
+		Path:           "/api/v1/prices/{id}/update",
+		Method:         http.MethodPost,
+		RequiresIdem:   false,
+		ExpectedStatus: http.StatusOK,
+	},
+
+	// Billing Invoices
+	BillingInvoicesList: Endpoint{
+		Path:           "/api/v1/invoices",
+		Method:         http.MethodGet,
+		RequiresIdem:   false,
+		ExpectedStatus: http.StatusOK,
+	},
+	BillingInvoicesGet: Endpoint{
+		Path:           "/api/v1/invoices/{id}",
+		Method:         http.MethodGet,
+		RequiresIdem:   false,
+		ExpectedStatus: http.StatusOK,
+	},
+	BillingInvoicesCreate: Endpoint{
+		Path:           "/api/v1/invoices/create",
+		Method:         http.MethodPost,
+		RequiresIdem:   false,
+		ExpectedStatus: http.StatusCreated,
+	},
+
+	// Billing Subscriptions
+	BillingSubscriptionsList: Endpoint{
+		Path:           "/api/v1/subscriptions",
+		Method:         http.MethodGet,
+		RequiresIdem:   false,
+		ExpectedStatus: http.StatusOK,
+	},
+	BillingSubscriptionsGet: Endpoint{
+		Path:           "/api/v1/subscriptions/{id}",
+		Method:         http.MethodGet,
+		RequiresIdem:   false,
+		ExpectedStatus: http.StatusOK,
+	},
+	BillingSubscriptionsCreate: Endpoint{
+		Path:           "/api/v1/subscriptions/create",
+		Method:         http.MethodPost,
+		RequiresIdem:   false,
 		ExpectedStatus: http.StatusCreated,
 	},
 }

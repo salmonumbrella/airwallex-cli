@@ -100,6 +100,8 @@ func NewRootCmd() *cobra.Command {
 	cmd.AddCommand(newSchemasCmd())
 	cmd.AddCommand(newPaymentLinksCmd())
 	cmd.AddCommand(newWebhooksCmd())
+	cmd.AddCommand(newPayersCmd())
+	cmd.AddCommand(newBillingCmd())
 
 	return cmd
 }

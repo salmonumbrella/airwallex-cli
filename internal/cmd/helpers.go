@@ -3,7 +3,9 @@ package cmd
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"time"
@@ -12,6 +14,7 @@ import (
 	"golang.org/x/term"
 
 	"github.com/salmonumbrella/airwallex-cli/internal/api"
+	"github.com/salmonumbrella/airwallex-cli/internal/batch"
 	"github.com/salmonumbrella/airwallex-cli/internal/iocontext"
 	"github.com/salmonumbrella/airwallex-cli/internal/outfmt"
 	"github.com/salmonumbrella/airwallex-cli/internal/secrets"
@@ -160,4 +163,45 @@ func ConfirmOrYes(ctx context.Context, prompt string) (bool, error) {
 
 	response = strings.TrimSpace(strings.ToLower(response))
 	return response == "y" || response == "yes", nil
+}
+
+func readJSONPayload(data, fromFile string) (map[string]interface{}, error) {
+	if data != "" && fromFile != "" {
+		return nil, fmt.Errorf("use only one of --data or --from-file")
+	}
+
+	var reader io.Reader
+	switch {
+	case fromFile != "":
+		if fromFile == "-" {
+			reader = os.Stdin
+		} else {
+			//nolint:gosec // G304: filename comes from user input, intentional
+			f, err := os.Open(fromFile)
+			if err != nil {
+				return nil, fmt.Errorf("failed to open file: %w", err)
+			}
+			defer func() { _ = f.Close() }()
+			reader = f
+		}
+	case data != "":
+		reader = strings.NewReader(data)
+	default:
+		return nil, fmt.Errorf("provide --data or --from-file")
+	}
+
+	limitedReader := io.LimitReader(reader, batch.MaxInputSize+1)
+	payload, err := io.ReadAll(limitedReader)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read JSON payload: %w", err)
+	}
+	if len(payload) > batch.MaxInputSize {
+		return nil, fmt.Errorf("input too large: exceeds maximum size of %d bytes", batch.MaxInputSize)
+	}
+
+	var result map[string]interface{}
+	if err := json.Unmarshal(payload, &result); err != nil {
+		return nil, fmt.Errorf("invalid JSON object: %w", err)
+	}
+	return result, nil
 }
