@@ -60,10 +60,10 @@ Examples:
 					required = "*"
 				}
 				desc := f.Description
-				if len(f.Enum) > 0 && len(desc) == 0 {
-					desc = fmt.Sprintf("enum: %v", f.Enum)
+				if len(f.Enum()) > 0 && len(desc) == 0 {
+					desc = fmt.Sprintf("enum: %v", f.Enum())
 				}
-				formatter.Row(f.Name, f.Type, required, desc)
+				formatter.Row(f.Name(), f.Type(), required, desc)
 			}
 			return formatter.EndTable()
 		},
@@ -117,10 +117,10 @@ Examples:
 					required = "*"
 				}
 				desc := f.Description
-				if len(f.Enum) > 0 && len(desc) == 0 {
-					desc = fmt.Sprintf("enum: %v", f.Enum)
+				if len(f.Enum()) > 0 && len(desc) == 0 {
+					desc = fmt.Sprintf("enum: %v", f.Enum())
 				}
-				formatter.Row(f.Name, f.Type, required, desc)
+				formatter.Row(f.Name(), f.Type(), required, desc)
 			}
 			return formatter.EndTable()
 		},

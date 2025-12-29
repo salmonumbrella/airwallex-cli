@@ -6,16 +6,52 @@ import (
 	"io"
 )
 
+// SchemaFieldRule contains validation rules for a schema field
+type SchemaFieldRule struct {
+	Type      string   `json:"type,omitempty"`
+	Pattern   string   `json:"pattern,omitempty"`
+	Enum      []string `json:"enum,omitempty"`
+	MinLength int      `json:"minLength,omitempty"`
+	MaxLength int      `json:"maxLength,omitempty"`
+}
+
 // SchemaField represents a field in a dynamic schema
 type SchemaField struct {
-	Name        string   `json:"name"`
-	Type        string   `json:"type"`
-	Required    bool     `json:"required"`
-	Description string   `json:"description,omitempty"`
-	Enum        []string `json:"enum,omitempty"`
-	MinLength   int      `json:"min_length,omitempty"`
-	MaxLength   int      `json:"max_length,omitempty"`
-	Pattern     string   `json:"pattern,omitempty"`
+	Key         string          `json:"key"`
+	Path        string          `json:"path,omitempty"`
+	Required    bool            `json:"required"`
+	Description string          `json:"description,omitempty"`
+	Rule        SchemaFieldRule `json:"rule,omitempty"`
+}
+
+// Name returns the field name (from Key for API compatibility)
+func (f SchemaField) Name() string {
+	return f.Key
+}
+
+// Type returns the field type from the rule
+func (f SchemaField) Type() string {
+	return f.Rule.Type
+}
+
+// Enum returns the enum values from the rule
+func (f SchemaField) Enum() []string {
+	return f.Rule.Enum
+}
+
+// Pattern returns the validation pattern from the rule
+func (f SchemaField) Pattern() string {
+	return f.Rule.Pattern
+}
+
+// MinLength returns the minimum length from the rule
+func (f SchemaField) MinLength() int {
+	return f.Rule.MinLength
+}
+
+// MaxLength returns the maximum length from the rule
+func (f SchemaField) MaxLength() int {
+	return f.Rule.MaxLength
 }
 
 // Schema represents a dynamic API schema response
