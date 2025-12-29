@@ -22,16 +22,16 @@ type RatesResponse struct {
 
 // Quote represents a locked FX rate quote
 type Quote struct {
-	ID             string  `json:"id"`
+	ID             string  `json:"quote_id"`
 	SellCurrency   string  `json:"sell_currency"`
 	BuyCurrency    string  `json:"buy_currency"`
 	SellAmount     float64 `json:"sell_amount,omitempty"`
 	BuyAmount      float64 `json:"buy_amount,omitempty"`
-	Rate           float64 `json:"rate"`
-	RateExpiry     string  `json:"rate_expiry"`
-	ValidityPeriod string  `json:"validity_period"`
+	Rate           float64 `json:"client_rate"`
+	RateExpiry     string  `json:"valid_to_at"`
+	ValidityPeriod string  `json:"validity"`
 	Status         string  `json:"status"`
-	CreatedAt      string  `json:"created_at"`
+	CreatedAt      string  `json:"valid_from_at"`
 }
 
 // Conversion represents an executed currency conversion

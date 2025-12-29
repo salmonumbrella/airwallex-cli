@@ -208,16 +208,16 @@ func TestCreateQuote_WithSellAmount(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
 		_, _ = w.Write([]byte(`{
-			"id": "quote_123",
+			"quote_id": "quote_123",
 			"sell_currency": "USD",
 			"buy_currency": "EUR",
 			"sell_amount": 1000.00,
 			"buy_amount": 850.00,
-			"rate": 0.85,
-			"rate_expiry": "2024-01-01T12:05:00Z",
-			"validity_period": "300",
+			"client_rate": 0.85,
+			"valid_to_at": "2024-01-01T12:05:00Z",
+			"validity": "MIN_5",
 			"status": "ACTIVE",
-			"created_at": "2024-01-01T12:00:00Z"
+			"valid_from_at": "2024-01-01T12:00:00Z"
 		}`))
 	}))
 	defer server.Close()
@@ -276,16 +276,16 @@ func TestCreateQuote_WithBuyAmount(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
 		_, _ = w.Write([]byte(`{
-			"id": "quote_456",
+			"quote_id": "quote_456",
 			"sell_currency": "GBP",
 			"buy_currency": "USD",
 			"sell_amount": 730.00,
 			"buy_amount": 1000.00,
-			"rate": 1.37,
-			"rate_expiry": "2024-01-01T12:05:00Z",
-			"validity_period": "300",
+			"client_rate": 1.37,
+			"valid_to_at": "2024-01-01T12:05:00Z",
+			"validity": "MIN_5",
 			"status": "ACTIVE",
-			"created_at": "2024-01-01T12:00:00Z"
+			"valid_from_at": "2024-01-01T12:00:00Z"
 		}`))
 	}))
 	defer server.Close()
@@ -369,16 +369,16 @@ func TestGetQuote_Success(t *testing.T) {
 
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{
-			"id": "quote_123",
+			"quote_id": "quote_123",
 			"sell_currency": "USD",
 			"buy_currency": "EUR",
 			"sell_amount": 1000.00,
 			"buy_amount": 850.00,
-			"rate": 0.85,
-			"rate_expiry": "2024-01-01T12:05:00Z",
-			"validity_period": "300",
+			"client_rate": 0.85,
+			"valid_to_at": "2024-01-01T12:05:00Z",
+			"validity": "MIN_5",
 			"status": "ACTIVE",
-			"created_at": "2024-01-01T12:00:00Z"
+			"valid_from_at": "2024-01-01T12:00:00Z"
 		}`))
 	}))
 	defer server.Close()
