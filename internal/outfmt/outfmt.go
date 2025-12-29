@@ -59,7 +59,18 @@ func WriteJSONFiltered(w io.Writer, v interface{}, query string) error {
 		return enc.Encode(v)
 	}
 
-	result, err := filter.Apply(v, query)
+	// Convert typed struct to generic interface{} for gojq compatibility.
+	// gojq cannot traverse Go structs directly - it needs map[string]interface{}.
+	jsonBytes, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+	var data interface{}
+	if err := json.Unmarshal(jsonBytes, &data); err != nil {
+		return err
+	}
+
+	result, err := filter.Apply(data, query)
 	if err != nil {
 		return err
 	}
