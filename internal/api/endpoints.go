@@ -142,14 +142,21 @@ var Endpoints = struct {
 	BillingPricesUpdate Endpoint
 
 	// Billing Invoices
-	BillingInvoicesList   Endpoint
-	BillingInvoicesGet    Endpoint
-	BillingInvoicesCreate Endpoint
+	BillingInvoicesList     Endpoint
+	BillingInvoicesGet      Endpoint
+	BillingInvoicesCreate   Endpoint
+	BillingInvoicesPreview  Endpoint
+	BillingInvoiceItemsList Endpoint
+	BillingInvoiceItemGet   Endpoint
 
 	// Billing Subscriptions
-	BillingSubscriptionsList   Endpoint
-	BillingSubscriptionsGet    Endpoint
-	BillingSubscriptionsCreate Endpoint
+	BillingSubscriptionsList     Endpoint
+	BillingSubscriptionsGet      Endpoint
+	BillingSubscriptionsCreate   Endpoint
+	BillingSubscriptionsUpdate   Endpoint
+	BillingSubscriptionsCancel   Endpoint
+	BillingSubscriptionItemsList Endpoint
+	BillingSubscriptionItemGet   Endpoint
 }{
 	// Authentication
 	Login: Endpoint{
@@ -243,13 +250,13 @@ var Endpoints = struct {
 		ExpectedStatus: http.StatusCreated,
 	},
 	PayersUpdate: Endpoint{
-		Path:           "/api/v1/payers/update/{id}",
+		Path:           "/api/v1/payers/update/{payer_id}",
 		Method:         http.MethodPost,
 		RequiresIdem:   false,
 		ExpectedStatus: http.StatusOK,
 	},
 	PayersDelete: Endpoint{
-		Path:           "/api/v1/payers/delete/{id}",
+		Path:           "/api/v1/payers/delete/{payer_id}",
 		Method:         http.MethodPost,
 		RequiresIdem:   false,
 		ExpectedStatus: http.StatusOK,
@@ -599,25 +606,25 @@ var Endpoints = struct {
 
 	// Billing Customers
 	BillingCustomersList: Endpoint{
-		Path:           "/api/v1/billing_customers",
+		Path:           "/api/v1/pa/customers",
 		Method:         http.MethodGet,
 		RequiresIdem:   false,
 		ExpectedStatus: http.StatusOK,
 	},
 	BillingCustomersGet: Endpoint{
-		Path:           "/api/v1/billing_customers/{id}",
+		Path:           "/api/v1/pa/customers/{id}",
 		Method:         http.MethodGet,
 		RequiresIdem:   false,
 		ExpectedStatus: http.StatusOK,
 	},
 	BillingCustomersCreate: Endpoint{
-		Path:           "/api/v1/billing_customers/create",
+		Path:           "/api/v1/pa/customers/create",
 		Method:         http.MethodPost,
 		RequiresIdem:   false,
 		ExpectedStatus: http.StatusCreated,
 	},
 	BillingCustomersUpdate: Endpoint{
-		Path:           "/api/v1/billing_customers/{id}/update",
+		Path:           "/api/v1/pa/customers/{id}/update",
 		Method:         http.MethodPost,
 		RequiresIdem:   false,
 		ExpectedStatus: http.StatusOK,
@@ -694,6 +701,24 @@ var Endpoints = struct {
 		RequiresIdem:   false,
 		ExpectedStatus: http.StatusCreated,
 	},
+	BillingInvoicesPreview: Endpoint{
+		Path:           "/api/v1/invoices/preview",
+		Method:         http.MethodPost,
+		RequiresIdem:   false,
+		ExpectedStatus: http.StatusOK,
+	},
+	BillingInvoiceItemsList: Endpoint{
+		Path:           "/api/v1/invoices/{id}/items",
+		Method:         http.MethodGet,
+		RequiresIdem:   false,
+		ExpectedStatus: http.StatusOK,
+	},
+	BillingInvoiceItemGet: Endpoint{
+		Path:           "/api/v1/invoices/{id}/items/{item_id}",
+		Method:         http.MethodGet,
+		RequiresIdem:   false,
+		ExpectedStatus: http.StatusOK,
+	},
 
 	// Billing Subscriptions
 	BillingSubscriptionsList: Endpoint{
@@ -713,5 +738,29 @@ var Endpoints = struct {
 		Method:         http.MethodPost,
 		RequiresIdem:   false,
 		ExpectedStatus: http.StatusCreated,
+	},
+	BillingSubscriptionsUpdate: Endpoint{
+		Path:           "/api/v1/subscriptions/{id}/update",
+		Method:         http.MethodPost,
+		RequiresIdem:   false,
+		ExpectedStatus: http.StatusOK,
+	},
+	BillingSubscriptionsCancel: Endpoint{
+		Path:           "/api/v1/subscriptions/{id}/cancel",
+		Method:         http.MethodPost,
+		RequiresIdem:   false,
+		ExpectedStatus: http.StatusOK,
+	},
+	BillingSubscriptionItemsList: Endpoint{
+		Path:           "/api/v1/subscriptions/{id}/items",
+		Method:         http.MethodGet,
+		RequiresIdem:   false,
+		ExpectedStatus: http.StatusOK,
+	},
+	BillingSubscriptionItemGet: Endpoint{
+		Path:           "/api/v1/subscriptions/{id}/items/{item_id}",
+		Method:         http.MethodGet,
+		RequiresIdem:   false,
+		ExpectedStatus: http.StatusOK,
 	},
 }

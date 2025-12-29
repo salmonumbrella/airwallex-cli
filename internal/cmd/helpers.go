@@ -205,3 +205,10 @@ func readJSONPayload(data, fromFile string) (map[string]interface{}, error) {
 	}
 	return result, nil
 }
+
+func readOptionalJSONPayload(data, fromFile string) (map[string]interface{}, error) {
+	if data == "" && fromFile == "" {
+		return nil, nil
+	}
+	return readJSONPayload(data, fromFile)
+}

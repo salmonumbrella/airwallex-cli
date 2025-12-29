@@ -25,20 +25,65 @@ type TransactionDisputesResponse struct {
 	HasMore bool                 `json:"has_more"`
 }
 
+// TransactionDisputeListParams defines filters for disputes list.
+type TransactionDisputeListParams struct {
+	Status         string
+	DetailedStatus string
+	Reason         string
+	Reference      string
+	TransactionID  string
+	UpdatedBy      string
+	FromCreatedAt  string
+	ToCreatedAt    string
+	FromUpdatedAt  string
+	ToUpdatedAt    string
+	Page           string
+	PageSize       int
+}
+
 // ListTransactionDisputes lists issuing transaction disputes.
-func (c *Client) ListTransactionDisputes(ctx context.Context, pageNum, pageSize int) (*TransactionDisputesResponse, error) {
-	params := url.Values{}
-	if pageSize > 0 {
-		if pageNum < 1 {
-			pageNum = 1
-		}
-		params.Set("page_num", fmt.Sprintf("%d", pageNum))
-		params.Set("page_size", fmt.Sprintf("%d", pageSize))
+func (c *Client) ListTransactionDisputes(ctx context.Context, params TransactionDisputeListParams) (*TransactionDisputesResponse, error) {
+	query := url.Values{}
+	if params.Status != "" {
+		query.Set("status", params.Status)
+	}
+	if params.DetailedStatus != "" {
+		query.Set("detailed_status", params.DetailedStatus)
+	}
+	if params.Reason != "" {
+		query.Set("reason", params.Reason)
+	}
+	if params.Reference != "" {
+		query.Set("reference", params.Reference)
+	}
+	if params.TransactionID != "" {
+		query.Set("transaction_id", params.TransactionID)
+	}
+	if params.UpdatedBy != "" {
+		query.Set("updated_by", params.UpdatedBy)
+	}
+	if params.FromCreatedAt != "" {
+		query.Set("from_created_at", params.FromCreatedAt)
+	}
+	if params.ToCreatedAt != "" {
+		query.Set("to_created_at", params.ToCreatedAt)
+	}
+	if params.FromUpdatedAt != "" {
+		query.Set("from_updated_at", params.FromUpdatedAt)
+	}
+	if params.ToUpdatedAt != "" {
+		query.Set("to_updated_at", params.ToUpdatedAt)
+	}
+	if params.Page != "" {
+		query.Set("page", params.Page)
+	}
+	if params.PageSize > 0 {
+		query.Set("page_size", fmt.Sprintf("%d", params.PageSize))
 	}
 
 	path := Endpoints.TransactionDisputesList.Path
-	if len(params) > 0 {
-		path += "?" + params.Encode()
+	if len(query) > 0 {
+		path += "?" + query.Encode()
 	}
 
 	resp, err := c.Get(ctx, path)

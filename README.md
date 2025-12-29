@@ -140,7 +140,8 @@ airwallex issuing transactions get <transactionId>
 ### Issuing - Authorizations
 
 ```bash
-airwallex issuing authorizations list [--status <status>] [--card-id <id>] [--cardholder-id <id>] \
+airwallex issuing authorizations list [--status <status>] [--card-id <id>] [--billing-currency <c>] \
+  [--digital-wallet-token-id <id>] [--lifecycle-id <id>] [--retrieval-ref <ref>] \
   [--from <date>] [--to <date>]
 airwallex issuing authorizations get <transactionId>
 ```
@@ -148,7 +149,9 @@ airwallex issuing authorizations get <transactionId>
 ### Issuing - Disputes
 
 ```bash
-airwallex issuing disputes list
+airwallex issuing disputes list [--status <status>] [--detailed-status <status>] [--transaction-id <id>] \
+  [--reason <reason>] [--reference <ref>] [--from <date>] [--to <date>] \
+  [--from-updated <date>] [--to-updated <date>]
 airwallex issuing disputes get <disputeId>
 airwallex issuing disputes create --data '{...}'
 airwallex issuing disputes update <disputeId> --data '{...}'
@@ -244,23 +247,33 @@ airwallex billing customers get <customerId>
 airwallex billing customers create --data '{...}'
 airwallex billing customers update <customerId> --data '{...}'
 
-airwallex billing products list
+airwallex billing products list [--active true|false]
 airwallex billing products get <productId>
 airwallex billing products create --data '{...}'
 airwallex billing products update <productId> --data '{...}'
 
-airwallex billing prices list
+airwallex billing prices list [--active true|false] [--currency <c>] [--product-id <id>] \
+  [--recurring-period <n>] [--recurring-period-unit <unit>]
 airwallex billing prices get <priceId>
 airwallex billing prices create --data '{...}'
 airwallex billing prices update <priceId> --data '{...}'
 
-airwallex billing invoices list
+airwallex billing invoices list [--customer-id <id>] [--subscription-id <id>] [--status <status>] \
+  [--from <date>] [--to <date>]
 airwallex billing invoices get <invoiceId>
 airwallex billing invoices create --data '{...}'
+airwallex billing invoices preview --data '{...}'
+airwallex billing invoices items list <invoiceId>
+airwallex billing invoices items get <invoiceId> <itemId>
 
-airwallex billing subscriptions list
+airwallex billing subscriptions list [--customer-id <id>] [--status <status>] \
+  [--recurring-period <n>] [--recurring-period-unit <unit>] [--from <date>] [--to <date>]
 airwallex billing subscriptions get <subscriptionId>
 airwallex billing subscriptions create --data '{...}'
+airwallex billing subscriptions update <subscriptionId> --data '{...}'
+airwallex billing subscriptions cancel <subscriptionId> [--data '{...}']
+airwallex billing subscriptions items list <subscriptionId>
+airwallex billing subscriptions items get <subscriptionId> <itemId>
 ```
 
 ### Webhooks

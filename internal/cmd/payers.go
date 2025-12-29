@@ -35,25 +35,80 @@ func payerID(p api.Payer) string {
 }
 
 func newPayersListCmd() *cobra.Command {
-	return NewListCommand(ListConfig[api.Payer]{
-		Use:          "list",
-		Short:        "List payers",
-		Headers:      []string{"PAYER_ID", "ENTITY_TYPE", "NAME", "STATUS"},
-		EmptyMessage: "No payers found",
-		RowFunc: func(p api.Payer) []string {
-			return []string{payerID(p), p.EntityType, p.Name, p.Status}
-		},
-		Fetch: func(ctx context.Context, client *api.Client, page, pageSize int) (ListResult[api.Payer], error) {
-			result, err := client.ListPayers(ctx, page, pageSize)
-			if err != nil {
-				return ListResult[api.Payer]{}, err
+	var entityType string
+	var name string
+	var nickName string
+	var from string
+	var to string
+	var page int
+	var pageSize int
+
+	cmd := &cobra.Command{
+		Use:   "list",
+		Short: "List payers",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := validateDate(from); err != nil {
+				return fmt.Errorf("invalid --from date: %w", err)
 			}
-			return ListResult[api.Payer]{
-				Items:   result.Items,
-				HasMore: result.HasMore,
-			}, nil
+			if err := validateDate(to); err != nil {
+				return fmt.Errorf("invalid --to date: %w", err)
+			}
+			if err := validateDateRange(from, to); err != nil {
+				return err
+			}
+
+			client, err := getClient(cmd.Context())
+			if err != nil {
+				return err
+			}
+
+			result, err := client.ListPayers(cmd.Context(), api.PayerListParams{
+				EntityType: entityType,
+				Name:       name,
+				NickName:   nickName,
+				FromDate:   from,
+				ToDate:     to,
+				PageNum:    page,
+				PageSize:   pageSize,
+			})
+			if err != nil {
+				return err
+			}
+
+			f := outfmt.FromContext(cmd.Context())
+			if len(result.Items) == 0 {
+				if outfmt.IsJSON(cmd.Context()) {
+					return f.Output(result)
+				}
+				f.Empty("No payers found")
+				return nil
+			}
+
+			headers := []string{"PAYER_ID", "ENTITY_TYPE", "NAME", "STATUS"}
+			rowFn := func(item any) []string {
+				p := item.(api.Payer)
+				return []string{payerID(p), p.EntityType, p.Name, p.Status}
+			}
+
+			if err := f.OutputList(result.Items, headers, rowFn); err != nil {
+				return err
+			}
+
+			if !outfmt.IsJSON(cmd.Context()) && result.HasMore {
+				_, _ = fmt.Fprintln(os.Stderr, "# More results available")
+			}
+			return nil
 		},
-	}, getClient)
+	}
+
+	cmd.Flags().StringVar(&entityType, "entity-type", "", "Filter by entity type")
+	cmd.Flags().StringVar(&name, "name", "", "Filter by name")
+	cmd.Flags().StringVar(&nickName, "nick-name", "", "Filter by nickname")
+	cmd.Flags().StringVar(&from, "from", "", "From date (YYYY-MM-DD)")
+	cmd.Flags().StringVar(&to, "to", "", "To date (YYYY-MM-DD)")
+	cmd.Flags().IntVar(&page, "page", 0, "Page number (0 = first page)")
+	cmd.Flags().IntVar(&pageSize, "page-size", 20, "API page size")
+	return cmd
 }
 
 func newPayersGetCmd() *cobra.Command {

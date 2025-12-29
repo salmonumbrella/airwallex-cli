@@ -34,7 +34,10 @@ func authorizationID(a api.Authorization) string {
 func newAuthorizationsListCmd() *cobra.Command {
 	var status string
 	var cardID string
-	var cardholderID string
+	var billingCurrency string
+	var digitalWalletTokenID string
+	var lifecycleID string
+	var retrievalRef string
 	var from string
 	var to string
 	var page int
@@ -63,7 +66,18 @@ func newAuthorizationsListCmd() *cobra.Command {
 				}
 			}
 
-			result, err := client.ListAuthorizations(cmd.Context(), status, cardID, cardholderID, fromRFC3339, toRFC3339, page, pageSize)
+			result, err := client.ListAuthorizations(cmd.Context(), api.AuthorizationListParams{
+				Status:               status,
+				CardID:               cardID,
+				BillingCurrency:      billingCurrency,
+				DigitalWalletTokenID: digitalWalletTokenID,
+				LifecycleID:          lifecycleID,
+				RetrievalRef:         retrievalRef,
+				FromCreatedAt:        fromRFC3339,
+				ToCreatedAt:          toRFC3339,
+				PageNum:              page,
+				PageSize:             pageSize,
+			})
 			if err != nil {
 				return err
 			}
@@ -100,7 +114,10 @@ func newAuthorizationsListCmd() *cobra.Command {
 
 	cmd.Flags().StringVar(&status, "status", "", "Filter by status")
 	cmd.Flags().StringVar(&cardID, "card-id", "", "Filter by card ID")
-	cmd.Flags().StringVar(&cardholderID, "cardholder-id", "", "Filter by cardholder ID")
+	cmd.Flags().StringVar(&billingCurrency, "billing-currency", "", "Filter by billing currency")
+	cmd.Flags().StringVar(&digitalWalletTokenID, "digital-wallet-token-id", "", "Filter by digital wallet token ID")
+	cmd.Flags().StringVar(&lifecycleID, "lifecycle-id", "", "Filter by lifecycle ID")
+	cmd.Flags().StringVar(&retrievalRef, "retrieval-ref", "", "Filter by retrieval reference")
 	cmd.Flags().StringVar(&from, "from", "", "From date (YYYY-MM-DD)")
 	cmd.Flags().StringVar(&to, "to", "", "To date (YYYY-MM-DD)")
 	cmd.Flags().IntVar(&page, "page", 0, "Page number (0 = first page)")

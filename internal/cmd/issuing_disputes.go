@@ -35,7 +35,18 @@ func disputeID(d api.TransactionDispute) string {
 }
 
 func newDisputesListCmd() *cobra.Command {
-	return NewListCommand(ListConfig[api.TransactionDispute]{
+	var status string
+	var detailedStatus string
+	var reason string
+	var reference string
+	var transactionID string
+	var updatedBy string
+	var from string
+	var to string
+	var fromUpdated string
+	var toUpdated string
+
+	cmd := NewListCommand(ListConfig[api.TransactionDispute]{
 		Use:          "list",
 		Short:        "List disputes",
 		Headers:      []string{"DISPUTE_ID", "TRANSACTION_ID", "STATUS", "AMOUNT", "CURRENCY"},
@@ -48,7 +59,71 @@ func newDisputesListCmd() *cobra.Command {
 			return []string{disputeID(d), d.TransactionID, d.Status, amount, d.Currency}
 		},
 		Fetch: func(ctx context.Context, client *api.Client, page, pageSize int) (ListResult[api.TransactionDispute], error) {
-			result, err := client.ListTransactionDisputes(ctx, page, pageSize)
+			if err := validateDate(from); err != nil {
+				return ListResult[api.TransactionDispute]{}, fmt.Errorf("invalid --from date: %w", err)
+			}
+			if err := validateDate(to); err != nil {
+				return ListResult[api.TransactionDispute]{}, fmt.Errorf("invalid --to date: %w", err)
+			}
+			if err := validateDate(fromUpdated); err != nil {
+				return ListResult[api.TransactionDispute]{}, fmt.Errorf("invalid --from-updated date: %w", err)
+			}
+			if err := validateDate(toUpdated); err != nil {
+				return ListResult[api.TransactionDispute]{}, fmt.Errorf("invalid --to-updated date: %w", err)
+			}
+
+			fromRFC3339 := ""
+			if from != "" {
+				var err error
+				fromRFC3339, err = convertDateToRFC3339(from)
+				if err != nil {
+					return ListResult[api.TransactionDispute]{}, fmt.Errorf("invalid --from date: %w", err)
+				}
+			}
+			toRFC3339 := ""
+			if to != "" {
+				var err error
+				toRFC3339, err = convertDateToRFC3339(to)
+				if err != nil {
+					return ListResult[api.TransactionDispute]{}, fmt.Errorf("invalid --to date: %w", err)
+				}
+			}
+			fromUpdatedRFC3339 := ""
+			if fromUpdated != "" {
+				var err error
+				fromUpdatedRFC3339, err = convertDateToRFC3339(fromUpdated)
+				if err != nil {
+					return ListResult[api.TransactionDispute]{}, fmt.Errorf("invalid --from-updated date: %w", err)
+				}
+			}
+			toUpdatedRFC3339 := ""
+			if toUpdated != "" {
+				var err error
+				toUpdatedRFC3339, err = convertDateToRFC3339(toUpdated)
+				if err != nil {
+					return ListResult[api.TransactionDispute]{}, fmt.Errorf("invalid --to-updated date: %w", err)
+				}
+			}
+
+			pageToken := ""
+			if page > 0 {
+				pageToken = fmt.Sprintf("%d", page)
+			}
+
+			result, err := client.ListTransactionDisputes(ctx, api.TransactionDisputeListParams{
+				Status:         status,
+				DetailedStatus: detailedStatus,
+				Reason:         reason,
+				Reference:      reference,
+				TransactionID:  transactionID,
+				UpdatedBy:      updatedBy,
+				FromCreatedAt:  fromRFC3339,
+				ToCreatedAt:    toRFC3339,
+				FromUpdatedAt:  fromUpdatedRFC3339,
+				ToUpdatedAt:    toUpdatedRFC3339,
+				Page:           pageToken,
+				PageSize:       pageSize,
+			})
 			if err != nil {
 				return ListResult[api.TransactionDispute]{}, err
 			}
@@ -58,6 +133,18 @@ func newDisputesListCmd() *cobra.Command {
 			}, nil
 		},
 	}, getClient)
+
+	cmd.Flags().StringVar(&status, "status", "", "Filter by status")
+	cmd.Flags().StringVar(&detailedStatus, "detailed-status", "", "Filter by detailed status")
+	cmd.Flags().StringVar(&reason, "reason", "", "Filter by reason")
+	cmd.Flags().StringVar(&reference, "reference", "", "Filter by reference")
+	cmd.Flags().StringVar(&transactionID, "transaction-id", "", "Filter by transaction ID")
+	cmd.Flags().StringVar(&updatedBy, "updated-by", "", "Filter by updated by")
+	cmd.Flags().StringVar(&from, "from", "", "From created date (YYYY-MM-DD)")
+	cmd.Flags().StringVar(&to, "to", "", "To created date (YYYY-MM-DD)")
+	cmd.Flags().StringVar(&fromUpdated, "from-updated", "", "From updated date (YYYY-MM-DD)")
+	cmd.Flags().StringVar(&toUpdated, "to-updated", "", "To updated date (YYYY-MM-DD)")
+	return cmd
 }
 
 func newDisputesGetCmd() *cobra.Command {

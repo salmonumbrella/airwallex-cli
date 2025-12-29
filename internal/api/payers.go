@@ -23,20 +23,46 @@ type PayersResponse struct {
 	HasMore bool    `json:"has_more"`
 }
 
+// PayerListParams defines filters for listing payers.
+type PayerListParams struct {
+	EntityType string
+	Name       string
+	NickName   string
+	FromDate   string
+	ToDate     string
+	PageNum    int
+	PageSize   int
+}
+
 // ListPayers lists payout payers.
-func (c *Client) ListPayers(ctx context.Context, pageNum, pageSize int) (*PayersResponse, error) {
-	params := url.Values{}
-	if pageSize > 0 {
-		if pageNum < 1 {
-			pageNum = 1
+func (c *Client) ListPayers(ctx context.Context, params PayerListParams) (*PayersResponse, error) {
+	query := url.Values{}
+	if params.EntityType != "" {
+		query.Set("entity_type", params.EntityType)
+	}
+	if params.Name != "" {
+		query.Set("name", params.Name)
+	}
+	if params.NickName != "" {
+		query.Set("nick_name", params.NickName)
+	}
+	if params.FromDate != "" {
+		query.Set("from_date", params.FromDate)
+	}
+	if params.ToDate != "" {
+		query.Set("to_date", params.ToDate)
+	}
+	if params.PageSize > 0 {
+		if params.PageNum < 1 {
+			params.PageNum = 1
 		}
-		params.Set("page_num", fmt.Sprintf("%d", pageNum))
-		params.Set("page_size", fmt.Sprintf("%d", pageSize))
+		query.Set("page_num", fmt.Sprintf("%d", params.PageNum))
+		query.Set("page_size", fmt.Sprintf("%d", params.PageSize))
 	}
 
 	path := Endpoints.PayersList.Path
-	if len(params) > 0 {
-		path += "?" + params.Encode()
+	if len(query) > 0 {
+		path += "?" + query.Encode()
 	}
 
 	resp, err := c.Get(ctx, path)

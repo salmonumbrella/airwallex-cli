@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strconv"
+	"strings"
 	"text/tabwriter"
 
 	"github.com/spf13/cobra"
@@ -27,38 +29,42 @@ func newBillingCmd() *cobra.Command {
 }
 
 func billingCustomerID(c api.BillingCustomer) string {
-	if c.ID != "" {
-		return c.ID
+	return c.ID
+}
+
+func billingCustomerName(c api.BillingCustomer) string {
+	if c.BusinessName != "" {
+		return c.BusinessName
 	}
-	return c.CustomerID
+	name := strings.TrimSpace(c.FirstName + " " + c.LastName)
+	return name
 }
 
 func billingProductID(p api.BillingProduct) string {
-	if p.ID != "" {
-		return p.ID
-	}
-	return p.ProductID
+	return p.ID
 }
 
 func billingPriceID(p api.BillingPrice) string {
-	if p.ID != "" {
-		return p.ID
-	}
-	return p.PriceID
+	return p.ID
 }
 
 func billingInvoiceID(i api.BillingInvoice) string {
-	if i.ID != "" {
-		return i.ID
-	}
-	return i.InvoiceID
+	return i.ID
 }
 
 func billingSubscriptionID(s api.BillingSubscription) string {
-	if s.ID != "" {
-		return s.ID
+	return s.ID
+}
+
+func parseOptionalBool(value string) (*bool, error) {
+	if value == "" {
+		return nil, nil
 	}
-	return s.SubscriptionID
+	parsed, err := strconv.ParseBool(value)
+	if err != nil {
+		return nil, fmt.Errorf("expected true or false, got %q", value)
+	}
+	return &parsed, nil
 }
 
 func newBillingCustomersCmd() *cobra.Command {
@@ -74,16 +80,53 @@ func newBillingCustomersCmd() *cobra.Command {
 }
 
 func newBillingCustomersListCmd() *cobra.Command {
-	return NewListCommand(ListConfig[api.BillingCustomer]{
+	var merchantCustomerID string
+	var from string
+	var to string
+
+	cmd := NewListCommand(ListConfig[api.BillingCustomer]{
 		Use:          "list",
 		Short:        "List billing customers",
-		Headers:      []string{"CUSTOMER_ID", "NAME", "EMAIL", "STATUS"},
+		Headers:      []string{"CUSTOMER_ID", "NAME", "EMAIL", "MERCHANT_ID"},
 		EmptyMessage: "No billing customers found",
 		RowFunc: func(c api.BillingCustomer) []string {
-			return []string{billingCustomerID(c), c.Name, c.Email, c.Status}
+			return []string{billingCustomerID(c), billingCustomerName(c), c.Email, c.MerchantCustomerID}
 		},
 		Fetch: func(ctx context.Context, client *api.Client, page, pageSize int) (ListResult[api.BillingCustomer], error) {
-			result, err := client.ListBillingCustomers(ctx, page, pageSize)
+			if err := validateDate(from); err != nil {
+				return ListResult[api.BillingCustomer]{}, fmt.Errorf("invalid --from date: %w", err)
+			}
+			if err := validateDate(to); err != nil {
+				return ListResult[api.BillingCustomer]{}, fmt.Errorf("invalid --to date: %w", err)
+			}
+			if err := validateDateRange(from, to); err != nil {
+				return ListResult[api.BillingCustomer]{}, err
+			}
+
+			fromRFC3339 := ""
+			if from != "" {
+				var err error
+				fromRFC3339, err = convertDateToRFC3339(from)
+				if err != nil {
+					return ListResult[api.BillingCustomer]{}, fmt.Errorf("invalid --from date: %w", err)
+				}
+			}
+			toRFC3339 := ""
+			if to != "" {
+				var err error
+				toRFC3339, err = convertDateToRFC3339(to)
+				if err != nil {
+					return ListResult[api.BillingCustomer]{}, fmt.Errorf("invalid --to date: %w", err)
+				}
+			}
+
+			result, err := client.ListBillingCustomers(ctx, api.BillingCustomerListParams{
+				MerchantCustomerID: merchantCustomerID,
+				FromCreatedAt:      fromRFC3339,
+				ToCreatedAt:        toRFC3339,
+				PageNum:            page,
+				PageSize:           pageSize,
+			})
 			if err != nil {
 				return ListResult[api.BillingCustomer]{}, err
 			}
@@ -93,6 +136,11 @@ func newBillingCustomersListCmd() *cobra.Command {
 			}, nil
 		},
 	}, getClient)
+
+	cmd.Flags().StringVar(&merchantCustomerID, "merchant-customer-id", "", "Filter by merchant customer ID")
+	cmd.Flags().StringVar(&from, "from", "", "From created date (YYYY-MM-DD)")
+	cmd.Flags().StringVar(&to, "to", "", "To created date (YYYY-MM-DD)")
+	return cmd
 }
 
 func newBillingCustomersGetCmd() *cobra.Command {
@@ -117,10 +165,11 @@ func newBillingCustomersGetCmd() *cobra.Command {
 
 			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
 			_, _ = fmt.Fprintf(tw, "customer_id\t%s\n", billingCustomerID(*customer))
-			_, _ = fmt.Fprintf(tw, "name\t%s\n", customer.Name)
+			_, _ = fmt.Fprintf(tw, "name\t%s\n", billingCustomerName(*customer))
 			_, _ = fmt.Fprintf(tw, "email\t%s\n", customer.Email)
-			_, _ = fmt.Fprintf(tw, "status\t%s\n", customer.Status)
+			_, _ = fmt.Fprintf(tw, "merchant_customer_id\t%s\n", customer.MerchantCustomerID)
 			_, _ = fmt.Fprintf(tw, "created_at\t%s\n", customer.CreatedAt)
+			_, _ = fmt.Fprintf(tw, "updated_at\t%s\n", customer.UpdatedAt)
 			_ = tw.Flush()
 			return nil
 		},
@@ -137,7 +186,7 @@ func newBillingCustomersCreateCmd() *cobra.Command {
 		Long: `Create a billing customer using a JSON payload.
 
 Examples:
-  airwallex billing customers create --data '{"name":"Acme Corp","email":"billing@example.com"}'
+  airwallex billing customers create --data '{"business_name":"Acme Corp","email":"billing@example.com"}'
   airwallex billing customers create --from-file customer.json`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			u := ui.FromContext(cmd.Context())
@@ -180,7 +229,7 @@ func newBillingCustomersUpdateCmd() *cobra.Command {
 		Long: `Update a billing customer using a JSON payload.
 
 Examples:
-  airwallex billing customers update cus_123 --data '{"name":"Updated"}'
+  airwallex billing customers update cus_123 --data '{"business_name":"Updated"}'
   airwallex billing customers update cus_123 --from-file update.json`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -227,16 +276,27 @@ func newBillingProductsCmd() *cobra.Command {
 }
 
 func newBillingProductsListCmd() *cobra.Command {
-	return NewListCommand(ListConfig[api.BillingProduct]{
+	var active string
+
+	cmd := NewListCommand(ListConfig[api.BillingProduct]{
 		Use:          "list",
 		Short:        "List billing products",
-		Headers:      []string{"PRODUCT_ID", "NAME", "STATUS"},
+		Headers:      []string{"PRODUCT_ID", "NAME", "ACTIVE"},
 		EmptyMessage: "No products found",
 		RowFunc: func(p api.BillingProduct) []string {
-			return []string{billingProductID(p), p.Name, p.Status}
+			return []string{billingProductID(p), p.Name, fmt.Sprintf("%t", p.Active)}
 		},
 		Fetch: func(ctx context.Context, client *api.Client, page, pageSize int) (ListResult[api.BillingProduct], error) {
-			result, err := client.ListBillingProducts(ctx, page, pageSize)
+			activeVal, err := parseOptionalBool(active)
+			if err != nil {
+				return ListResult[api.BillingProduct]{}, fmt.Errorf("invalid --active: %w", err)
+			}
+
+			result, err := client.ListBillingProducts(ctx, api.BillingProductListParams{
+				Active:   activeVal,
+				PageNum:  page,
+				PageSize: pageSize,
+			})
 			if err != nil {
 				return ListResult[api.BillingProduct]{}, err
 			}
@@ -246,6 +306,9 @@ func newBillingProductsListCmd() *cobra.Command {
 			}, nil
 		},
 	}, getClient)
+
+	cmd.Flags().StringVar(&active, "active", "", "Filter by active status (true|false)")
+	return cmd
 }
 
 func newBillingProductsGetCmd() *cobra.Command {
@@ -272,8 +335,8 @@ func newBillingProductsGetCmd() *cobra.Command {
 			_, _ = fmt.Fprintf(tw, "product_id\t%s\n", billingProductID(*product))
 			_, _ = fmt.Fprintf(tw, "name\t%s\n", product.Name)
 			_, _ = fmt.Fprintf(tw, "description\t%s\n", product.Description)
-			_, _ = fmt.Fprintf(tw, "status\t%s\n", product.Status)
-			_, _ = fmt.Fprintf(tw, "created_at\t%s\n", product.CreatedAt)
+			_, _ = fmt.Fprintf(tw, "unit\t%s\n", product.Unit)
+			_, _ = fmt.Fprintf(tw, "active\t%t\n", product.Active)
 			_ = tw.Flush()
 			return nil
 		},
@@ -380,20 +443,46 @@ func newBillingPricesCmd() *cobra.Command {
 }
 
 func newBillingPricesListCmd() *cobra.Command {
-	return NewListCommand(ListConfig[api.BillingPrice]{
+	var active string
+	var currency string
+	var productID string
+	var recurringPeriod int
+	var recurringPeriodUnit string
+
+	cmd := NewListCommand(ListConfig[api.BillingPrice]{
 		Use:          "list",
 		Short:        "List billing prices",
-		Headers:      []string{"PRICE_ID", "PRODUCT_ID", "AMOUNT", "CURRENCY", "STATUS"},
+		Headers:      []string{"PRICE_ID", "PRODUCT_ID", "AMOUNT", "CURRENCY", "ACTIVE"},
 		EmptyMessage: "No prices found",
 		RowFunc: func(p api.BillingPrice) []string {
-			amount := ""
-			if p.UnitAmount != 0 {
-				amount = fmt.Sprintf("%.2f", p.UnitAmount)
+			amount := p.UnitAmount
+			if amount == 0 {
+				amount = p.FlatAmount
 			}
-			return []string{billingPriceID(p), p.ProductID, amount, p.Currency, p.Status}
+			amountText := ""
+			if amount != 0 {
+				amountText = fmt.Sprintf("%.2f", amount)
+			}
+			return []string{billingPriceID(p), p.ProductID, amountText, p.Currency, fmt.Sprintf("%t", p.Active)}
 		},
 		Fetch: func(ctx context.Context, client *api.Client, page, pageSize int) (ListResult[api.BillingPrice], error) {
-			result, err := client.ListBillingPrices(ctx, page, pageSize)
+			activeVal, err := parseOptionalBool(active)
+			if err != nil {
+				return ListResult[api.BillingPrice]{}, fmt.Errorf("invalid --active: %w", err)
+			}
+			if err := validateCurrency(currency); err != nil {
+				return ListResult[api.BillingPrice]{}, err
+			}
+
+			result, err := client.ListBillingPrices(ctx, api.BillingPriceListParams{
+				Active:              activeVal,
+				Currency:            currency,
+				ProductID:           productID,
+				RecurringPeriod:     recurringPeriod,
+				RecurringPeriodUnit: recurringPeriodUnit,
+				PageNum:             page,
+				PageSize:            pageSize,
+			})
 			if err != nil {
 				return ListResult[api.BillingPrice]{}, err
 			}
@@ -403,6 +492,13 @@ func newBillingPricesListCmd() *cobra.Command {
 			}, nil
 		},
 	}, getClient)
+
+	cmd.Flags().StringVar(&active, "active", "", "Filter by active status (true|false)")
+	cmd.Flags().StringVar(&currency, "currency", "", "Filter by currency")
+	cmd.Flags().StringVar(&productID, "product-id", "", "Filter by product ID")
+	cmd.Flags().IntVar(&recurringPeriod, "recurring-period", 0, "Filter by recurring period")
+	cmd.Flags().StringVar(&recurringPeriodUnit, "recurring-period-unit", "", "Filter by recurring period unit")
+	return cmd
 }
 
 func newBillingPricesGetCmd() *cobra.Command {
@@ -428,11 +524,17 @@ func newBillingPricesGetCmd() *cobra.Command {
 			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
 			_, _ = fmt.Fprintf(tw, "price_id\t%s\n", billingPriceID(*price))
 			_, _ = fmt.Fprintf(tw, "product_id\t%s\n", price.ProductID)
-			if price.UnitAmount != 0 || price.Currency != "" {
-				_, _ = fmt.Fprintf(tw, "amount\t%.2f %s\n", price.UnitAmount, price.Currency)
+			if price.UnitAmount != 0 || price.FlatAmount != 0 || price.Currency != "" {
+				amount := price.UnitAmount
+				if amount == 0 {
+					amount = price.FlatAmount
+				}
+				_, _ = fmt.Fprintf(tw, "amount\t%.2f %s\n", amount, price.Currency)
 			}
-			_, _ = fmt.Fprintf(tw, "status\t%s\n", price.Status)
-			_, _ = fmt.Fprintf(tw, "created_at\t%s\n", price.CreatedAt)
+			if price.Recurring != nil {
+				_, _ = fmt.Fprintf(tw, "recurring\t%d %s\n", price.Recurring.Period, price.Recurring.PeriodUnit)
+			}
+			_, _ = fmt.Fprintf(tw, "active\t%t\n", price.Active)
 			_ = tw.Flush()
 			return nil
 		},
@@ -534,24 +636,67 @@ func newBillingInvoicesCmd() *cobra.Command {
 	cmd.AddCommand(newBillingInvoicesListCmd())
 	cmd.AddCommand(newBillingInvoicesGetCmd())
 	cmd.AddCommand(newBillingInvoicesCreateCmd())
+	cmd.AddCommand(newBillingInvoicesPreviewCmd())
+	cmd.AddCommand(newBillingInvoiceItemsCmd())
 	return cmd
 }
 
 func newBillingInvoicesListCmd() *cobra.Command {
-	return NewListCommand(ListConfig[api.BillingInvoice]{
+	var customerID string
+	var subscriptionID string
+	var status string
+	var from string
+	var to string
+
+	cmd := NewListCommand(ListConfig[api.BillingInvoice]{
 		Use:          "list",
 		Short:        "List billing invoices",
-		Headers:      []string{"INVOICE_ID", "NUMBER", "STATUS", "AMOUNT", "CURRENCY"},
+		Headers:      []string{"INVOICE_ID", "STATUS", "TOTAL", "CURRENCY", "CUSTOMER_ID"},
 		EmptyMessage: "No invoices found",
 		RowFunc: func(i api.BillingInvoice) []string {
 			amount := ""
-			if i.Amount != 0 {
-				amount = fmt.Sprintf("%.2f", i.Amount)
+			if i.TotalAmount != 0 {
+				amount = fmt.Sprintf("%.2f", i.TotalAmount)
 			}
-			return []string{billingInvoiceID(i), i.InvoiceNumber, i.Status, amount, i.Currency}
+			return []string{billingInvoiceID(i), i.Status, amount, i.Currency, i.CustomerID}
 		},
 		Fetch: func(ctx context.Context, client *api.Client, page, pageSize int) (ListResult[api.BillingInvoice], error) {
-			result, err := client.ListBillingInvoices(ctx, page, pageSize)
+			if err := validateDate(from); err != nil {
+				return ListResult[api.BillingInvoice]{}, fmt.Errorf("invalid --from date: %w", err)
+			}
+			if err := validateDate(to); err != nil {
+				return ListResult[api.BillingInvoice]{}, fmt.Errorf("invalid --to date: %w", err)
+			}
+			if err := validateDateRange(from, to); err != nil {
+				return ListResult[api.BillingInvoice]{}, err
+			}
+
+			fromRFC3339 := ""
+			if from != "" {
+				var err error
+				fromRFC3339, err = convertDateToRFC3339(from)
+				if err != nil {
+					return ListResult[api.BillingInvoice]{}, fmt.Errorf("invalid --from date: %w", err)
+				}
+			}
+			toRFC3339 := ""
+			if to != "" {
+				var err error
+				toRFC3339, err = convertDateToRFC3339(to)
+				if err != nil {
+					return ListResult[api.BillingInvoice]{}, fmt.Errorf("invalid --to date: %w", err)
+				}
+			}
+
+			result, err := client.ListBillingInvoices(ctx, api.BillingInvoiceListParams{
+				CustomerID:     customerID,
+				SubscriptionID: subscriptionID,
+				Status:         status,
+				FromCreatedAt:  fromRFC3339,
+				ToCreatedAt:    toRFC3339,
+				PageNum:        page,
+				PageSize:       pageSize,
+			})
 			if err != nil {
 				return ListResult[api.BillingInvoice]{}, err
 			}
@@ -561,6 +706,13 @@ func newBillingInvoicesListCmd() *cobra.Command {
 			}, nil
 		},
 	}, getClient)
+
+	cmd.Flags().StringVar(&customerID, "customer-id", "", "Filter by customer ID")
+	cmd.Flags().StringVar(&subscriptionID, "subscription-id", "", "Filter by subscription ID")
+	cmd.Flags().StringVar(&status, "status", "", "Filter by status")
+	cmd.Flags().StringVar(&from, "from", "", "From created date (YYYY-MM-DD)")
+	cmd.Flags().StringVar(&to, "to", "", "To created date (YYYY-MM-DD)")
+	return cmd
 }
 
 func newBillingInvoicesGetCmd() *cobra.Command {
@@ -585,13 +737,17 @@ func newBillingInvoicesGetCmd() *cobra.Command {
 
 			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
 			_, _ = fmt.Fprintf(tw, "invoice_id\t%s\n", billingInvoiceID(*invoice))
-			_, _ = fmt.Fprintf(tw, "invoice_number\t%s\n", invoice.InvoiceNumber)
+			_, _ = fmt.Fprintf(tw, "customer_id\t%s\n", invoice.CustomerID)
+			_, _ = fmt.Fprintf(tw, "subscription_id\t%s\n", invoice.SubscriptionID)
 			_, _ = fmt.Fprintf(tw, "status\t%s\n", invoice.Status)
-			if invoice.Amount != 0 || invoice.Currency != "" {
-				_, _ = fmt.Fprintf(tw, "amount\t%.2f %s\n", invoice.Amount, invoice.Currency)
+			if invoice.TotalAmount != 0 || invoice.Currency != "" {
+				_, _ = fmt.Fprintf(tw, "total\t%.2f %s\n", invoice.TotalAmount, invoice.Currency)
 			}
-			_, _ = fmt.Fprintf(tw, "due_date\t%s\n", invoice.DueDate)
+			_, _ = fmt.Fprintf(tw, "period_start_at\t%s\n", invoice.PeriodStartAt)
+			_, _ = fmt.Fprintf(tw, "period_end_at\t%s\n", invoice.PeriodEndAt)
 			_, _ = fmt.Fprintf(tw, "created_at\t%s\n", invoice.CreatedAt)
+			_, _ = fmt.Fprintf(tw, "updated_at\t%s\n", invoice.UpdatedAt)
+			_, _ = fmt.Fprintf(tw, "paid_at\t%s\n", invoice.PaidAt)
 			_ = tw.Flush()
 			return nil
 		},
@@ -641,6 +797,162 @@ Examples:
 	return cmd
 }
 
+func newBillingInvoicesPreviewCmd() *cobra.Command {
+	var data string
+	var fromFile string
+
+	cmd := &cobra.Command{
+		Use:   "preview",
+		Short: "Preview a billing invoice",
+		Long: `Preview a billing invoice using a JSON payload.
+
+Examples:
+  airwallex billing invoices preview --data '{"customer_id":"cus_123","currency":"USD"}'
+  airwallex billing invoices preview --from-file invoice.json`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			client, err := getClient(cmd.Context())
+			if err != nil {
+				return err
+			}
+
+			payload, err := readJSONPayload(data, fromFile)
+			if err != nil {
+				return err
+			}
+
+			preview, err := client.PreviewBillingInvoice(cmd.Context(), payload)
+			if err != nil {
+				return err
+			}
+
+			if outfmt.IsJSON(cmd.Context()) {
+				return outfmt.WriteJSON(os.Stdout, preview)
+			}
+
+			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
+			_, _ = fmt.Fprintf(tw, "customer_id\t%s\n", preview.CustomerID)
+			_, _ = fmt.Fprintf(tw, "subscription_id\t%s\n", preview.SubscriptionID)
+			if preview.TotalAmount != 0 || preview.Currency != "" {
+				_, _ = fmt.Fprintf(tw, "total\t%.2f %s\n", preview.TotalAmount, preview.Currency)
+			}
+			_, _ = fmt.Fprintf(tw, "created_at\t%s\n", preview.CreatedAt)
+			_ = tw.Flush()
+			return nil
+		},
+	}
+
+	cmd.Flags().StringVar(&data, "data", "", "Inline JSON payload")
+	cmd.Flags().StringVar(&fromFile, "from-file", "", "Path to JSON payload file (- for stdin)")
+	return cmd
+}
+
+func newBillingInvoiceItemsCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "items",
+		Short: "Invoice items",
+	}
+	cmd.AddCommand(newBillingInvoiceItemsListCmd())
+	cmd.AddCommand(newBillingInvoiceItemsGetCmd())
+	return cmd
+}
+
+func newBillingInvoiceItemsListCmd() *cobra.Command {
+	cmd := NewListCommand(ListConfig[api.BillingInvoiceItem]{
+		Use:          "list <invoiceId>",
+		Short:        "List invoice items",
+		Headers:      []string{"ITEM_ID", "INVOICE_ID", "AMOUNT", "CURRENCY", "QTY"},
+		EmptyMessage: "No invoice items found",
+		RowFunc: func(i api.BillingInvoiceItem) []string {
+			amount := ""
+			if i.Amount != 0 {
+				amount = fmt.Sprintf("%.2f", i.Amount)
+			}
+			return []string{i.ID, i.InvoiceID, amount, i.Currency, fmt.Sprintf("%.2f", i.Quantity)}
+		},
+		Fetch: func(ctx context.Context, client *api.Client, page, pageSize int) (ListResult[api.BillingInvoiceItem], error) {
+			return ListResult[api.BillingInvoiceItem]{}, fmt.Errorf("invoice ID is required")
+		},
+	}, getClient)
+
+	cmd.Args = cobra.ExactArgs(1)
+	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		client, err := getClient(cmd.Context())
+		if err != nil {
+			return err
+		}
+
+		page, _ := cmd.Flags().GetInt("page")
+		pageSize, _ := cmd.Flags().GetInt("page-size")
+
+		result, err := client.ListBillingInvoiceItems(cmd.Context(), args[0], page, pageSize)
+		if err != nil {
+			return err
+		}
+
+		f := outfmt.FromContext(cmd.Context())
+		if len(result.Items) == 0 {
+			if outfmt.IsJSON(cmd.Context()) {
+				return f.Output(result)
+			}
+			f.Empty("No invoice items found")
+			return nil
+		}
+
+		headers := []string{"ITEM_ID", "INVOICE_ID", "AMOUNT", "CURRENCY", "QTY"}
+		rowFn := func(item any) []string {
+			it := item.(api.BillingInvoiceItem)
+			amount := ""
+			if it.Amount != 0 {
+				amount = fmt.Sprintf("%.2f", it.Amount)
+			}
+			return []string{it.ID, it.InvoiceID, amount, it.Currency, fmt.Sprintf("%.2f", it.Quantity)}
+		}
+
+		if err := f.OutputList(result.Items, headers, rowFn); err != nil {
+			return err
+		}
+		if !outfmt.IsJSON(cmd.Context()) && result.HasMore {
+			_, _ = fmt.Fprintln(os.Stderr, "# More results available")
+		}
+		return nil
+	}
+
+	return cmd
+}
+
+func newBillingInvoiceItemsGetCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "get <invoiceId> <itemId>",
+		Short: "Get invoice item",
+		Args:  cobra.ExactArgs(2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			client, err := getClient(cmd.Context())
+			if err != nil {
+				return err
+			}
+
+			item, err := client.GetBillingInvoiceItem(cmd.Context(), args[0], args[1])
+			if err != nil {
+				return err
+			}
+
+			if outfmt.IsJSON(cmd.Context()) {
+				return outfmt.WriteJSON(os.Stdout, item)
+			}
+
+			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
+			_, _ = fmt.Fprintf(tw, "item_id\t%s\n", item.ID)
+			_, _ = fmt.Fprintf(tw, "invoice_id\t%s\n", item.InvoiceID)
+			if item.Amount != 0 || item.Currency != "" {
+				_, _ = fmt.Fprintf(tw, "amount\t%.2f %s\n", item.Amount, item.Currency)
+			}
+			_, _ = fmt.Fprintf(tw, "quantity\t%.2f\n", item.Quantity)
+			_ = tw.Flush()
+			return nil
+		},
+	}
+}
+
 func newBillingSubscriptionsCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "subscriptions",
@@ -649,20 +961,66 @@ func newBillingSubscriptionsCmd() *cobra.Command {
 	cmd.AddCommand(newBillingSubscriptionsListCmd())
 	cmd.AddCommand(newBillingSubscriptionsGetCmd())
 	cmd.AddCommand(newBillingSubscriptionsCreateCmd())
+	cmd.AddCommand(newBillingSubscriptionsUpdateCmd())
+	cmd.AddCommand(newBillingSubscriptionsCancelCmd())
+	cmd.AddCommand(newBillingSubscriptionItemsCmd())
 	return cmd
 }
 
 func newBillingSubscriptionsListCmd() *cobra.Command {
-	return NewListCommand(ListConfig[api.BillingSubscription]{
+	var customerID string
+	var status string
+	var recurringPeriod int
+	var recurringPeriodUnit string
+	var from string
+	var to string
+
+	cmd := NewListCommand(ListConfig[api.BillingSubscription]{
 		Use:          "list",
 		Short:        "List billing subscriptions",
-		Headers:      []string{"SUBSCRIPTION_ID", "CUSTOMER_ID", "PRICE_ID", "STATUS"},
+		Headers:      []string{"SUBSCRIPTION_ID", "CUSTOMER_ID", "STATUS", "CURRENT_PERIOD_END"},
 		EmptyMessage: "No subscriptions found",
 		RowFunc: func(s api.BillingSubscription) []string {
-			return []string{billingSubscriptionID(s), s.CustomerID, s.PriceID, s.Status}
+			return []string{billingSubscriptionID(s), s.CustomerID, s.Status, s.CurrentPeriodEndAt}
 		},
 		Fetch: func(ctx context.Context, client *api.Client, page, pageSize int) (ListResult[api.BillingSubscription], error) {
-			result, err := client.ListBillingSubscriptions(ctx, page, pageSize)
+			if err := validateDate(from); err != nil {
+				return ListResult[api.BillingSubscription]{}, fmt.Errorf("invalid --from date: %w", err)
+			}
+			if err := validateDate(to); err != nil {
+				return ListResult[api.BillingSubscription]{}, fmt.Errorf("invalid --to date: %w", err)
+			}
+			if err := validateDateRange(from, to); err != nil {
+				return ListResult[api.BillingSubscription]{}, err
+			}
+
+			fromRFC3339 := ""
+			if from != "" {
+				var err error
+				fromRFC3339, err = convertDateToRFC3339(from)
+				if err != nil {
+					return ListResult[api.BillingSubscription]{}, fmt.Errorf("invalid --from date: %w", err)
+				}
+			}
+			toRFC3339 := ""
+			if to != "" {
+				var err error
+				toRFC3339, err = convertDateToRFC3339(to)
+				if err != nil {
+					return ListResult[api.BillingSubscription]{}, fmt.Errorf("invalid --to date: %w", err)
+				}
+			}
+
+			result, err := client.ListBillingSubscriptions(ctx, api.BillingSubscriptionListParams{
+				CustomerID:          customerID,
+				Status:              status,
+				RecurringPeriod:     recurringPeriod,
+				RecurringPeriodUnit: recurringPeriodUnit,
+				FromCreatedAt:       fromRFC3339,
+				ToCreatedAt:         toRFC3339,
+				PageNum:             page,
+				PageSize:            pageSize,
+			})
 			if err != nil {
 				return ListResult[api.BillingSubscription]{}, err
 			}
@@ -672,6 +1030,14 @@ func newBillingSubscriptionsListCmd() *cobra.Command {
 			}, nil
 		},
 	}, getClient)
+
+	cmd.Flags().StringVar(&customerID, "customer-id", "", "Filter by customer ID")
+	cmd.Flags().StringVar(&status, "status", "", "Filter by status")
+	cmd.Flags().IntVar(&recurringPeriod, "recurring-period", 0, "Filter by recurring period")
+	cmd.Flags().StringVar(&recurringPeriodUnit, "recurring-period-unit", "", "Filter by recurring period unit")
+	cmd.Flags().StringVar(&from, "from", "", "From created date (YYYY-MM-DD)")
+	cmd.Flags().StringVar(&to, "to", "", "To created date (YYYY-MM-DD)")
+	return cmd
 }
 
 func newBillingSubscriptionsGetCmd() *cobra.Command {
@@ -697,9 +1063,12 @@ func newBillingSubscriptionsGetCmd() *cobra.Command {
 			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
 			_, _ = fmt.Fprintf(tw, "subscription_id\t%s\n", billingSubscriptionID(*sub))
 			_, _ = fmt.Fprintf(tw, "customer_id\t%s\n", sub.CustomerID)
-			_, _ = fmt.Fprintf(tw, "price_id\t%s\n", sub.PriceID)
 			_, _ = fmt.Fprintf(tw, "status\t%s\n", sub.Status)
+			_, _ = fmt.Fprintf(tw, "current_period_start_at\t%s\n", sub.CurrentPeriodStartAt)
+			_, _ = fmt.Fprintf(tw, "current_period_end_at\t%s\n", sub.CurrentPeriodEndAt)
+			_, _ = fmt.Fprintf(tw, "next_billing_at\t%s\n", sub.NextBillingAt)
 			_, _ = fmt.Fprintf(tw, "created_at\t%s\n", sub.CreatedAt)
+			_, _ = fmt.Fprintf(tw, "updated_at\t%s\n", sub.UpdatedAt)
 			_ = tw.Flush()
 			return nil
 		},
@@ -747,4 +1116,199 @@ Examples:
 	cmd.Flags().StringVar(&data, "data", "", "Inline JSON payload")
 	cmd.Flags().StringVar(&fromFile, "from-file", "", "Path to JSON payload file (- for stdin)")
 	return cmd
+}
+
+func newBillingSubscriptionsUpdateCmd() *cobra.Command {
+	var data string
+	var fromFile string
+
+	cmd := &cobra.Command{
+		Use:   "update <subscriptionId>",
+		Short: "Update a billing subscription",
+		Long: `Update a billing subscription using a JSON payload.
+
+Examples:
+  airwallex billing subscriptions update sub_123 --data '{"cancel_at_period_end":true}'
+  airwallex billing subscriptions update sub_123 --from-file update.json`,
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			u := ui.FromContext(cmd.Context())
+			client, err := getClient(cmd.Context())
+			if err != nil {
+				return err
+			}
+
+			payload, err := readJSONPayload(data, fromFile)
+			if err != nil {
+				return err
+			}
+
+			sub, err := client.UpdateBillingSubscription(cmd.Context(), args[0], payload)
+			if err != nil {
+				return err
+			}
+
+			if outfmt.IsJSON(cmd.Context()) {
+				return outfmt.WriteJSON(os.Stdout, sub)
+			}
+
+			u.Success(fmt.Sprintf("Updated billing subscription: %s", billingSubscriptionID(*sub)))
+			return nil
+		},
+	}
+
+	cmd.Flags().StringVar(&data, "data", "", "Inline JSON payload")
+	cmd.Flags().StringVar(&fromFile, "from-file", "", "Path to JSON payload file (- for stdin)")
+	return cmd
+}
+
+func newBillingSubscriptionsCancelCmd() *cobra.Command {
+	var data string
+	var fromFile string
+
+	cmd := &cobra.Command{
+		Use:   "cancel <subscriptionId>",
+		Short: "Cancel a billing subscription",
+		Long: `Cancel a billing subscription.
+
+Examples:
+  airwallex billing subscriptions cancel sub_123
+  airwallex billing subscriptions cancel sub_123 --data '{"cancel_at_period_end":true}'`,
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			u := ui.FromContext(cmd.Context())
+			client, err := getClient(cmd.Context())
+			if err != nil {
+				return err
+			}
+
+			payload, err := readOptionalJSONPayload(data, fromFile)
+			if err != nil {
+				return err
+			}
+
+			sub, err := client.CancelBillingSubscription(cmd.Context(), args[0], payload)
+			if err != nil {
+				return err
+			}
+
+			if outfmt.IsJSON(cmd.Context()) {
+				return outfmt.WriteJSON(os.Stdout, sub)
+			}
+
+			u.Success(fmt.Sprintf("Cancelled billing subscription: %s", billingSubscriptionID(*sub)))
+			return nil
+		},
+	}
+
+	cmd.Flags().StringVar(&data, "data", "", "Inline JSON payload")
+	cmd.Flags().StringVar(&fromFile, "from-file", "", "Path to JSON payload file (- for stdin)")
+	return cmd
+}
+
+func newBillingSubscriptionItemsCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "items",
+		Short: "Subscription items",
+	}
+	cmd.AddCommand(newBillingSubscriptionItemsListCmd())
+	cmd.AddCommand(newBillingSubscriptionItemsGetCmd())
+	return cmd
+}
+
+func newBillingSubscriptionItemsListCmd() *cobra.Command {
+	cmd := NewListCommand(ListConfig[api.BillingSubscriptionItem]{
+		Use:          "list <subscriptionId>",
+		Short:        "List subscription items",
+		Headers:      []string{"ITEM_ID", "SUBSCRIPTION_ID", "PRICE_ID", "QTY"},
+		EmptyMessage: "No subscription items found",
+		RowFunc: func(i api.BillingSubscriptionItem) []string {
+			priceID := ""
+			if i.Price != nil {
+				priceID = i.Price.ID
+			}
+			return []string{i.ID, i.SubscriptionID, priceID, fmt.Sprintf("%.2f", i.Quantity)}
+		},
+		Fetch: func(ctx context.Context, client *api.Client, page, pageSize int) (ListResult[api.BillingSubscriptionItem], error) {
+			return ListResult[api.BillingSubscriptionItem]{}, fmt.Errorf("subscription ID is required")
+		},
+	}, getClient)
+
+	cmd.Args = cobra.ExactArgs(1)
+	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		client, err := getClient(cmd.Context())
+		if err != nil {
+			return err
+		}
+
+		page, _ := cmd.Flags().GetInt("page")
+		pageSize, _ := cmd.Flags().GetInt("page-size")
+
+		result, err := client.ListBillingSubscriptionItems(cmd.Context(), args[0], page, pageSize)
+		if err != nil {
+			return err
+		}
+
+		f := outfmt.FromContext(cmd.Context())
+		if len(result.Items) == 0 {
+			if outfmt.IsJSON(cmd.Context()) {
+				return f.Output(result)
+			}
+			f.Empty("No subscription items found")
+			return nil
+		}
+
+		headers := []string{"ITEM_ID", "SUBSCRIPTION_ID", "PRICE_ID", "QTY"}
+		rowFn := func(item any) []string {
+			it := item.(api.BillingSubscriptionItem)
+			priceID := ""
+			if it.Price != nil {
+				priceID = it.Price.ID
+			}
+			return []string{it.ID, it.SubscriptionID, priceID, fmt.Sprintf("%.2f", it.Quantity)}
+		}
+
+		if err := f.OutputList(result.Items, headers, rowFn); err != nil {
+			return err
+		}
+		if !outfmt.IsJSON(cmd.Context()) && result.HasMore {
+			_, _ = fmt.Fprintln(os.Stderr, "# More results available")
+		}
+		return nil
+	}
+
+	return cmd
+}
+
+func newBillingSubscriptionItemsGetCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "get <subscriptionId> <itemId>",
+		Short: "Get subscription item",
+		Args:  cobra.ExactArgs(2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			client, err := getClient(cmd.Context())
+			if err != nil {
+				return err
+			}
+
+			item, err := client.GetBillingSubscriptionItem(cmd.Context(), args[0], args[1])
+			if err != nil {
+				return err
+			}
+
+			if outfmt.IsJSON(cmd.Context()) {
+				return outfmt.WriteJSON(os.Stdout, item)
+			}
+
+			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
+			_, _ = fmt.Fprintf(tw, "item_id\t%s\n", item.ID)
+			_, _ = fmt.Fprintf(tw, "subscription_id\t%s\n", item.SubscriptionID)
+			if item.Price != nil {
+				_, _ = fmt.Fprintf(tw, "price_id\t%s\n", item.Price.ID)
+			}
+			_, _ = fmt.Fprintf(tw, "quantity\t%.2f\n", item.Quantity)
+			_ = tw.Flush()
+			return nil
+		},
+	}
 }

@@ -29,35 +29,58 @@ type AuthorizationsResponse struct {
 	HasMore bool            `json:"has_more"`
 }
 
+// AuthorizationListParams defines filters for listing authorizations.
+type AuthorizationListParams struct {
+	Status               string
+	CardID               string
+	BillingCurrency      string
+	DigitalWalletTokenID string
+	LifecycleID          string
+	RetrievalRef         string
+	FromCreatedAt        string
+	ToCreatedAt          string
+	PageNum              int
+	PageSize             int
+}
+
 // ListAuthorizations lists issuing authorizations with optional filters.
-func (c *Client) ListAuthorizations(ctx context.Context, status, cardID, cardholderID, fromCreatedAt, toCreatedAt string, pageNum, pageSize int) (*AuthorizationsResponse, error) {
-	params := url.Values{}
-	if status != "" {
-		params.Set("status", status)
+func (c *Client) ListAuthorizations(ctx context.Context, params AuthorizationListParams) (*AuthorizationsResponse, error) {
+	query := url.Values{}
+	if params.Status != "" {
+		query.Set("status", params.Status)
 	}
-	if cardID != "" {
-		params.Set("card_id", cardID)
+	if params.CardID != "" {
+		query.Set("card_id", params.CardID)
 	}
-	if cardholderID != "" {
-		params.Set("cardholder_id", cardholderID)
+	if params.BillingCurrency != "" {
+		query.Set("billing_currency", params.BillingCurrency)
 	}
-	if fromCreatedAt != "" {
-		params.Set("from_created_at", fromCreatedAt)
+	if params.DigitalWalletTokenID != "" {
+		query.Set("digital_wallet_token_id", params.DigitalWalletTokenID)
 	}
-	if toCreatedAt != "" {
-		params.Set("to_created_at", toCreatedAt)
+	if params.LifecycleID != "" {
+		query.Set("lifecycle_id", params.LifecycleID)
 	}
-	if pageSize > 0 {
-		if pageNum < 1 {
-			pageNum = 1
+	if params.RetrievalRef != "" {
+		query.Set("retrieval_ref", params.RetrievalRef)
+	}
+	if params.FromCreatedAt != "" {
+		query.Set("from_created_at", params.FromCreatedAt)
+	}
+	if params.ToCreatedAt != "" {
+		query.Set("to_created_at", params.ToCreatedAt)
+	}
+	if params.PageSize > 0 {
+		if params.PageNum < 1 {
+			params.PageNum = 1
 		}
-		params.Set("page_num", fmt.Sprintf("%d", pageNum))
-		params.Set("page_size", fmt.Sprintf("%d", pageSize))
+		query.Set("page_num", fmt.Sprintf("%d", params.PageNum))
+		query.Set("page_size", fmt.Sprintf("%d", params.PageSize))
 	}
 
 	path := Endpoints.AuthorizationsList.Path
-	if len(params) > 0 {
-		path += "?" + params.Encode()
+	if len(query) > 0 {
+		path += "?" + query.Encode()
 	}
 
 	resp, err := c.Get(ctx, path)
