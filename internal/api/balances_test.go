@@ -215,7 +215,7 @@ func TestGetBalanceHistory_Success(t *testing.T) {
 					"amount": 100.00,
 					"balance": 1000.00,
 					"transaction_type": "DEPOSIT",
-					"created_at": "2024-01-01T00:00:00Z",
+					"posted_at": "2024-01-01T00:00:00Z",
 					"description": "Test deposit"
 				},
 				{
@@ -224,7 +224,7 @@ func TestGetBalanceHistory_Success(t *testing.T) {
 					"amount": -50.00,
 					"balance": 950.00,
 					"transaction_type": "WITHDRAWAL",
-					"created_at": "2024-01-02T00:00:00Z"
+					"posted_at": "2024-01-02T00:00:00Z"
 				}
 			],
 			"has_more": true
@@ -314,7 +314,7 @@ func TestGetBalanceHistory_WithCurrencyFilter(t *testing.T) {
 					"amount": 200.00,
 					"balance": 500.00,
 					"transaction_type": "DEPOSIT",
-					"created_at": "2024-01-01T00:00:00Z"
+					"posted_at": "2024-01-01T00:00:00Z"
 				}
 			],
 			"has_more": false
@@ -375,7 +375,7 @@ func TestGetBalanceHistory_WithDateFilters(t *testing.T) {
 					"amount": 75.00,
 					"balance": 800.00,
 					"transaction_type": "DEPOSIT",
-					"created_at": "2024-01-15T12:00:00Z"
+					"posted_at": "2024-01-15T12:00:00Z"
 				}
 			],
 			"has_more": false
@@ -433,7 +433,7 @@ func TestGetBalanceHistory_WithPagination(t *testing.T) {
 					"amount": 25.00,
 					"balance": 700.00,
 					"transaction_type": "DEPOSIT",
-					"created_at": "2024-01-20T00:00:00Z"
+					"posted_at": "2024-01-20T00:00:00Z"
 				}
 			],
 			"has_more": true
@@ -502,7 +502,7 @@ func TestGetBalanceHistory_AllFilters(t *testing.T) {
 					"amount": 150.00,
 					"balance": 600.00,
 					"transaction_type": "DEPOSIT",
-					"created_at": "2024-06-15T12:00:00Z"
+					"posted_at": "2024-06-15T12:00:00Z"
 				}
 			],
 			"has_more": false
@@ -690,7 +690,7 @@ func TestGetBalanceHistory_ZeroAmounts(t *testing.T) {
 					"amount": 0.00,
 					"balance": 0.00,
 					"transaction_type": "ADJUSTMENT",
-					"created_at": "2024-01-01T00:00:00Z"
+					"posted_at": "2024-01-01T00:00:00Z"
 				}
 			],
 			"has_more": false

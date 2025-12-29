@@ -87,7 +87,7 @@ Examples:
 
   # Combine filters with custom limit
   airwallex balances history --currency USD --from 2024-01-01 --to 2024-01-07 --limit 50`,
-		Headers:      []string{"ID", "CURRENCY", "AMOUNT", "BALANCE", "TYPE", "CREATED_AT", "DESCRIPTION"},
+		Headers:      []string{"ID", "CURRENCY", "AMOUNT", "BALANCE", "TYPE", "POSTED_AT", "DESCRIPTION"},
 		EmptyMessage: "No balance history found",
 		RowFunc: func(item api.BalanceHistoryItem) []string {
 			return []string{
@@ -96,7 +96,7 @@ Examples:
 				fmt.Sprintf("%.2f", item.Amount),
 				fmt.Sprintf("%.2f", item.Balance),
 				item.TransactionType,
-				item.CreatedAt,
+				item.PostedAt,
 				item.Description,
 			}
 		},

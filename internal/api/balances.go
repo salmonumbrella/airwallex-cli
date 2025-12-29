@@ -26,7 +26,7 @@ type BalanceHistoryItem struct {
 	Amount          float64 `json:"amount"`
 	Balance         float64 `json:"balance"`
 	TransactionType string  `json:"transaction_type"`
-	CreatedAt       string  `json:"created_at"`
+	PostedAt        string  `json:"posted_at"`
 	Description     string  `json:"description,omitempty"`
 }
 
