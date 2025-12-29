@@ -124,8 +124,9 @@ func newPaymentLinksGetCmd() *cobra.Command {
 
 func newPaymentLinksCreateCmd() *cobra.Command {
 	var amount float64
-	var currency, description string
+	var currency, description, title string
 	var expiresIn string
+	var reusable bool
 
 	cmd := &cobra.Command{
 		Use:   "create",
@@ -150,9 +151,20 @@ Examples:
 				return err
 			}
 
+			// Use description as title if title not provided
+			effectiveTitle := title
+			if effectiveTitle == "" && description != "" {
+				effectiveTitle = description
+			}
+			if effectiveTitle == "" {
+				effectiveTitle = fmt.Sprintf("Payment of %.2f %s", amount, currency)
+			}
+
 			req := map[string]interface{}{
 				"amount":   amount,
 				"currency": currency,
+				"title":    effectiveTitle,
+				"reusable": reusable,
 			}
 			if description != "" {
 				req["description"] = description
@@ -178,7 +190,9 @@ Examples:
 
 	cmd.Flags().Float64Var(&amount, "amount", 0, "Amount to collect (required)")
 	cmd.Flags().StringVar(&currency, "currency", "", "Currency (required)")
+	cmd.Flags().StringVar(&title, "title", "", "Title for the payment link (defaults to description or auto-generated)")
 	cmd.Flags().StringVar(&description, "description", "", "Description")
+	cmd.Flags().BoolVar(&reusable, "reusable", false, "Allow the link to be used multiple times")
 	cmd.Flags().StringVar(&expiresIn, "expires-in", "", "Expiration period (e.g., 7d, 24h)")
 	mustMarkRequired(cmd, "amount")
 	mustMarkRequired(cmd, "currency")
