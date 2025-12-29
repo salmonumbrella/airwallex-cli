@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/salmonumbrella/airwallex-cli/internal/iocontext"
+	"github.com/salmonumbrella/airwallex-cli/internal/ui"
 )
 
 // Formatter handles output formatting for commands.
@@ -78,11 +79,12 @@ func (f *Formatter) StartTable(headers []string) bool {
 		return false
 	}
 
+	u := ui.FromContext(f.ctx)
 	for i, h := range headers {
 		if i > 0 {
 			_, _ = fmt.Fprint(f.tabWriter, "\t")
 		}
-		_, _ = fmt.Fprint(f.tabWriter, h)
+		_, _ = fmt.Fprint(f.tabWriter, u.FormatHeader(h))
 	}
 	_, _ = fmt.Fprintln(f.tabWriter)
 	return true
@@ -95,6 +97,54 @@ func (f *Formatter) Row(columns ...string) {
 			_, _ = fmt.Fprint(f.tabWriter, "\t")
 		}
 		_, _ = fmt.Fprint(f.tabWriter, col)
+	}
+	_, _ = fmt.Fprintln(f.tabWriter)
+}
+
+// ColumnType indicates how a column value should be colorized.
+type ColumnType int
+
+const (
+	// ColumnPlain indicates no special colorization.
+	ColumnPlain ColumnType = iota
+	// ColumnStatus indicates a status value (COMPLETED, PENDING, FAILED, etc.).
+	ColumnStatus
+	// ColumnAmount indicates a currency amount.
+	ColumnAmount
+	// ColumnCurrency indicates a currency code.
+	ColumnCurrency
+)
+
+// ColorRow writes a row with colorization based on column types.
+// columnTypes specifies how each column should be colorized.
+// If columnTypes is shorter than columns, remaining columns are treated as plain.
+func (f *Formatter) ColorRow(columnTypes []ColumnType, columns ...string) {
+	u := ui.FromContext(f.ctx)
+	for i, col := range columns {
+		if i > 0 {
+			_, _ = fmt.Fprint(f.tabWriter, "\t")
+		}
+
+		// Determine column type
+		var colType ColumnType
+		if i < len(columnTypes) {
+			colType = columnTypes[i]
+		}
+
+		// Apply colorization based on type
+		var formatted string
+		switch colType {
+		case ColumnStatus:
+			formatted = u.FormatStatus(col)
+		case ColumnAmount:
+			formatted = u.FormatAmount(col)
+		case ColumnCurrency:
+			formatted = u.FormatCurrency(col)
+		default:
+			formatted = col
+		}
+
+		_, _ = fmt.Fprint(f.tabWriter, formatted)
 	}
 	_, _ = fmt.Fprintln(f.tabWriter)
 }
@@ -114,6 +164,12 @@ func (f *Formatter) Empty(message string) {
 // columns and rowFn extracts column values from each item.
 // Sort and limit transformations are applied based on context flags.
 func (f *Formatter) OutputList(items any, headers []string, rowFn func(item any) []string) error {
+	return f.OutputListWithColors(items, headers, nil, rowFn)
+}
+
+// OutputListWithColors outputs a slice of items with optional colorization.
+// columnTypes specifies how each column should be colorized. If nil, no colorization is applied.
+func (f *Formatter) OutputListWithColors(items any, headers []string, columnTypes []ColumnType, rowFn func(item any) []string) error {
 	val := reflect.ValueOf(items)
 	if val.Kind() != reflect.Slice && val.Kind() != reflect.Array {
 		return fmt.Errorf("items must be a slice or array, got %T", items)
@@ -137,7 +193,12 @@ func (f *Formatter) OutputList(items any, headers []string, rowFn func(item any)
 
 	for i := 0; i < processed.Len(); i++ {
 		item := processed.Index(i).Interface()
-		f.Row(rowFn(item)...)
+		cols := rowFn(item)
+		if columnTypes != nil {
+			f.ColorRow(columnTypes, cols...)
+		} else {
+			f.Row(cols...)
+		}
 	}
 
 	return f.EndTable()

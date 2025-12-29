@@ -50,12 +50,19 @@ func newAccountsListCmd() *cobra.Command {
 			}
 
 			headers := []string{"ACCOUNT_ID", "NAME", "CURRENCY", "COUNTRY", "STATUS"}
+			colTypes := []outfmt.ColumnType{
+				outfmt.ColumnPlain,    // ACCOUNT_ID
+				outfmt.ColumnPlain,    // NAME
+				outfmt.ColumnCurrency, // CURRENCY
+				outfmt.ColumnPlain,    // COUNTRY
+				outfmt.ColumnStatus,   // STATUS
+			}
 			rowFn := func(item any) []string {
 				a := item.(api.GlobalAccount)
 				return []string{a.AccountID, a.AccountName, a.Currency, a.CountryCode, a.Status}
 			}
 
-			if err := f.OutputList(result.Items, headers, rowFn); err != nil {
+			if err := f.OutputListWithColors(result.Items, headers, colTypes, rowFn); err != nil {
 				return err
 			}
 

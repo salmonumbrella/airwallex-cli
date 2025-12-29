@@ -79,3 +79,65 @@ func (u *UI) Error(msg string) {
 func (u *UI) Info(msg string) {
 	_, _ = u.err.WriteString(msg + "\n")
 }
+
+// ColorEnabled returns whether color output is enabled.
+func (u *UI) ColorEnabled() bool {
+	return u.color
+}
+
+// FormatStatus colorizes status values based on their meaning.
+// Green for success states, yellow for pending, red for failed/cancelled.
+func (u *UI) FormatStatus(status string) string {
+	if !u.color {
+		return status
+	}
+
+	switch status {
+	// Success states
+	case "COMPLETED", "ACTIVE", "SETTLED", "SUCCESS", "VERIFIED", "PAID":
+		return termenv.String(status).Foreground(termenv.ANSIGreen).String()
+	// Pending/in-progress states
+	case "PENDING", "PROCESSING", "IN_PROGRESS", "AWAITING", "INACTIVE", "CREATED":
+		return termenv.String(status).Foreground(termenv.ANSIYellow).String()
+	// Failure states
+	case "FAILED", "CANCELLED", "CANCELED", "REJECTED", "CLOSED", "EXPIRED":
+		return termenv.String(status).Foreground(termenv.ANSIRed).String()
+	default:
+		return status
+	}
+}
+
+// FormatAmount colorizes currency amounts.
+// Positive amounts are shown in green, negative in red.
+func (u *UI) FormatAmount(amount string) string {
+	if !u.color {
+		return amount
+	}
+
+	// Check if it's a negative amount (starts with - after optional whitespace)
+	trimmed := amount
+	for len(trimmed) > 0 && (trimmed[0] == ' ' || trimmed[0] == '\t') {
+		trimmed = trimmed[1:]
+	}
+	if len(trimmed) > 0 && trimmed[0] == '-' {
+		return termenv.String(amount).Foreground(termenv.ANSIRed).String()
+	}
+
+	return termenv.String(amount).Foreground(termenv.ANSIGreen).String()
+}
+
+// FormatCurrency colorizes currency codes.
+func (u *UI) FormatCurrency(currency string) string {
+	if !u.color {
+		return currency
+	}
+	return termenv.String(currency).Foreground(termenv.ANSICyan).String()
+}
+
+// FormatHeader colorizes table headers.
+func (u *UI) FormatHeader(header string) string {
+	if !u.color {
+		return header
+	}
+	return termenv.String(header).Bold().String()
+}

@@ -39,8 +39,17 @@ func newBalancesCmd() *cobra.Command {
 			}
 
 			f.StartTable([]string{"CURRENCY", "AVAILABLE", "PENDING", "RESERVED", "TOTAL"})
+			// Column types: currency, amount, amount, amount, amount
+			colTypes := []outfmt.ColumnType{
+				outfmt.ColumnCurrency,
+				outfmt.ColumnAmount,
+				outfmt.ColumnAmount,
+				outfmt.ColumnAmount,
+				outfmt.ColumnAmount,
+			}
 			for _, b := range balances.Balances {
-				f.Row(b.Currency,
+				f.ColorRow(colTypes,
+					b.Currency,
 					fmt.Sprintf("%.2f", b.AvailableAmount),
 					fmt.Sprintf("%.2f", b.PendingAmount),
 					fmt.Sprintf("%.2f", b.ReservedAmount),

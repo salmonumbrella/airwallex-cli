@@ -31,6 +31,7 @@ type ListConfig[T any] struct {
 	// Output configuration
 	Headers      []string
 	RowFunc      func(T) []string
+	ColumnTypes  []outfmt.ColumnType // Optional: column types for colorization
 	EmptyMessage string
 }
 
@@ -74,13 +75,13 @@ func NewListCommand[T any](cfg ListConfig[T], getClient func(context.Context) (*
 				return nil
 			}
 
-			// Use OutputList for consistent sort/limit handling
+			// Use OutputListWithColors for consistent sort/limit handling
 			// Wrap RowFunc to match OutputList's signature
 			rowFn := func(item any) []string {
 				return cfg.RowFunc(item.(T))
 			}
 
-			if err := f.OutputList(result.Items, cfg.Headers, rowFn); err != nil {
+			if err := f.OutputListWithColors(result.Items, cfg.Headers, cfg.ColumnTypes, rowFn); err != nil {
 				return err
 			}
 

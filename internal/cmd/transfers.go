@@ -67,6 +67,13 @@ func newTransfersListCmd() *cobra.Command {
 		Short:        "List transfers",
 		Headers:      []string{"TRANSFER_ID", "AMOUNT", "CURRENCY", "STATUS", "REFERENCE"},
 		EmptyMessage: "No transfers found",
+		ColumnTypes: []outfmt.ColumnType{
+			outfmt.ColumnPlain,    // TRANSFER_ID
+			outfmt.ColumnAmount,   // AMOUNT
+			outfmt.ColumnCurrency, // CURRENCY
+			outfmt.ColumnStatus,   // STATUS
+			outfmt.ColumnPlain,    // REFERENCE
+		},
 		RowFunc: func(t api.Transfer) []string {
 			return []string{
 				t.TransferID,

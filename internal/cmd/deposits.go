@@ -73,12 +73,20 @@ Examples:
 			}
 
 			headers := []string{"DEPOSIT_ID", "AMOUNT", "CURRENCY", "STATUS", "SOURCE", "CREATED"}
+			colTypes := []outfmt.ColumnType{
+				outfmt.ColumnPlain,    // DEPOSIT_ID
+				outfmt.ColumnAmount,   // AMOUNT
+				outfmt.ColumnCurrency, // CURRENCY
+				outfmt.ColumnStatus,   // STATUS
+				outfmt.ColumnPlain,    // SOURCE
+				outfmt.ColumnPlain,    // CREATED
+			}
 			rowFn := func(item any) []string {
 				d := item.(api.Deposit)
 				return []string{d.ID, fmt.Sprintf("%.2f", d.Amount), d.Currency, d.Status, d.Source, d.CreatedAt}
 			}
 
-			if err := f.OutputList(result.Items, headers, rowFn); err != nil {
+			if err := f.OutputListWithColors(result.Items, headers, colTypes, rowFn); err != nil {
 				return err
 			}
 
