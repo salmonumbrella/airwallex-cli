@@ -180,6 +180,24 @@ airwallex beneficiaries delete <beneficiaryId>
 airwallex beneficiaries validate --entity-type ... --bank-country ...
 ```
 
+**Key flags for `beneficiaries create`:**
+
+| Flag | Description |
+|------|-------------|
+| `--payment-method` | `LOCAL` (domestic) or `SWIFT` (international wire) |
+| `--swift-code` | SWIFT/BIC code for international transfers |
+| `--iban` | IBAN for European/international transfers |
+| `--routing-number` | US ABA routing number (9 digits) |
+| `--sort-code` | UK sort code (6 digits) |
+| `--bsb` | Australian BSB number (6 digits) |
+| `--ifsc` | Indian IFSC code (11 characters) |
+| `--clabe` | Mexican CLABE (18 digits) |
+| `--institution-number` | Canadian institution number (3 digits) |
+| `--transit-number` | Canadian transit/branch number (5 digits) |
+| `--validate` | Validate against schema without creating |
+
+See `airwallex beneficiaries create --help` for country-specific examples.
+
 ### Payers
 
 ```bash
