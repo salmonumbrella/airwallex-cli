@@ -3,11 +3,24 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 
+	"github.com/salmonumbrella/airwallex-cli/internal/flagmap"
 	"github.com/salmonumbrella/airwallex-cli/internal/outfmt"
 )
+
+// schemaKeyToFlag finds the CLI flag that maps to a given schema field key or path
+func schemaKeyToFlag(key, path string) string {
+	// Try matching against the full path first, then the key
+	for flag, mapping := range flagmap.AllMappings() {
+		if mapping.SchemaPath == path || strings.HasSuffix(mapping.SchemaPath, "."+key) {
+			return "--" + flag
+		}
+	}
+	return ""
+}
 
 func newSchemasCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -53,7 +66,7 @@ Examples:
 				return nil
 			}
 
-			formatter.StartTable([]string{"FIELD", "TYPE", "REQUIRED", "DESCRIPTION"})
+			formatter.StartTable([]string{"FIELD", "TYPE", "REQUIRED", "CLI FLAG", "DESCRIPTION"})
 			for _, f := range schema.Fields {
 				required := ""
 				if f.Required {
@@ -63,7 +76,8 @@ Examples:
 				if len(f.Enum()) > 0 && len(desc) == 0 {
 					desc = fmt.Sprintf("enum: %v", f.Enum())
 				}
-				formatter.Row(f.Name(), f.Type(), required, desc)
+				cliFlag := schemaKeyToFlag(f.Key, f.Path)
+				formatter.Row(f.Name(), f.Type(), required, cliFlag, desc)
 			}
 			return formatter.EndTable()
 		},
@@ -110,7 +124,7 @@ Examples:
 				return nil
 			}
 
-			formatter.StartTable([]string{"FIELD", "TYPE", "REQUIRED", "DESCRIPTION"})
+			formatter.StartTable([]string{"FIELD", "TYPE", "REQUIRED", "CLI FLAG", "DESCRIPTION"})
 			for _, f := range schema.Fields {
 				required := ""
 				if f.Required {
@@ -120,7 +134,8 @@ Examples:
 				if len(f.Enum()) > 0 && len(desc) == 0 {
 					desc = fmt.Sprintf("enum: %v", f.Enum())
 				}
-				formatter.Row(f.Name(), f.Type(), required, desc)
+				cliFlag := schemaKeyToFlag(f.Key, f.Path)
+				formatter.Row(f.Name(), f.Type(), required, cliFlag, desc)
 			}
 			return formatter.EndTable()
 		},
