@@ -82,6 +82,19 @@ var mappings = map[string]Mapping{
 		RoutingType: "transit_number",
 		Description: "Canadian transit/branch number (5 digits)",
 	},
+	// Japan Zengin (two-tier routing)
+	"zengin-bank-code": {
+		Flag:        "zengin-bank-code",
+		SchemaPath:  "beneficiary.bank_details.account_routing_value1",
+		RoutingType: "bank_code",
+		Description: "Japan Zengin bank code (4 digits)",
+	},
+	"zengin-branch-code": {
+		Flag:        "zengin-branch-code",
+		SchemaPath:  "beneficiary.bank_details.account_routing_value2",
+		RoutingType: "branch_code",
+		Description: "Japan Zengin branch code (3 digits)",
+	},
 	"bank-code": {
 		Flag:        "bank-code",
 		SchemaPath:  "beneficiary.bank_details.bank_code",
@@ -175,5 +188,6 @@ func RoutingFlags() []string {
 		"routing-number", "sort-code", "bsb", "ifsc", "clabe",
 		"institution-number", "transit-number", "bank-code", "branch-code",
 		"swift-code", "iban",
+		"zengin-bank-code", "zengin-branch-code",
 	}
 }
