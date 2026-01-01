@@ -1096,3 +1096,131 @@ func TestFormatter_Output_TemplateTakesPrecedence(t *testing.T) {
 		t.Errorf("template should take precedence over JSON, got: %q", buf.String())
 	}
 }
+
+// Annotated output tests
+
+func TestAnnotatedOutput_MarshalJSON(t *testing.T) {
+	tests := []struct {
+		name     string
+		data     any
+		links    map[string]string
+		contains []string
+		excludes []string
+	}{
+		{
+			name:     "with links",
+			data:     struct{ ID string }{"test-123"},
+			links:    map[string]string{"next": "cmd --after test-123"},
+			contains: []string{`"ID":"test-123"`, `"_links"`, `"next":"cmd --after test-123"`},
+		},
+		{
+			name:     "without links",
+			data:     struct{ ID string }{"test-123"},
+			links:    nil,
+			contains: []string{`"ID":"test-123"`},
+			excludes: []string{`"_links"`},
+		},
+		{
+			name:     "empty links",
+			data:     struct{ ID string }{"test-123"},
+			links:    map[string]string{},
+			contains: []string{`"ID":"test-123"`},
+			excludes: []string{`"_links"`},
+		},
+		{
+			name:     "multiple links",
+			data:     struct{ ID string }{"test-123"},
+			links:    map[string]string{"next": "/next", "prev": "/prev"},
+			contains: []string{`"next"`, `"prev"`, `"_links"`},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := AnnotatedOutput{
+				Data:  tt.data,
+				Links: tt.links,
+			}
+
+			b, err := json.Marshal(a)
+			if err != nil {
+				t.Fatalf("MarshalJSON error: %v", err)
+			}
+
+			output := string(b)
+			for _, s := range tt.contains {
+				if !strings.Contains(output, s) {
+					t.Errorf("expected output to contain %q, got: %s", s, output)
+				}
+			}
+			for _, s := range tt.excludes {
+				if strings.Contains(output, s) {
+					t.Errorf("expected output NOT to contain %q, got: %s", s, output)
+				}
+			}
+		})
+	}
+}
+
+func TestAnnotatedOutput_NonObjectData(t *testing.T) {
+	// For arrays or primitives, links can't be added
+	a := AnnotatedOutput{
+		Data:  []string{"a", "b", "c"},
+		Links: map[string]string{"next": "/next"},
+	}
+
+	b, err := json.Marshal(a)
+	if err != nil {
+		t.Fatalf("MarshalJSON error: %v", err)
+	}
+
+	output := string(b)
+	// Should return the array without links since we can't add to non-object
+	if !strings.Contains(output, `["a","b","c"]`) {
+		t.Errorf("expected array output, got: %s", output)
+	}
+}
+
+func TestFormatter_OutputAnnotated(t *testing.T) {
+	ctx := WithFormat(context.Background(), "json")
+	var buf bytes.Buffer
+	f := FromContext(ctx, WithWriter(&buf))
+
+	data := struct {
+		ID     string `json:"id"`
+		Status string `json:"status"`
+	}{
+		ID:     "tfr_123",
+		Status: "COMPLETED",
+	}
+
+	links := map[string]string{
+		"self": "/api/v1/transfers/tfr_123",
+	}
+
+	err := f.OutputAnnotated(data, links)
+	if err != nil {
+		t.Fatalf("OutputAnnotated error: %v", err)
+	}
+
+	// Parse the JSON output to verify structure (avoids whitespace issues)
+	var result map[string]any
+	if err := json.Unmarshal(buf.Bytes(), &result); err != nil {
+		t.Fatalf("failed to parse output JSON: %v", err)
+	}
+
+	if result["id"] != "tfr_123" {
+		t.Errorf("expected id=tfr_123, got: %v", result["id"])
+	}
+	if result["status"] != "COMPLETED" {
+		t.Errorf("expected status=COMPLETED, got: %v", result["status"])
+	}
+
+	links2, ok := result["_links"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected _links to be a map, got: %T", result["_links"])
+	}
+	if links2["self"] != "/api/v1/transfers/tfr_123" {
+		t.Errorf("expected self link, got: %v", links2["self"])
+	}
+}

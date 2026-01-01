@@ -2,6 +2,7 @@ package outfmt
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"reflect"
@@ -108,6 +109,46 @@ func templateFuncs() template.FuncMap {
 			return val
 		},
 	}
+}
+
+// AnnotatedOutput wraps data with agent-friendly metadata.
+type AnnotatedOutput struct {
+	Data  any               `json:"-"`
+	Links map[string]string `json:"_links,omitempty"`
+}
+
+// MarshalJSON implements custom JSON marshaling to flatten Data with links.
+func (a AnnotatedOutput) MarshalJSON() ([]byte, error) {
+	// First marshal the data
+	dataBytes, err := json.Marshal(a.Data)
+	if err != nil {
+		return nil, err
+	}
+
+	// If no links, return data as-is
+	if len(a.Links) == 0 {
+		return dataBytes, nil
+	}
+
+	// Unmarshal data into a map
+	var dataMap map[string]any
+	if err := json.Unmarshal(dataBytes, &dataMap); err != nil {
+		// Data isn't an object, can't add links
+		return dataBytes, nil
+	}
+
+	// Add links
+	dataMap["_links"] = a.Links
+	return json.Marshal(dataMap)
+}
+
+// OutputAnnotated outputs data with optional _links for agent navigation.
+func (f *Formatter) OutputAnnotated(data any, links map[string]string) error {
+	annotated := AnnotatedOutput{
+		Data:  data,
+		Links: links,
+	}
+	return f.Output(annotated)
 }
 
 // StartTable writes table headers and returns true if in text mode.
