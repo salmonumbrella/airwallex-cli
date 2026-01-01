@@ -480,3 +480,356 @@ func TestBeneficiariesCreateValidationCombinations(t *testing.T) {
 		})
 	}
 }
+
+func TestBeneficiariesCreate_InternationalRouting(t *testing.T) {
+	cleanup := setupTestEnvironment(t)
+	defer cleanup()
+
+	tests := []struct {
+		name        string
+		args        []string
+		wantErr     bool
+		errContains string
+	}{
+		// Valid international routing configurations
+		{
+			name: "US with routing number",
+			args: []string{
+				"--entity-type", "COMPANY",
+				"--bank-country", "US",
+				"--company-name", "Test Corp",
+				"--account-name", "Test Corp",
+				"--account-currency", "USD",
+				"--account-number", "123456789",
+				"--routing-number", "021000021",
+			},
+			wantErr: false,
+		},
+		{
+			name: "UK with sort code",
+			args: []string{
+				"--entity-type", "COMPANY",
+				"--bank-country", "GB",
+				"--company-name", "UK Ltd",
+				"--account-name", "UK Ltd",
+				"--account-currency", "GBP",
+				"--account-number", "12345678",
+				"--sort-code", "123456",
+			},
+			wantErr: false,
+		},
+		{
+			name: "Australia with BSB",
+			args: []string{
+				"--entity-type", "PERSONAL",
+				"--bank-country", "AU",
+				"--first-name", "John",
+				"--last-name", "Smith",
+				"--account-name", "John Smith",
+				"--account-currency", "AUD",
+				"--account-number", "123456789",
+				"--bsb", "062000",
+			},
+			wantErr: false,
+		},
+		{
+			name: "Europe with IBAN and SWIFT",
+			args: []string{
+				"--entity-type", "COMPANY",
+				"--bank-country", "DE",
+				"--company-name", "GmbH",
+				"--account-name", "GmbH",
+				"--account-currency", "EUR",
+				"--iban", "DE89370400440532013000",
+				"--swift-code", "COBADEFFXXX",
+				"--transfer-method", "SWIFT",
+			},
+			wantErr: false,
+		},
+		{
+			name: "India with IFSC",
+			args: []string{
+				"--entity-type", "PERSONAL",
+				"--bank-country", "IN",
+				"--first-name", "Raj",
+				"--last-name", "Patel",
+				"--account-name", "Raj Patel",
+				"--account-currency", "INR",
+				"--account-number", "1234567890",
+				"--ifsc", "SBIN0001234",
+			},
+			wantErr: false,
+		},
+		{
+			name: "Mexico with CLABE",
+			args: []string{
+				"--entity-type", "COMPANY",
+				"--bank-country", "MX",
+				"--company-name", "Mexico SA",
+				"--account-name", "Mexico SA",
+				"--account-currency", "MXN",
+				"--clabe", "123456789012345678",
+			},
+			wantErr: false,
+		},
+		{
+			name: "SWIFT only without account number",
+			args: []string{
+				"--entity-type", "COMPANY",
+				"--bank-country", "JP",
+				"--company-name", "Japan Corp",
+				"--account-name", "Japan Corp",
+				"--account-currency", "JPY",
+				"--swift-code", "MABORJPJXXX",
+				"--transfer-method", "SWIFT",
+			},
+			wantErr: false,
+		},
+		// Invalid routing configurations
+		{
+			name: "no routing method fails",
+			args: []string{
+				"--entity-type", "COMPANY",
+				"--bank-country", "US",
+				"--company-name", "Test",
+				"--account-name", "Test",
+				"--account-currency", "USD",
+				"--account-number", "123",
+			},
+			wantErr:     true,
+			errContains: "must provide at least one routing method",
+		},
+		{
+			name: "invalid routing number format - too short",
+			args: []string{
+				"--entity-type", "COMPANY",
+				"--bank-country", "US",
+				"--company-name", "Test Corp",
+				"--account-name", "Test Corp",
+				"--account-currency", "USD",
+				"--account-number", "123456789",
+				"--routing-number", "12345",
+			},
+			wantErr:     true,
+			errContains: "--routing-number must be exactly 9 digits",
+		},
+		{
+			name: "invalid routing number format - too long",
+			args: []string{
+				"--entity-type", "COMPANY",
+				"--bank-country", "US",
+				"--company-name", "Test Corp",
+				"--account-name", "Test Corp",
+				"--account-currency", "USD",
+				"--account-number", "123456789",
+				"--routing-number", "0210000210",
+			},
+			wantErr:     true,
+			errContains: "--routing-number must be exactly 9 digits",
+		},
+		{
+			name: "invalid routing number format - non-numeric",
+			args: []string{
+				"--entity-type", "COMPANY",
+				"--bank-country", "US",
+				"--company-name", "Test Corp",
+				"--account-name", "Test Corp",
+				"--account-currency", "USD",
+				"--account-number", "123456789",
+				"--routing-number", "02100002X",
+			},
+			wantErr:     true,
+			errContains: "--routing-number must be exactly 9 digits",
+		},
+		{
+			name: "invalid sort code format - too short",
+			args: []string{
+				"--entity-type", "COMPANY",
+				"--bank-country", "GB",
+				"--company-name", "UK Ltd",
+				"--account-name", "UK Ltd",
+				"--account-currency", "GBP",
+				"--account-number", "12345678",
+				"--sort-code", "12345",
+			},
+			wantErr:     true,
+			errContains: "--sort-code must be exactly 6 digits",
+		},
+		{
+			name: "invalid sort code format - too long",
+			args: []string{
+				"--entity-type", "COMPANY",
+				"--bank-country", "GB",
+				"--company-name", "UK Ltd",
+				"--account-name", "UK Ltd",
+				"--account-currency", "GBP",
+				"--account-number", "12345678",
+				"--sort-code", "1234567",
+			},
+			wantErr:     true,
+			errContains: "--sort-code must be exactly 6 digits",
+		},
+		{
+			name: "invalid sort code format - non-numeric",
+			args: []string{
+				"--entity-type", "COMPANY",
+				"--bank-country", "GB",
+				"--company-name", "UK Ltd",
+				"--account-name", "UK Ltd",
+				"--account-currency", "GBP",
+				"--account-number", "12345678",
+				"--sort-code", "12345A",
+			},
+			wantErr:     true,
+			errContains: "--sort-code must be exactly 6 digits",
+		},
+		{
+			name: "invalid BSB format - too short",
+			args: []string{
+				"--entity-type", "PERSONAL",
+				"--bank-country", "AU",
+				"--first-name", "John",
+				"--last-name", "Smith",
+				"--account-name", "John Smith",
+				"--account-currency", "AUD",
+				"--account-number", "123456789",
+				"--bsb", "12345",
+			},
+			wantErr:     true,
+			errContains: "--bsb must be exactly 6 digits",
+		},
+		{
+			name: "invalid BSB format - too long",
+			args: []string{
+				"--entity-type", "PERSONAL",
+				"--bank-country", "AU",
+				"--first-name", "John",
+				"--last-name", "Smith",
+				"--account-name", "John Smith",
+				"--account-currency", "AUD",
+				"--account-number", "123456789",
+				"--bsb", "0620001",
+			},
+			wantErr:     true,
+			errContains: "--bsb must be exactly 6 digits",
+		},
+		{
+			name: "invalid BSB format - non-numeric",
+			args: []string{
+				"--entity-type", "PERSONAL",
+				"--bank-country", "AU",
+				"--first-name", "John",
+				"--last-name", "Smith",
+				"--account-name", "John Smith",
+				"--account-currency", "AUD",
+				"--account-number", "123456789",
+				"--bsb", "06200A",
+			},
+			wantErr:     true,
+			errContains: "--bsb must be exactly 6 digits",
+		},
+		{
+			name: "invalid CLABE format - too short",
+			args: []string{
+				"--entity-type", "COMPANY",
+				"--bank-country", "MX",
+				"--company-name", "Mexico SA",
+				"--account-name", "Mexico SA",
+				"--account-currency", "MXN",
+				"--clabe", "12345678901234567",
+			},
+			wantErr:     true,
+			errContains: "--clabe must be exactly 18 digits",
+		},
+		{
+			name: "invalid CLABE format - too long",
+			args: []string{
+				"--entity-type", "COMPANY",
+				"--bank-country", "MX",
+				"--company-name", "Mexico SA",
+				"--account-name", "Mexico SA",
+				"--account-currency", "MXN",
+				"--clabe", "1234567890123456789",
+			},
+			wantErr:     true,
+			errContains: "--clabe must be exactly 18 digits",
+		},
+		{
+			name: "invalid CLABE format - non-numeric",
+			args: []string{
+				"--entity-type", "COMPANY",
+				"--bank-country", "MX",
+				"--company-name", "Mexico SA",
+				"--account-name", "Mexico SA",
+				"--account-currency", "MXN",
+				"--clabe", "12345678901234567A",
+			},
+			wantErr:     true,
+			errContains: "--clabe must be exactly 18 digits",
+		},
+		// Multiple routing methods (should be valid)
+		{
+			name: "multiple routing methods - IBAN and SWIFT",
+			args: []string{
+				"--entity-type", "COMPANY",
+				"--bank-country", "FR",
+				"--company-name", "French SA",
+				"--account-name", "French SA",
+				"--account-currency", "EUR",
+				"--iban", "FR7630006000011234567890189",
+				"--swift-code", "BNPAFRPPXXX",
+			},
+			wantErr: false,
+		},
+		{
+			name: "multiple routing methods - routing number and SWIFT",
+			args: []string{
+				"--entity-type", "COMPANY",
+				"--bank-country", "US",
+				"--company-name", "US Corp",
+				"--account-name", "US Corp",
+				"--account-currency", "USD",
+				"--account-number", "123456789",
+				"--routing-number", "021000021",
+				"--swift-code", "CHASUS33XXX",
+				"--transfer-method", "SWIFT",
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create the beneficiaries parent command and add the create subcommand
+			benefCmd := newBeneficiariesCmd()
+
+			// Set up a root command
+			rootCmd := &cobra.Command{Use: "root"}
+			rootCmd.AddCommand(benefCmd)
+
+			// Prepend "beneficiaries create" to the args
+			fullArgs := append([]string{"beneficiaries", "create"}, tt.args...)
+			rootCmd.SetArgs(fullArgs)
+
+			// Execute the command
+			err := rootCmd.Execute()
+
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("expected error containing %q, got nil", tt.errContains)
+					return
+				}
+				if !strings.Contains(err.Error(), tt.errContains) {
+					t.Errorf("expected error containing %q, got %q", tt.errContains, err.Error())
+				}
+			} else {
+				// For non-error cases, we expect to fail on the actual API call
+				// since we don't have a mock client set up. This is acceptable
+				// as we're only testing validation logic here.
+				if err != nil && !isExpectedTestError(err) {
+					t.Errorf("unexpected validation error: %v", err)
+				}
+			}
+		})
+	}
+}
