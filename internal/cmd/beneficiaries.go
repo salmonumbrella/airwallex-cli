@@ -329,9 +329,10 @@ Examples:
 			hasPayNow := paynowVPA != "" || uen != "" || nric != "" || sgBankCode != ""
 			hasClearing := clearingNumber != ""
 			hasFPS := hkBankCode != "" || fpsID != "" || hkid != ""
+			hasPayID := payidPhone != "" || payidEmail != "" || payidABN != ""
 
 			hasAnyRouting := hasEmail || hasPhone || hasEFT || hasSWIFT || hasRouting ||
-				hasIBAN || hasSortCode || hasBSB || hasIFSC || hasCLABE || hasBankCode || hasZengin || hasCNAPS || hasKorea || hasPayNow || hasClearing || hasFPS
+				hasIBAN || hasSortCode || hasBSB || hasIFSC || hasCLABE || hasBankCode || hasZengin || hasCNAPS || hasKorea || hasPayNow || hasClearing || hasFPS || hasPayID
 
 			if !hasAnyRouting {
 				return fmt.Errorf("must provide at least one routing method (e.g., --swift-code, --iban, --routing-number, --sort-code, --bsb)")
@@ -498,6 +499,27 @@ Examples:
 			if paynowVPA != "" {
 				if len(paynowVPA) > 21 {
 					return fmt.Errorf("--paynow-vpa must be 21 characters or fewer")
+				}
+			}
+
+			// Australia PayID validation
+			if payidPhone != "" {
+				payidPhoneRegex := regexp.MustCompile(`^\+61-\d{9}$`)
+				if !payidPhoneRegex.MatchString(payidPhone) {
+					return fmt.Errorf("--payid-phone must be in format +61-nnnnnnnnn")
+				}
+			}
+			if payidEmail != "" {
+				// Basic email validation
+				emailRegex := regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
+				if !emailRegex.MatchString(payidEmail) {
+					return fmt.Errorf("--payid-email must be a valid email address")
+				}
+			}
+			if payidABN != "" {
+				abnRegex := regexp.MustCompile(`^\d{9}$|^\d{11}$`)
+				if !abnRegex.MatchString(payidABN) {
+					return fmt.Errorf("--payid-abn must be 9 or 11 digits")
 				}
 			}
 
