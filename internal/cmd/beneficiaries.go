@@ -234,7 +234,50 @@ Examples:
   # Canada Interac e-Transfer (email)
   airwallex beneficiaries create --entity-type PERSONAL --bank-country CA \
     --first-name John --last-name Doe --account-name "John Doe" \
-    --account-currency CAD --email john@example.com --clearing-system INTERAC`,
+    --account-currency CAD --email john@example.com --clearing-system INTERAC
+
+  # Japan with Zengin routing
+  airwallex beneficiaries create --entity-type PERSONAL --bank-country JP \
+    --first-name Taro --last-name Yamada --account-name "Yamada Taro" \
+    --account-currency JPY --account-number 1234567 \
+    --zengin-bank-code 0001 --zengin-branch-code 001 \
+    --account-category Savings
+
+  # China with CNAPS
+  airwallex beneficiaries create --entity-type PERSONAL --bank-country CN \
+    --first-name Wei --last-name Zhang --account-name "Zhang Wei" \
+    --account-currency CNY --account-number 6222021234567890123 \
+    --cnaps 102100099996 --bank-name "Industrial and Commercial Bank" \
+    --personal-id-type CHINESE_NATIONAL_ID --personal-id-number 310101199001011234
+
+  # Brazil with CPF
+  airwallex beneficiaries create --entity-type PERSONAL --bank-country BR \
+    --first-name João --last-name Silva --account-name "João Silva" \
+    --account-currency BRL --account-number 123456789 \
+    --swift-code BRASBRRJ --cpf 12345678901 --bank-branch 1234
+
+  # South Korea
+  airwallex beneficiaries create --entity-type PERSONAL --bank-country KR \
+    --first-name Min --last-name Kim --account-name "Kim Min" \
+    --account-currency KRW --account-number 1234567890123 \
+    --korea-bank-code 004
+
+  # Singapore with PayNow NRIC
+  airwallex beneficiaries create --entity-type PERSONAL --bank-country SG \
+    --first-name Wei --last-name Tan --account-name "Tan Wei" \
+    --account-currency SGD --nric S1234567A
+
+  # Hong Kong with FPS
+  airwallex beneficiaries create --entity-type PERSONAL --bank-country HK \
+    --first-name Wing --last-name Chan --account-name "Chan Wing" \
+    --account-currency HKD --account-number 12345678901234 \
+    --hk-bank-code 004
+
+  # Sweden with clearing number
+  airwallex beneficiaries create --entity-type PERSONAL --bank-country SE \
+    --first-name Erik --last-name Svensson --account-name "Erik Svensson" \
+    --account-currency SEK --account-number 123456789012345 \
+    --clearing-number 1234`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			u := ui.FromContext(cmd.Context())
 			client, err := getClient(cmd.Context())
