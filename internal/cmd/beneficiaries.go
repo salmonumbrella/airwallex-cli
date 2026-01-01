@@ -118,7 +118,7 @@ func newBeneficiariesCreateCmd() *cobra.Command {
 	var firstName string
 	var lastName string
 	var nickname string
-	var transferMethod string
+	var paymentMethod string
 	var accountCurrency string
 	var accountName string
 	var accountNumber string
@@ -157,7 +157,7 @@ Examples:
   airwallex beneficiaries create --entity-type COMPANY --bank-country US \
     --company-name "Acme Corp" --account-name "Acme Corp" \
     --account-currency USD --account-number 123456789 \
-    --swift-code CHASUS33 --transfer-method SWIFT
+    --swift-code CHASUS33 --payment-method SWIFT
 
   # US ACH (domestic)
   airwallex beneficiaries create --entity-type COMPANY --bank-country US \
@@ -169,7 +169,7 @@ Examples:
   airwallex beneficiaries create --entity-type COMPANY --bank-country DE \
     --company-name "GmbH Corp" --account-name "GmbH Corp" \
     --account-currency EUR --iban DE89370400440532013000 \
-    --swift-code COBADEFFXXX --transfer-method SWIFT
+    --swift-code COBADEFFXXX --payment-method SWIFT
 
   # UK with Sort Code
   airwallex beneficiaries create --entity-type COMPANY --bank-country GB \
@@ -436,8 +436,8 @@ Examples:
 			// Build request
 			req := map[string]interface{}{
 				"beneficiary":      beneficiary,
-				"transfer_methods": []string{transferMethod},
-				"payment_methods":  []string{transferMethod},
+				"transfer_methods": []string{paymentMethod},
+				"payment_methods":  []string{paymentMethod},
 			}
 			if nickname != "" {
 				req["nickname"] = nickname
@@ -445,7 +445,7 @@ Examples:
 
 			// Optional: Fetch schema and validate
 			if validateOnly {
-				schema, err := client.GetBeneficiarySchema(cmd.Context(), bankCountry, entityType, transferMethod)
+				schema, err := client.GetBeneficiarySchema(cmd.Context(), bankCountry, entityType, paymentMethod)
 				if err != nil {
 					return fmt.Errorf("failed to fetch schema: %w", err)
 				}
@@ -519,7 +519,7 @@ Examples:
 				if outfmt.IsJSON(cmd.Context()) {
 					return outfmt.WriteJSON(os.Stdout, req)
 				}
-				u.Info(fmt.Sprintf("Would create beneficiary in %s with %s routing", bankCountry, transferMethod))
+				u.Info(fmt.Sprintf("Would create beneficiary in %s with %s routing", bankCountry, paymentMethod))
 				return nil
 			}
 

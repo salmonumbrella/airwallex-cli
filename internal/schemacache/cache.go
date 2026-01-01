@@ -57,9 +57,9 @@ func (c *Cache) Get(key string) (*api.Schema, bool) {
 		return nil, false
 	}
 
-	// Check if expired
+	// Check if expired - don't remove under read lock, just return miss
+	// Let Set() overwrite or use Prune() for cleanup
 	if time.Since(entry.CachedAt) > c.ttl {
-		_ = os.Remove(path) // Clean up expired entry, ignore error
 		return nil, false
 	}
 
@@ -104,6 +104,44 @@ func (c *Cache) Clear() error {
 	for _, e := range entries {
 		if strings.HasSuffix(e.Name(), ".json") {
 			_ = os.Remove(filepath.Join(c.dir, e.Name()))
+		}
+	}
+	return nil
+}
+
+// Prune removes all expired entries from the cache
+func (c *Cache) Prune() error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	entries, err := os.ReadDir(c.dir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return err
+	}
+
+	for _, e := range entries {
+		if !strings.HasSuffix(e.Name(), ".json") {
+			continue
+		}
+
+		path := filepath.Join(c.dir, e.Name())
+		data, err := os.ReadFile(path)
+		if err != nil {
+			continue
+		}
+
+		var entry cacheEntry
+		if err := json.Unmarshal(data, &entry); err != nil {
+			// Invalid entry, remove it
+			_ = os.Remove(path)
+			continue
+		}
+
+		if time.Since(entry.CachedAt) > c.ttl {
+			_ = os.Remove(path)
 		}
 	}
 	return nil
