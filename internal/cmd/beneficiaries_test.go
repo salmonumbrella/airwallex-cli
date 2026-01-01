@@ -904,6 +904,36 @@ func TestBeneficiariesCreate_InternationalRouting(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		// China CNAPS validation
+		{
+			name: "cnaps invalid - not 12 digits",
+			args: []string{
+				"--entity-type", "PERSONAL",
+				"--bank-country", "CN",
+				"--first-name", "Wei",
+				"--last-name", "Zhang",
+				"--account-name", "Zhang Wei",
+				"--account-currency", "CNY",
+				"--account-number", "12345678901234",
+				"--cnaps", "12345678901",
+			},
+			wantErr:     true,
+			errContains: "--cnaps must be exactly 12 digits",
+		},
+		{
+			name: "valid China CNAPS",
+			args: []string{
+				"--entity-type", "PERSONAL",
+				"--bank-country", "CN",
+				"--first-name", "Wei",
+				"--last-name", "Zhang",
+				"--account-name", "Zhang Wei",
+				"--account-currency", "CNY",
+				"--account-number", "12345678901234",
+				"--cnaps", "102100099996",
+			},
+			wantErr: false,
+		},
 		// Multiple routing methods (should be valid)
 		{
 			name: "multiple routing methods - IBAN and SWIFT",

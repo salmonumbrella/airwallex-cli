@@ -142,6 +142,8 @@ func newBeneficiariesCreateCmd() *cobra.Command {
 	var zenginBankCode string
 	var zenginBranchCode string
 	var bankAccountCategory string
+	// China
+	var cnaps string
 	// Address fields (required for Interac)
 	var addressCountry string
 	var addressStreet string
@@ -250,9 +252,10 @@ Examples:
 			hasCLABE := clabe != ""
 			hasBankCode := bankCode != ""
 			hasZengin := zenginBankCode != ""
+			hasCNAPS := cnaps != ""
 
 			hasAnyRouting := hasEmail || hasPhone || hasEFT || hasSWIFT || hasRouting ||
-				hasIBAN || hasSortCode || hasBSB || hasIFSC || hasCLABE || hasBankCode || hasZengin
+				hasIBAN || hasSortCode || hasBSB || hasIFSC || hasCLABE || hasBankCode || hasZengin || hasCNAPS
 
 			if !hasAnyRouting {
 				return fmt.Errorf("must provide at least one routing method (e.g., --swift-code, --iban, --routing-number, --sort-code, --bsb)")
@@ -354,6 +357,14 @@ Examples:
 				zenginBranchRegex := regexp.MustCompile(`^\d{3}$`)
 				if !zenginBranchRegex.MatchString(zenginBranchCode) {
 					return fmt.Errorf("--zengin-branch-code must be exactly 3 digits")
+				}
+			}
+
+			// Validation: China CNAPS (12 digits)
+			if cnaps != "" {
+				cnapsRegex := regexp.MustCompile(`^\d{12}$`)
+				if !cnapsRegex.MatchString(cnaps) {
+					return fmt.Errorf("--cnaps must be exactly 12 digits")
 				}
 			}
 
@@ -459,6 +470,9 @@ Examples:
 					bankDetails["account_routing_type2"] = "branch_code"
 					bankDetails["account_routing_value2"] = zenginBranchCode
 				}
+			} else if cnaps != "" {
+				bankDetails["account_routing_type1"] = "cnaps"
+				bankDetails["account_routing_value1"] = cnaps
 			}
 
 			if branchCode != "" {
@@ -523,6 +537,9 @@ Examples:
 				// Japan Zengin
 				addField("zengin-bank-code", zenginBankCode)
 				addField("zengin-branch-code", zenginBranchCode)
+
+				// China CNAPS
+				addField("cnaps", cnaps)
 
 				// Canada EFT
 				addField("institution-number", institutionNumber)
@@ -626,6 +643,9 @@ Examples:
 	// Japan Zengin routing
 	cmd.Flags().StringVar(&zenginBankCode, "zengin-bank-code", "", "Japan Zengin bank code (4 digits)")
 	cmd.Flags().StringVar(&zenginBranchCode, "zengin-branch-code", "", "Japan Zengin branch code (3 digits)")
+
+	// China CNAPS routing
+	cmd.Flags().StringVar(&cnaps, "cnaps", "", "China CNAPS code (12 digits)")
 
 	// Address flags (required for Interac)
 	cmd.Flags().StringVar(&addressCountry, "address-country", "", "Beneficiary country code (e.g. CA)")
