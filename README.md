@@ -189,6 +189,7 @@ airwallex beneficiaries validate --entity-type ... --bank-country ...
 | 🇪🇺 Europe | SEPA | `--iban`, `--swift-code` |
 | 🇦🇺 Australia | BECS | `--bsb` |
 | 🇨🇦 Canada | EFT | `--institution-number`, `--transit-number` |
+| 🇨🇦 Canada | Interac e-Transfer | `--email`, `--phone`, `--clearing-system INTERAC` |
 | 🇮🇳 India | NEFT/RTGS/IMPS | `--ifsc` |
 | 🇲🇽 Mexico | SPEI | `--clabe` |
 | 🇯🇵 Japan | Zengin | `--zengin-bank-code`, `--zengin-branch-code` |
