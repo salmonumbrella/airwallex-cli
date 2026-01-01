@@ -65,6 +65,75 @@ func TestParseAPIError_EmptyFields(t *testing.T) {
 	}
 }
 
+func TestAPIError_ErrorWithFieldErrors(t *testing.T) {
+	err := &APIError{
+		Code:    "validation_failed",
+		Message: "The request failed our schema validation.",
+		Errors: []FieldError{
+			{
+				Source:  "beneficiary.bank_details.swift_code",
+				Code:    "field_required",
+				Message: "This field is required",
+			},
+			{
+				Source:  "beneficiary.bank_details.account_number",
+				Code:    "field_invalid",
+				Message: "Invalid account number format",
+			},
+		},
+	}
+	got := err.Error()
+
+	// Check that the main message is present
+	if !strings.Contains(got, "validation_failed") {
+		t.Errorf("Error() = %q, want to contain 'validation_failed'", got)
+	}
+
+	// Check that field errors header is present
+	if !strings.Contains(got, "Field errors:") {
+		t.Errorf("Error() = %q, want to contain 'Field errors:'", got)
+	}
+
+	// Check that individual field errors are included
+	if !strings.Contains(got, "beneficiary.bank_details.swift_code: This field is required") {
+		t.Errorf("Error() = %q, want to contain first field error", got)
+	}
+	if !strings.Contains(got, "beneficiary.bank_details.account_number: Invalid account number format") {
+		t.Errorf("Error() = %q, want to contain second field error", got)
+	}
+}
+
+func TestParseAPIError_WithFieldErrors(t *testing.T) {
+	body := []byte(`{
+		"code": "validation_failed",
+		"message": "The request failed our schema validation.",
+		"errors": [
+			{
+				"source": "beneficiary.bank_details.swift_code",
+				"code": "field_required",
+				"message": "This field is required"
+			}
+		]
+	}`)
+	err := ParseAPIError(body)
+
+	if err.Code != "validation_failed" {
+		t.Errorf("Code = %q, want 'validation_failed'", err.Code)
+	}
+	if len(err.Errors) != 1 {
+		t.Fatalf("len(Errors) = %d, want 1", len(err.Errors))
+	}
+	if err.Errors[0].Source != "beneficiary.bank_details.swift_code" {
+		t.Errorf("Errors[0].Source = %q, want 'beneficiary.bank_details.swift_code'", err.Errors[0].Source)
+	}
+	if err.Errors[0].Code != "field_required" {
+		t.Errorf("Errors[0].Code = %q, want 'field_required'", err.Errors[0].Code)
+	}
+	if err.Errors[0].Message != "This field is required" {
+		t.Errorf("Errors[0].Message = %q, want 'This field is required'", err.Errors[0].Message)
+	}
+}
+
 func TestContextualError(t *testing.T) {
 	inner := &APIError{Code: "not_found", Message: "Transfer not found"}
 	err := WrapError("GET", "/api/v1/transfers/123", 404, inner)

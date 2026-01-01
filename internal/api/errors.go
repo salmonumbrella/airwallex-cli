@@ -8,17 +8,32 @@ import (
 	"time"
 )
 
-type APIError struct {
+// FieldError represents a specific field validation error from the API.
+type FieldError struct {
+	Source  string `json:"source"`
 	Code    string `json:"code"`
 	Message string `json:"message"`
-	Source  string `json:"source,omitempty"`
+}
+
+type APIError struct {
+	Code    string       `json:"code"`
+	Message string       `json:"message"`
+	Source  string       `json:"source,omitempty"`
+	Errors  []FieldError `json:"errors,omitempty"`
 }
 
 func (e *APIError) Error() string {
+	msg := fmt.Sprintf("%s: %s", e.Code, e.Message)
 	if e.Source != "" {
-		return fmt.Sprintf("%s: %s (source: %s)", e.Code, e.Message, e.Source)
+		msg += fmt.Sprintf(" (source: %s)", e.Source)
 	}
-	return fmt.Sprintf("%s: %s", e.Code, e.Message)
+	if len(e.Errors) > 0 {
+		msg += "\nField errors:"
+		for _, fe := range e.Errors {
+			msg += fmt.Sprintf("\n  - %s: %s", fe.Source, fe.Message)
+		}
+	}
+	return msg
 }
 
 func ParseAPIError(body []byte) *APIError {
@@ -34,6 +49,7 @@ func ParseAPIError(body []byte) *APIError {
 	const maxMessageLength = 500
 	const maxCodeLength = 100
 	const maxSourceLength = 200
+	const maxFieldErrors = 20
 
 	if len(e.Message) > maxMessageLength {
 		e.Message = e.Message[:maxMessageLength] + "..."
@@ -43,6 +59,22 @@ func ParseAPIError(body []byte) *APIError {
 	}
 	if len(e.Source) > maxSourceLength {
 		e.Source = e.Source[:maxSourceLength]
+	}
+
+	// Sanitize field errors
+	if len(e.Errors) > maxFieldErrors {
+		e.Errors = e.Errors[:maxFieldErrors]
+	}
+	for i := range e.Errors {
+		if len(e.Errors[i].Source) > maxSourceLength {
+			e.Errors[i].Source = e.Errors[i].Source[:maxSourceLength]
+		}
+		if len(e.Errors[i].Code) > maxCodeLength {
+			e.Errors[i].Code = e.Errors[i].Code[:maxCodeLength]
+		}
+		if len(e.Errors[i].Message) > maxMessageLength {
+			e.Errors[i].Message = e.Errors[i].Message[:maxMessageLength] + "..."
+		}
 	}
 
 	if e.Code == "" && e.Message == "" {
