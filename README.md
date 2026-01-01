@@ -180,56 +180,27 @@ airwallex beneficiaries delete <beneficiaryId>
 airwallex beneficiaries validate --entity-type ... --bank-country ...
 ```
 
-**Key flags for `beneficiaries create`:**
+#### Supported Countries & Routing
 
-| Flag | Description |
-|------|-------------|
-| `--payment-method` | `LOCAL` (domestic) or `SWIFT` (international wire) |
-| `--swift-code` | SWIFT/BIC code for international transfers |
-| `--iban` | IBAN for European/international transfers |
-| `--routing-number` | US ABA routing number (9 digits) |
-| `--sort-code` | UK sort code (6 digits) |
-| `--bsb` | Australian BSB number (6 digits) |
-| `--ifsc` | Indian IFSC code (11 characters) |
-| `--clabe` | Mexican CLABE (18 digits) |
-| `--institution-number` | Canadian institution number (3 digits) |
-| `--transit-number` | Canadian transit/branch number (5 digits) |
-| `--zengin-bank-code` | Japan Zengin bank code (4 digits) |
-| `--zengin-branch-code` | Japan Zengin branch code (3 digits) |
-| `--cnaps` | China CNAPS code (12 digits) |
-| `--korea-bank-code` | South Korea bank code (3 digits) |
-| `--sg-bank-code` | Singapore bank code (7 digits) |
-| `--nric` | Singapore NRIC for PayNow (9 chars) |
-| `--uen` | Singapore UEN for business PayNow |
-| `--hk-bank-code` | Hong Kong bank code (3 digits) |
-| `--fps-id` | Hong Kong FPS identifier (7-9 digits) |
-| `--clearing-number` | Sweden clearing number (4-5 digits) |
-| `--cpf` | Brazil individual tax ID (11 digits) |
-| `--cnpj` | Brazil business tax ID (14 digits) |
-| `--validate` | Validate against schema without creating |
-
-See `airwallex beneficiaries create --help` for country-specific examples.
-
-#### International Routing Support
-
-The CLI supports country-specific routing codes and payment rails for 15+ countries:
-
-| Country | Routing Method | Flags |
-|---------|---------------|-------|
-| 🇺🇸 USA | ACH/Fedwire | `--routing-number` |
+| Country | Payment Rail | Routing Flags |
+|---------|--------------|---------------|
+| 🇺🇸 USA | ACH / Fedwire | `--routing-number` |
 | 🇬🇧 UK | Faster Payments | `--sort-code` |
+| 🇪🇺 Europe | SEPA | `--iban`, `--swift-code` |
 | 🇦🇺 Australia | BECS | `--bsb` |
 | 🇨🇦 Canada | EFT | `--institution-number`, `--transit-number` |
 | 🇮🇳 India | NEFT/RTGS/IMPS | `--ifsc` |
 | 🇲🇽 Mexico | SPEI | `--clabe` |
 | 🇯🇵 Japan | Zengin | `--zengin-bank-code`, `--zengin-branch-code` |
-| 🇨🇳 China | CNAPS | `--cnaps`, `--bank-name`, `--personal-id-type` |
-| 🇧🇷 Brazil | PIX/TED | `--cpf`, `--cnpj`, `--bank-branch` |
+| 🇨🇳 China | CNAPS | `--cnaps`, `--bank-name`, `--personal-id-type`, `--legal-rep-*` |
+| 🇧🇷 Brazil | PIX / TED | `--cpf`, `--cnpj`, `--bank-branch` |
 | 🇰🇷 South Korea | - | `--korea-bank-code` |
-| 🇸🇬 Singapore | PayNow/FAST | `--nric`, `--uen`, `--sg-bank-code`, `--paynow-vpa` |
+| 🇸🇬 Singapore | PayNow / FAST | `--nric`, `--uen`, `--sg-bank-code`, `--paynow-vpa` |
 | 🇭🇰 Hong Kong | FPS | `--hk-bank-code`, `--fps-id`, `--hkid` |
 | 🇸🇪 Sweden | Bankgiro | `--clearing-number` |
-| 🇪🇺 Europe | SEPA | `--iban`, `--swift-code` |
+| 🌍 International | SWIFT | `--swift-code`, `--iban` |
+
+Use `--validate` to check against schema without creating. See `airwallex beneficiaries create --help` for examples.
 
 ### Payers
 
