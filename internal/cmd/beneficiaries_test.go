@@ -1064,6 +1064,36 @@ func TestBeneficiariesCreate_InternationalRouting(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		// South Korea bank code validation
+		{
+			name: "korea-bank-code invalid - not 3 digits",
+			args: []string{
+				"--entity-type", "PERSONAL",
+				"--bank-country", "KR",
+				"--first-name", "Min",
+				"--last-name", "Kim",
+				"--account-name", "Kim Min",
+				"--account-currency", "KRW",
+				"--account-number", "1234567890123",
+				"--korea-bank-code", "12",
+			},
+			wantErr:     true,
+			errContains: "--korea-bank-code must be exactly 3 digits",
+		},
+		{
+			name: "valid South Korea",
+			args: []string{
+				"--entity-type", "PERSONAL",
+				"--bank-country", "KR",
+				"--first-name", "Min",
+				"--last-name", "Kim",
+				"--account-name", "Kim Min",
+				"--account-currency", "KRW",
+				"--account-number", "1234567890123",
+				"--korea-bank-code", "004",
+			},
+			wantErr: false,
+		},
 		// Multiple routing methods (should be valid)
 		{
 			name: "multiple routing methods - IBAN and SWIFT",

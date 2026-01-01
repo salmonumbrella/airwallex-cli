@@ -626,6 +626,9 @@ Examples:
 				// China CNAPS
 				addField("cnaps", cnaps)
 
+				// South Korea
+				addField("korea-bank-code", koreaBankCode)
+
 				// Brazil
 				addField("cpf", cpf)
 				addField("cnpj", cnpj)
@@ -742,6 +745,9 @@ Examples:
 
 	// China CNAPS routing
 	cmd.Flags().StringVar(&cnaps, "cnaps", "", "China CNAPS code (12 digits)")
+
+	// South Korea routing
+	cmd.Flags().StringVar(&koreaBankCode, "korea-bank-code", "", "South Korea bank code (3 digits)")
 
 	// Brazil routing
 	cmd.Flags().StringVar(&cpf, "cpf", "", "Brazil CPF individual tax ID (11 digits)")
