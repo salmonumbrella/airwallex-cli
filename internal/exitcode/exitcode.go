@@ -99,5 +99,31 @@ func FromError(err error) int {
 		return ServerErr
 	}
 
+	// Check ContextualError for HTTP status code mapping
+	var ctxErr *api.ContextualError
+	if errors.As(err, &ctxErr) {
+		return fromStatusCode(ctxErr.StatusCode)
+	}
+
 	return Error
+}
+
+// fromStatusCode maps HTTP status codes to exit codes.
+func fromStatusCode(statusCode int) int {
+	switch {
+	case statusCode == 401 || statusCode == 403:
+		return AuthRequired
+	case statusCode == 404:
+		return NotFound
+	case statusCode == 422 || statusCode == 400:
+		return Validation
+	case statusCode == 429:
+		return RateLimited
+	case statusCode == 409:
+		return Conflict
+	case statusCode >= 500:
+		return ServerErr
+	default:
+		return Error
+	}
 }

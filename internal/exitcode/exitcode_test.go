@@ -120,3 +120,37 @@ func TestServerError_Error(t *testing.T) {
 		t.Errorf("Error() = %q, want %q", got, expected)
 	}
 }
+
+func TestFromError_ContextualError_StatusCodes(t *testing.T) {
+	tests := []struct {
+		name       string
+		statusCode int
+		expected   int
+	}{
+		{"401 unauthorized", 401, AuthRequired},
+		{"403 forbidden", 403, AuthRequired},
+		{"404 not found", 404, NotFound},
+		{"400 bad request", 400, Validation},
+		{"422 unprocessable", 422, Validation},
+		{"429 rate limited", 429, RateLimited},
+		{"409 conflict", 409, Conflict},
+		{"500 server error", 500, ServerErr},
+		{"502 bad gateway", 502, ServerErr},
+		{"503 unavailable", 503, ServerErr},
+		{"418 teapot", 418, Error}, // Unknown 4xx
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := &api.ContextualError{
+				Method:     "GET",
+				URL:        "/test",
+				StatusCode: tt.statusCode,
+				Err:        errors.New("test error"),
+			}
+			if got := FromError(err); got != tt.expected {
+				t.Errorf("FromError(status %d) = %d, want %d", tt.statusCode, got, tt.expected)
+			}
+		})
+	}
+}
