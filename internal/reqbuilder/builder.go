@@ -1,0 +1,85 @@
+// internal/reqbuilder/builder.go
+package reqbuilder
+
+import "strings"
+
+// BuildNestedMap converts flat "path.to.field" keys into nested maps
+func BuildNestedMap(fields map[string]string) map[string]interface{} {
+	result := make(map[string]interface{})
+
+	for path, value := range fields {
+		if value == "" {
+			continue
+		}
+		setNestedValue(result, path, value)
+	}
+
+	return result
+}
+
+// setNestedValue sets a value at a dot-separated path
+func setNestedValue(m map[string]interface{}, path, value string) {
+	parts := strings.Split(path, ".")
+	current := m
+
+	for i, part := range parts {
+		if i == len(parts)-1 {
+			// Last part - set the value
+			current[part] = value
+		} else {
+			// Intermediate part - ensure map exists
+			if _, ok := current[part]; !ok {
+				current[part] = make(map[string]interface{})
+			}
+			current = current[part].(map[string]interface{})
+		}
+	}
+}
+
+// AddRoutingType adds the routing type field for a routing value
+func AddRoutingType(m map[string]interface{}, index int, routingType string) {
+	if routingType == "" {
+		return
+	}
+
+	beneficiary, ok := m["beneficiary"].(map[string]interface{})
+	if !ok {
+		return
+	}
+
+	bankDetails, ok := beneficiary["bank_details"].(map[string]interface{})
+	if !ok {
+		return
+	}
+
+	typeKey := "account_routing_type1"
+	if index == 2 {
+		typeKey = "account_routing_type2"
+	}
+	bankDetails[typeKey] = routingType
+}
+
+// MergeRequest merges additional fields into a request map
+func MergeRequest(base, additional map[string]interface{}) map[string]interface{} {
+	result := make(map[string]interface{})
+
+	// Copy base
+	for k, v := range base {
+		result[k] = v
+	}
+
+	// Merge additional (recursive for maps)
+	for k, v := range additional {
+		if existing, ok := result[k]; ok {
+			if existingMap, ok := existing.(map[string]interface{}); ok {
+				if additionalMap, ok := v.(map[string]interface{}); ok {
+					result[k] = MergeRequest(existingMap, additionalMap)
+					continue
+				}
+			}
+		}
+		result[k] = v
+	}
+
+	return result
+}
