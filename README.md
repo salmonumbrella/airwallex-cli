@@ -194,6 +194,18 @@ airwallex beneficiaries validate --entity-type ... --bank-country ...
 | `--clabe` | Mexican CLABE (18 digits) |
 | `--institution-number` | Canadian institution number (3 digits) |
 | `--transit-number` | Canadian transit/branch number (5 digits) |
+| `--zengin-bank-code` | Japan Zengin bank code (4 digits) |
+| `--zengin-branch-code` | Japan Zengin branch code (3 digits) |
+| `--cnaps` | China CNAPS code (12 digits) |
+| `--korea-bank-code` | South Korea bank code (3 digits) |
+| `--sg-bank-code` | Singapore bank code (7 digits) |
+| `--nric` | Singapore NRIC for PayNow (9 chars) |
+| `--uen` | Singapore UEN for business PayNow |
+| `--hk-bank-code` | Hong Kong bank code (3 digits) |
+| `--fps-id` | Hong Kong FPS identifier (7-9 digits) |
+| `--clearing-number` | Sweden clearing number (4-5 digits) |
+| `--cpf` | Brazil individual tax ID (11 digits) |
+| `--cnpj` | Brazil business tax ID (14 digits) |
 | `--validate` | Validate against schema without creating |
 
 See `airwallex beneficiaries create --help` for country-specific examples.
