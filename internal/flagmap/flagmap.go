@@ -95,6 +95,13 @@ var mappings = map[string]Mapping{
 		RoutingType: "branch_code",
 		Description: "Japan Zengin branch code (3 digits)",
 	},
+	// China CNAPS
+	"cnaps": {
+		Flag:        "cnaps",
+		SchemaPath:  "beneficiary.bank_details.account_routing_value1",
+		RoutingType: "cnaps",
+		Description: "China CNAPS code (12 digits)",
+	},
 	"bank-code": {
 		Flag:        "bank-code",
 		SchemaPath:  "beneficiary.bank_details.bank_code",
@@ -189,5 +196,6 @@ func RoutingFlags() []string {
 		"institution-number", "transit-number", "bank-code", "branch-code",
 		"swift-code", "iban",
 		"zengin-bank-code", "zengin-branch-code",
+		"cnaps",
 	}
 }
