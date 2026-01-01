@@ -125,6 +125,17 @@ func newBeneficiariesCreateCmd() *cobra.Command {
 	var email string
 	var phone string
 	var localClearingSystem string
+	// SWIFT/international routing
+	var swiftCode string
+	var routingNumber string
+	var iban string
+	// Additional international routing flags
+	var sortCode string
+	var bsb string
+	var ifsc string
+	var clabe string
+	var bankCode string
+	var branchCode string
 	// Address fields (required for Interac)
 	var addressCountry string
 	var addressStreet string
@@ -138,6 +149,47 @@ func newBeneficiariesCreateCmd() *cobra.Command {
 		Long: `Create a new beneficiary for payouts.
 
 Examples:
+  # US SWIFT (international wire)
+  airwallex beneficiaries create --entity-type COMPANY --bank-country US \
+    --company-name "Acme Corp" --account-name "Acme Corp" \
+    --account-currency USD --account-number 123456789 \
+    --swift-code CHASUS33 --transfer-method SWIFT
+
+  # US ACH (domestic)
+  airwallex beneficiaries create --entity-type COMPANY --bank-country US \
+    --company-name "Acme Corp" --account-name "Acme Corp" \
+    --account-currency USD --account-number 123456789 \
+    --routing-number 021000021
+
+  # Europe IBAN/SWIFT
+  airwallex beneficiaries create --entity-type COMPANY --bank-country DE \
+    --company-name "GmbH Corp" --account-name "GmbH Corp" \
+    --account-currency EUR --iban DE89370400440532013000 \
+    --swift-code COBADEFFXXX --transfer-method SWIFT
+
+  # UK with Sort Code
+  airwallex beneficiaries create --entity-type COMPANY --bank-country GB \
+    --company-name "UK Ltd" --account-name "UK Ltd" \
+    --account-currency GBP --account-number 12345678 \
+    --sort-code 123456
+
+  # Australia with BSB
+  airwallex beneficiaries create --entity-type PERSONAL --bank-country AU \
+    --first-name Jane --last-name Smith --account-name "Jane Smith" \
+    --account-currency AUD --account-number 123456789 \
+    --bsb 123456
+
+  # India with IFSC
+  airwallex beneficiaries create --entity-type PERSONAL --bank-country IN \
+    --first-name Raj --last-name Kumar --account-name "Raj Kumar" \
+    --account-currency INR --account-number 1234567890 \
+    --ifsc HDFC0001234
+
+  # Mexico with CLABE
+  airwallex beneficiaries create --entity-type COMPANY --bank-country MX \
+    --company-name "Mexico SA" --account-name "Mexico SA" \
+    --account-currency MXN --clabe 012345678901234567
+
   # Canada EFT (bank transfer)
   airwallex beneficiaries create --entity-type PERSONAL --bank-country CA \
     --first-name John --last-name Doe --account-name "John Doe" \
@@ -181,9 +233,20 @@ Examples:
 			hasEmail := email != ""
 			hasPhone := phone != ""
 			hasEFT := institutionNumber != ""
+			hasSWIFT := swiftCode != ""
+			hasRouting := routingNumber != ""
+			hasIBAN := iban != ""
+			hasSortCode := sortCode != ""
+			hasBSB := bsb != ""
+			hasIFSC := ifsc != ""
+			hasCLABE := clabe != ""
+			hasBankCode := bankCode != ""
 
-			if !hasEmail && !hasPhone && !hasEFT {
-				return fmt.Errorf("must provide at least one routing method: --email, --phone, or --institution-number with --transit-number")
+			hasAnyRouting := hasEmail || hasPhone || hasEFT || hasSWIFT || hasRouting ||
+				hasIBAN || hasSortCode || hasBSB || hasIFSC || hasCLABE || hasBankCode
+
+			if !hasAnyRouting {
+				return fmt.Errorf("must provide at least one routing method (e.g., --swift-code, --iban, --routing-number, --sort-code, --bsb)")
 			}
 
 			// Validation: Canada EFT requires both institution and transit numbers
@@ -278,21 +341,50 @@ Examples:
 				bankDetails["local_clearing_system"] = localClearingSystem
 			}
 
-			// Handle routing based on type (Canada Interac vs EFT)
-			if email != "" {
+			// Handle routing - SWIFT/international first
+			if swiftCode != "" {
+				bankDetails["swift_code"] = swiftCode
+			}
+			if iban != "" {
+				bankDetails["iban"] = iban
+			}
+			if clabe != "" {
+				bankDetails["clabe"] = clabe
+			}
+
+			// Set account_routing_type1/value1 based on provided flag
+			if routingNumber != "" {
+				bankDetails["account_routing_type1"] = "aba"
+				bankDetails["account_routing_value1"] = routingNumber
+			} else if sortCode != "" {
+				bankDetails["account_routing_type1"] = "sort_code"
+				bankDetails["account_routing_value1"] = sortCode
+			} else if bsb != "" {
+				bankDetails["account_routing_type1"] = "bsb"
+				bankDetails["account_routing_value1"] = bsb
+			} else if ifsc != "" {
+				bankDetails["account_routing_type1"] = "ifsc"
+				bankDetails["account_routing_value1"] = ifsc
+			} else if bankCode != "" {
+				bankDetails["account_routing_type1"] = "bank_code"
+				bankDetails["account_routing_value1"] = bankCode
+			} else if email != "" {
 				bankDetails["account_routing_type1"] = "email_address"
 				bankDetails["account_routing_value1"] = email
 			} else if phone != "" {
 				bankDetails["account_routing_type1"] = "phone_number"
 				bankDetails["account_routing_value1"] = phone
 			} else if institutionNumber != "" {
-				// Canada EFT requires institution + transit numbers
 				bankDetails["account_routing_type1"] = "institution_number"
 				bankDetails["account_routing_value1"] = institutionNumber
 				if transitNumber != "" {
 					bankDetails["account_routing_type2"] = "transit_number"
 					bankDetails["account_routing_value2"] = transitNumber
 				}
+			}
+
+			if branchCode != "" {
+				bankDetails["branch_code"] = branchCode
 			}
 
 			beneficiary["bank_details"] = bankDetails
@@ -343,6 +435,19 @@ Examples:
 	cmd.Flags().StringVar(&email, "email", "", "Email for Interac e-Transfer")
 	cmd.Flags().StringVar(&phone, "phone", "", "Phone for Interac e-Transfer (format: +1-nnnnnnnnnn)")
 	cmd.Flags().StringVar(&localClearingSystem, "clearing-system", "", "Clearing system: EFT, REGULAR_EFT, INTERAC, etc.")
+
+	// SWIFT/international routing flags
+	cmd.Flags().StringVar(&swiftCode, "swift-code", "", "SWIFT/BIC code for international transfers")
+	cmd.Flags().StringVar(&routingNumber, "routing-number", "", "US ABA routing number (9 digits)")
+	cmd.Flags().StringVar(&iban, "iban", "", "IBAN for European/international transfers")
+
+	// Additional international routing flags
+	cmd.Flags().StringVar(&sortCode, "sort-code", "", "UK sort code (6 digits)")
+	cmd.Flags().StringVar(&bsb, "bsb", "", "Australian BSB number (6 digits)")
+	cmd.Flags().StringVar(&ifsc, "ifsc", "", "Indian IFSC code")
+	cmd.Flags().StringVar(&clabe, "clabe", "", "Mexican CLABE (18 digits)")
+	cmd.Flags().StringVar(&bankCode, "bank-code", "", "Generic bank code")
+	cmd.Flags().StringVar(&branchCode, "branch-code", "", "Generic branch code")
 
 	// Address flags (required for Interac)
 	cmd.Flags().StringVar(&addressCountry, "address-country", "", "Beneficiary country code (e.g. CA)")
