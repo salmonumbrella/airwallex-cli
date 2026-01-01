@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/salmonumbrella/airwallex-cli/internal/api"
+	"github.com/salmonumbrella/airwallex-cli/internal/flagmap"
 	"github.com/salmonumbrella/airwallex-cli/internal/outfmt"
 	"github.com/salmonumbrella/airwallex-cli/internal/schemavalidator"
 	"github.com/salmonumbrella/airwallex-cli/internal/ui"
@@ -441,44 +442,59 @@ Examples:
 					return fmt.Errorf("failed to fetch schema: %w", err)
 				}
 
-				// Build provided fields map for validation
+				// Build provided fields map for validation using flagmap
 				provided := make(map[string]string)
-				if accountName != "" {
-					provided["beneficiary.bank_details.account_name"] = accountName
+
+				// Helper to add a field using flagmap
+				addField := func(flagName, value string) {
+					if value != "" {
+						if m, ok := flagmap.GetMapping(flagName); ok {
+							provided[m.SchemaPath] = value
+						}
+					}
 				}
-				if accountNumber != "" {
-					provided["beneficiary.bank_details.account_number"] = accountNumber
+
+				// Account details
+				addField("account-name", accountName)
+				addField("account-number", accountNumber)
+				addField("account-currency", accountCurrency)
+
+				// SWIFT/International routing
+				addField("swift-code", swiftCode)
+				addField("iban", iban)
+				addField("clabe", clabe)
+
+				// Country-specific routing
+				addField("routing-number", routingNumber)
+				addField("sort-code", sortCode)
+				addField("bsb", bsb)
+				addField("ifsc", ifsc)
+				addField("bank-code", bankCode)
+				addField("branch-code", branchCode)
+
+				// Canada EFT
+				addField("institution-number", institutionNumber)
+				addField("transit-number", transitNumber)
+
+				// Email/phone routing (not in flagmap, use direct paths)
+				if email != "" {
+					provided["beneficiary.bank_details.account_routing_value1"] = email
 				}
-				if swiftCode != "" {
-					provided["beneficiary.bank_details.swift_code"] = swiftCode
+				if phone != "" {
+					provided["beneficiary.bank_details.account_routing_value1"] = phone
 				}
-				if iban != "" {
-					provided["beneficiary.bank_details.iban"] = iban
-				}
-				if routingNumber != "" {
-					provided["beneficiary.bank_details.account_routing_value1"] = routingNumber
-				}
-				if sortCode != "" {
-					provided["beneficiary.bank_details.account_routing_value1"] = sortCode
-				}
-				if bsb != "" {
-					provided["beneficiary.bank_details.account_routing_value1"] = bsb
-				}
-				if ifsc != "" {
-					provided["beneficiary.bank_details.account_routing_value1"] = ifsc
-				}
-				if clabe != "" {
-					provided["beneficiary.bank_details.clabe"] = clabe
-				}
-				if companyName != "" {
-					provided["beneficiary.company_name"] = companyName
-				}
-				if firstName != "" {
-					provided["beneficiary.first_name"] = firstName
-				}
-				if lastName != "" {
-					provided["beneficiary.last_name"] = lastName
-				}
+
+				// Entity details
+				addField("company-name", companyName)
+				addField("first-name", firstName)
+				addField("last-name", lastName)
+
+				// Address fields
+				addField("address-country", addressCountry)
+				addField("address-street", addressStreet)
+				addField("address-city", addressCity)
+				addField("address-state", addressState)
+				addField("address-postcode", addressPostcode)
 
 				// Validate using schemavalidator package
 				missing, err := schemavalidator.Validate(schema, provided)
