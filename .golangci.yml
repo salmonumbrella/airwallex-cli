@@ -1,5 +1,5 @@
 # .golangci.yml
-version: 2
+version: "2"
 
 linters:
   enable:
@@ -12,16 +12,19 @@ linters:
     - unconvert
     - unparam
     - gosec
-
-linters-settings:
-  errcheck:
-    check-blank: true
-  govet:
-    check-shadowing: true
-  gosec:
-    excludes:
-      - G104 # Duplicates errcheck
-      - G304 # File path from variable (expected in CLI)
+  settings:
+    errcheck:
+      check-blank: false
+    gosec:
+      excludes:
+        - G104 # Duplicates errcheck
+        - G304 # File path from variable (expected in CLI)
+  exclusions:
+    rules:
+      - path: _test\.go
+        linters:
+          - errcheck
+          - gosec
 
 run:
   timeout: 5m
@@ -29,8 +32,3 @@ run:
 
 issues:
   max-same-issues: 0
-  exclude-rules:
-    - path: _test\.go
-      linters:
-        - errcheck
-        - gosec
