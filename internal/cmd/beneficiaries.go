@@ -144,6 +144,10 @@ func newBeneficiariesCreateCmd() *cobra.Command {
 	var bankAccountCategory string
 	// China
 	var cnaps string
+	// Brazil
+	var cpf string
+	var cnpj string
+	var bankBranch string
 	// Address fields (required for Interac)
 	var addressCountry string
 	var addressStreet string
@@ -368,6 +372,22 @@ Examples:
 				}
 			}
 
+			// Validation: Brazil CPF (11 digits)
+			if cpf != "" {
+				cpfRegex := regexp.MustCompile(`^\d{11}$`)
+				if !cpfRegex.MatchString(cpf) {
+					return fmt.Errorf("--cpf must be exactly 11 digits")
+				}
+			}
+
+			// Validation: Brazil CNPJ (14 digits)
+			if cnpj != "" {
+				cnpjRegex := regexp.MustCompile(`^\d{14}$`)
+				if !cnpjRegex.MatchString(cnpj) {
+					return fmt.Errorf("--cnpj must be exactly 14 digits")
+				}
+			}
+
 			// Build beneficiary object
 			beneficiary := map[string]interface{}{
 				"entity_type": entityType,
@@ -380,6 +400,13 @@ Examples:
 			}
 			if lastName != "" {
 				beneficiary["last_name"] = lastName
+			}
+			if cpf != "" {
+				beneficiary["personal_id_type"] = "INDIVIDUAL_TAX_ID"
+				beneficiary["personal_id_number"] = cpf
+			}
+			if cnpj != "" {
+				beneficiary["business_registration_number"] = cnpj
 			}
 
 			// Build address (required for Interac)
@@ -478,6 +505,9 @@ Examples:
 			if branchCode != "" {
 				bankDetails["branch_code"] = branchCode
 			}
+			if bankBranch != "" {
+				bankDetails["bank_branch"] = bankBranch
+			}
 
 			beneficiary["bank_details"] = bankDetails
 
@@ -540,6 +570,11 @@ Examples:
 
 				// China CNAPS
 				addField("cnaps", cnaps)
+
+				// Brazil
+				addField("cpf", cpf)
+				addField("cnpj", cnpj)
+				addField("bank-branch", bankBranch)
 
 				// Canada EFT
 				addField("institution-number", institutionNumber)
@@ -646,6 +681,11 @@ Examples:
 
 	// China CNAPS routing
 	cmd.Flags().StringVar(&cnaps, "cnaps", "", "China CNAPS code (12 digits)")
+
+	// Brazil routing
+	cmd.Flags().StringVar(&cpf, "cpf", "", "Brazil CPF individual tax ID (11 digits)")
+	cmd.Flags().StringVar(&cnpj, "cnpj", "", "Brazil CNPJ business tax ID (14 digits)")
+	cmd.Flags().StringVar(&bankBranch, "bank-branch", "", "Bank branch code (Brazil: 4-7 chars)")
 
 	// Address flags (required for Interac)
 	cmd.Flags().StringVar(&addressCountry, "address-country", "", "Beneficiary country code (e.g. CA)")
