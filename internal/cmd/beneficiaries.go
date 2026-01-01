@@ -161,6 +161,14 @@ func newBeneficiariesCreateCmd() *cobra.Command {
 	var hkBankCode string
 	var fpsID string
 	var hkid string
+	// China legal representative
+	var legalRepFirstName string
+	var legalRepLastName string
+	var legalRepID string
+	var bankName string
+	var personalIDType string
+	var personalIDNumber string
+	var businessRegNumber string
 	// Address fields (required for Interac)
 	var addressCountry string
 	var addressStreet string
@@ -481,6 +489,32 @@ Examples:
 				beneficiary["business_registration_number"] = cnpj
 			}
 
+			// China legal representative additional_info
+			if legalRepFirstName != "" || legalRepLastName != "" || legalRepID != "" {
+				additionalInfo := map[string]interface{}{}
+				if legalRepFirstName != "" {
+					additionalInfo["legal_rep_first_name"] = legalRepFirstName
+				}
+				if legalRepLastName != "" {
+					additionalInfo["legal_rep_last_name"] = legalRepLastName
+				}
+				if legalRepID != "" {
+					additionalInfo["legal_rep_id_number"] = legalRepID
+				}
+				beneficiary["additional_info"] = additionalInfo
+			}
+
+			// General ID fields (China and others)
+			if personalIDType != "" {
+				beneficiary["personal_id_type"] = personalIDType
+			}
+			if personalIDNumber != "" {
+				beneficiary["personal_id_number"] = personalIDNumber
+			}
+			if businessRegNumber != "" {
+				beneficiary["business_registration_number"] = businessRegNumber
+			}
+
 			// Build address (required for Interac)
 			if addressCountry != "" || addressStreet != "" || addressCity != "" {
 				address := map[string]interface{}{}
@@ -520,6 +554,9 @@ Examples:
 			}
 			if localClearingSystem != "" {
 				bankDetails["local_clearing_system"] = localClearingSystem
+			}
+			if bankName != "" {
+				bankDetails["bank_name"] = bankName
 			}
 
 			// Handle routing - SWIFT/international first
@@ -696,6 +733,15 @@ Examples:
 				addField("fps-id", fpsID)
 				addField("hkid", hkid)
 
+				// China legal representative and general ID fields
+				addField("legal-rep-first-name", legalRepFirstName)
+				addField("legal-rep-last-name", legalRepLastName)
+				addField("legal-rep-id", legalRepID)
+				addField("bank-name", bankName)
+				addField("personal-id-type", personalIDType)
+				addField("personal-id-number", personalIDNumber)
+				addField("business-registration-number", businessRegNumber)
+
 				// Email/phone routing (not in flagmap, use direct paths)
 				if email != "" {
 					provided["beneficiary.bank_details.account_routing_value1"] = email
@@ -819,6 +865,15 @@ Examples:
 	cmd.Flags().StringVar(&hkBankCode, "hk-bank-code", "", "Hong Kong bank code (3 digits)")
 	cmd.Flags().StringVar(&fpsID, "fps-id", "", "Hong Kong FPS identifier (7-9 digits)")
 	cmd.Flags().StringVar(&hkid, "hkid", "", "Hong Kong ID for FPS routing")
+
+	// China special fields
+	cmd.Flags().StringVar(&legalRepFirstName, "legal-rep-first-name", "", "China legal representative first name (Chinese)")
+	cmd.Flags().StringVar(&legalRepLastName, "legal-rep-last-name", "", "China legal representative last name (Chinese)")
+	cmd.Flags().StringVar(&legalRepID, "legal-rep-id", "", "China legal representative ID number (15 or 18 chars)")
+	cmd.Flags().StringVar(&bankName, "bank-name", "", "Bank name (required for China)")
+	cmd.Flags().StringVar(&personalIDType, "personal-id-type", "", "Personal ID type (e.g., INDIVIDUAL_TAX_ID, CHINESE_NATIONAL_ID)")
+	cmd.Flags().StringVar(&personalIDNumber, "personal-id-number", "", "Personal ID number")
+	cmd.Flags().StringVar(&businessRegNumber, "business-registration-number", "", "Business registration number")
 
 	// Address flags (required for Interac)
 	cmd.Flags().StringVar(&addressCountry, "address-country", "", "Beneficiary country code (e.g. CA)")
