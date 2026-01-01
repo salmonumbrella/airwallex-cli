@@ -34,6 +34,7 @@ func NewRootCmd() *cobra.Command {
 		Use:          "airwallex",
 		Short:        "Airwallex CLI for cards, transfers, and more",
 		Long:         "A command-line interface for the Airwallex API.",
+		Version:      Version,
 		SilenceUsage: true,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			// Validate flag combinations
