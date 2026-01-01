@@ -289,6 +289,38 @@ Examples:
 				}
 			}
 
+			// Validation: Routing number format (US ABA - 9 digits)
+			if routingNumber != "" {
+				abaRegex := regexp.MustCompile(`^\d{9}$`)
+				if !abaRegex.MatchString(routingNumber) {
+					return fmt.Errorf("--routing-number must be exactly 9 digits")
+				}
+			}
+
+			// Validation: Sort code format (UK - 6 digits)
+			if sortCode != "" {
+				sortCodeRegex := regexp.MustCompile(`^\d{6}$`)
+				if !sortCodeRegex.MatchString(sortCode) {
+					return fmt.Errorf("--sort-code must be exactly 6 digits")
+				}
+			}
+
+			// Validation: BSB format (Australia - 6 digits)
+			if bsb != "" {
+				bsbRegex := regexp.MustCompile(`^\d{6}$`)
+				if !bsbRegex.MatchString(bsb) {
+					return fmt.Errorf("--bsb must be exactly 6 digits")
+				}
+			}
+
+			// Validation: CLABE format (Mexico - 18 digits)
+			if clabe != "" {
+				clabeRegex := regexp.MustCompile(`^\d{18}$`)
+				if !clabeRegex.MatchString(clabe) {
+					return fmt.Errorf("--clabe must be exactly 18 digits")
+				}
+			}
+
 			// Build beneficiary object
 			beneficiary := map[string]interface{}{
 				"entity_type": entityType,
