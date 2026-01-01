@@ -40,6 +40,10 @@ func TestFlagToSchemaPath(t *testing.T) {
 		{"hk-bank-code", "beneficiary.bank_details.account_routing_value1", "bank_code"},
 		{"fps-id", "beneficiary.bank_details.account_routing_value1", "fps_identifier"},
 		{"hkid", "beneficiary.bank_details.account_routing_value1", "personal_id_number"},
+		// Australia PayID/NPP
+		{"payid-phone", "beneficiary.bank_details.account_routing_value1", "phone_number"},
+		{"payid-email", "beneficiary.bank_details.account_routing_value1", "email_address"},
+		{"payid-abn", "beneficiary.bank_details.account_routing_value1", "australian_business_number"},
 		// Brazil tax IDs
 		{"cpf", "beneficiary.personal_id_number", ""},
 		{"cnpj", "beneficiary.business_registration_number", ""},
@@ -83,15 +87,15 @@ func TestGetMappingNotFound(t *testing.T) {
 
 func TestAllMappings(t *testing.T) {
 	all := AllMappings()
-	if len(all) != 49 {
-		t.Errorf("expected 49 mappings, got %d", len(all))
+	if len(all) != 52 {
+		t.Errorf("expected 52 mappings, got %d", len(all))
 	}
 }
 
 func TestRoutingFlags(t *testing.T) {
 	flags := RoutingFlags()
-	if len(flags) != 23 {
-		t.Errorf("expected 23 routing flags, got %d", len(flags))
+	if len(flags) != 26 {
+		t.Errorf("expected 26 routing flags, got %d", len(flags))
 	}
 }
 

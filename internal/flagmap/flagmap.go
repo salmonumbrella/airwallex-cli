@@ -59,6 +59,25 @@ var mappings = map[string]Mapping{
 		RoutingType: "bsb",
 		Description: "Australian BSB number (6 digits)",
 	},
+	// Australia PayID/NPP
+	"payid-phone": {
+		Flag:        "payid-phone",
+		SchemaPath:  "beneficiary.bank_details.account_routing_value1",
+		RoutingType: "phone_number",
+		Description: "Australia PayID phone (format: +61-nnnnnnnnn)",
+	},
+	"payid-email": {
+		Flag:        "payid-email",
+		SchemaPath:  "beneficiary.bank_details.account_routing_value1",
+		RoutingType: "email_address",
+		Description: "Australia PayID email address",
+	},
+	"payid-abn": {
+		Flag:        "payid-abn",
+		SchemaPath:  "beneficiary.bank_details.account_routing_value1",
+		RoutingType: "australian_business_number",
+		Description: "Australia PayID ABN (9 or 11 digits)",
+	},
 	"ifsc": {
 		Flag:        "ifsc",
 		SchemaPath:  "beneficiary.bank_details.account_routing_value1",
@@ -313,5 +332,6 @@ func RoutingFlags() []string {
 		"paynow-vpa", "uen", "nric", "sg-bank-code",
 		"clearing-number",
 		"hk-bank-code", "fps-id", "hkid",
+		"payid-phone", "payid-email", "payid-abn",
 	}
 }
