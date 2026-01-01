@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/salmonumbrella/airwallex-cli/internal/factory"
 	"github.com/salmonumbrella/airwallex-cli/internal/iocontext"
 	"github.com/salmonumbrella/airwallex-cli/internal/outfmt"
 	"github.com/salmonumbrella/airwallex-cli/internal/update"
@@ -30,6 +31,10 @@ type versionInfo struct {
 }
 
 func newVersionCmd() *cobra.Command {
+	return newVersionCmdWithFactory(nil)
+}
+
+func newVersionCmdWithFactory(f *factory.Factory) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "version",
 		Short: "Print version information",
@@ -38,12 +43,17 @@ func newVersionCmd() *cobra.Command {
 			// Check for updates (non-blocking, ignores errors)
 			updateResult := update.CheckForUpdate(cmd.Context(), Version)
 
-			// Get IO streams - prefer context IO, fall back to cobra's writers
-			io := iocontext.GetIO(cmd.Context())
+			// Get IO streams - prefer factory IO, then context IO, then cobra's writers
+			var io *iocontext.IO
+			if f != nil && f.IO != nil {
+				io = f.IO
+			} else {
+				io = iocontext.GetIO(cmd.Context())
+			}
 			out := io.Out
 			errOut := io.ErrOut
 
-			// If IO from context is still the default (os.Stdout), check if cobra has custom writers
+			// If IO is still the default (os.Stdout), check if cobra has custom writers
 			if out == os.Stdout {
 				out = cmd.OutOrStdout()
 			}

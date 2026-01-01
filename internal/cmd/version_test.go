@@ -9,6 +9,8 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/salmonumbrella/airwallex-cli/internal/factory"
+	"github.com/salmonumbrella/airwallex-cli/internal/iocontext"
 	"github.com/salmonumbrella/airwallex-cli/internal/outfmt"
 )
 
@@ -491,4 +493,46 @@ func TestVersionCommand_TextVsJSONOutput(t *testing.T) {
 			t.Errorf("JSON output should not contain text format, got: %s", output)
 		}
 	})
+}
+
+func TestVersionCommand_WithFactory(t *testing.T) {
+	// Store original values
+	origVersion := Version
+	origCommit := Commit
+	origBuildDate := BuildDate
+	defer func() {
+		Version = origVersion
+		Commit = origCommit
+		BuildDate = origBuildDate
+	}()
+
+	// Set test values
+	Version = "1.2.3"
+	Commit = "factory-commit"
+	BuildDate = "2024-01-01"
+
+	// Create factory with custom IO
+	var buf bytes.Buffer
+	f := factory.New().WithIO(&iocontext.IO{
+		Out:    &buf,
+		ErrOut: &buf,
+	})
+
+	// Create version command with factory
+	cmd := newVersionCmdWithFactory(f)
+
+	// Execute command
+	err := cmd.Execute()
+	if err != nil {
+		t.Fatalf("Execute() error = %v", err)
+	}
+
+	// Verify output was captured via factory IO
+	output := buf.String()
+	if !strings.Contains(output, "airwallex-cli 1.2.3") {
+		t.Errorf("expected output to contain version, got: %s", output)
+	}
+	if !strings.Contains(output, "factory-commit") {
+		t.Errorf("expected output to contain commit, got: %s", output)
+	}
 }
