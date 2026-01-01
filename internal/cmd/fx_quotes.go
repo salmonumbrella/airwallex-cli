@@ -41,7 +41,14 @@ Examples:
 
 Validity periods: 1m, 5m, 15m, 30m, 1h, 2h, 4h, 12h, 24h`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Validate currencies
+			// Check required currencies (supports both --sell-currency and --sell aliases)
+			if sellCurrency == "" {
+				return fmt.Errorf("--sell-currency is required (or use --sell)")
+			}
+			if buyCurrency == "" {
+				return fmt.Errorf("--buy-currency is required (or use --buy)")
+			}
+			// Validate currency format
 			if err := validateCurrency(sellCurrency); err != nil {
 				return fmt.Errorf("--sell-currency: %w", err)
 			}
@@ -77,22 +84,23 @@ Validity periods: 1m, 5m, 15m, 30m, 1h, 2h, 4h, 12h, 24h`,
 				return err
 			}
 
-			// Convert user-friendly validity to API format (MIN_X, HOUR_X)
+			// Convert user-friendly validity to API format (MIN_X, HR_X)
+			// Note: Airwallex API uses HR_X (not HOUR_X) for hour durations
 			validityMap := map[string]string{
 				"1m":  "MIN_1",
 				"5m":  "MIN_5",
 				"15m": "MIN_15",
 				"30m": "MIN_30",
-				"1h":  "HOUR_1",
-				"2h":  "HOUR_2",
-				"4h":  "HOUR_4",
-				"8h":  "HOUR_8",
-				"12h": "HOUR_12",
-				"24h": "HOUR_24",
+				"1h":  "HR_1",
+				"2h":  "HR_2",
+				"4h":  "HR_4",
+				"8h":  "HR_8",
+				"12h": "HR_12",
+				"24h": "HR_24",
 			}
 			apiValidity, ok := validityMap[validity]
 			if !ok {
-				// Allow pass-through for raw API formats like MIN_15, HOUR_1
+				// Allow pass-through for raw API formats like MIN_15, HR_1
 				apiValidity = validity
 			}
 
@@ -134,11 +142,14 @@ Validity periods: 1m, 5m, 15m, 30m, 1h, 2h, 4h, 12h, 24h`,
 
 	cmd.Flags().StringVar(&sellCurrency, "sell-currency", "", "Currency to sell (required)")
 	cmd.Flags().StringVar(&buyCurrency, "buy-currency", "", "Currency to buy (required)")
+	// Add short aliases for consistency with fx rates command
+	cmd.Flags().StringVar(&sellCurrency, "sell", "", "Currency to sell (alias for --sell-currency)")
+	cmd.Flags().StringVar(&buyCurrency, "buy", "", "Currency to buy (alias for --buy-currency)")
+	_ = cmd.Flags().MarkHidden("sell") // Hide from help to avoid confusion
+	_ = cmd.Flags().MarkHidden("buy")  // Primary flags are --sell-currency/--buy-currency
 	cmd.Flags().Float64Var(&sellAmount, "sell-amount", 0, "Amount to sell")
 	cmd.Flags().Float64Var(&buyAmount, "buy-amount", 0, "Amount to buy")
 	cmd.Flags().StringVar(&validity, "validity", "1h", "Quote validity period (1m, 5m, 1h, 24h)")
-	mustMarkRequired(cmd, "sell-currency")
-	mustMarkRequired(cmd, "buy-currency")
 	return cmd
 }
 
