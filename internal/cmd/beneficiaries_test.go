@@ -1011,6 +1011,59 @@ func TestBeneficiariesCreate_InternationalRouting(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		// Singapore NRIC validation
+		{
+			name: "nric invalid format",
+			args: []string{
+				"--entity-type", "PERSONAL",
+				"--bank-country", "SG",
+				"--first-name", "Wei",
+				"--last-name", "Tan",
+				"--account-name", "Tan Wei",
+				"--account-currency", "SGD",
+				"--nric", "12345678A",
+			},
+			wantErr:     true,
+			errContains: "--nric must be 9 characters in format SnnnnnnnA",
+		},
+		{
+			name: "valid Singapore PayNow with NRIC",
+			args: []string{
+				"--entity-type", "PERSONAL",
+				"--bank-country", "SG",
+				"--first-name", "Wei",
+				"--last-name", "Tan",
+				"--account-name", "Tan Wei",
+				"--account-currency", "SGD",
+				"--nric", "S1234567A",
+			},
+			wantErr: false,
+		},
+		{
+			name: "uen invalid - wrong length",
+			args: []string{
+				"--entity-type", "COMPANY",
+				"--bank-country", "SG",
+				"--company-name", "SG Corp Pte Ltd",
+				"--account-name", "SG Corp Pte Ltd",
+				"--account-currency", "SGD",
+				"--uen", "1234567",
+			},
+			wantErr:     true,
+			errContains: "--uen must be 8-13 characters",
+		},
+		{
+			name: "valid Singapore PayNow with UEN",
+			args: []string{
+				"--entity-type", "COMPANY",
+				"--bank-country", "SG",
+				"--company-name", "SG Corp Pte Ltd",
+				"--account-name", "SG Corp Pte Ltd",
+				"--account-currency", "SGD",
+				"--uen", "196800306E",
+			},
+			wantErr: false,
+		},
 		// Multiple routing methods (should be valid)
 		{
 			name: "multiple routing methods - IBAN and SWIFT",

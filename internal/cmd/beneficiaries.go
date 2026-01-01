@@ -144,10 +144,17 @@ func newBeneficiariesCreateCmd() *cobra.Command {
 	var bankAccountCategory string
 	// China
 	var cnaps string
+	// South Korea
+	var koreaBankCode string
 	// Brazil
 	var cpf string
 	var cnpj string
 	var bankBranch string
+	// Singapore PayNow
+	var paynowVPA string
+	var uen string
+	var nric string
+	var sgBankCode string
 	// Address fields (required for Interac)
 	var addressCountry string
 	var addressStreet string
@@ -257,9 +264,11 @@ Examples:
 			hasBankCode := bankCode != ""
 			hasZengin := zenginBankCode != ""
 			hasCNAPS := cnaps != ""
+			hasKorea := koreaBankCode != ""
+			hasPayNow := paynowVPA != "" || uen != "" || nric != "" || sgBankCode != ""
 
 			hasAnyRouting := hasEmail || hasPhone || hasEFT || hasSWIFT || hasRouting ||
-				hasIBAN || hasSortCode || hasBSB || hasIFSC || hasCLABE || hasBankCode || hasZengin || hasCNAPS
+				hasIBAN || hasSortCode || hasBSB || hasIFSC || hasCLABE || hasBankCode || hasZengin || hasCNAPS || hasKorea || hasPayNow
 
 			if !hasAnyRouting {
 				return fmt.Errorf("must provide at least one routing method (e.g., --swift-code, --iban, --routing-number, --sort-code, --bsb)")
@@ -372,6 +381,14 @@ Examples:
 				}
 			}
 
+			// Validation: South Korea bank code (3 digits)
+			if koreaBankCode != "" {
+				koreaBankRegex := regexp.MustCompile(`^\d{3}$`)
+				if !koreaBankRegex.MatchString(koreaBankCode) {
+					return fmt.Errorf("--korea-bank-code must be exactly 3 digits")
+				}
+			}
+
 			// Validation: Brazil CPF (11 digits)
 			if cpf != "" {
 				cpfRegex := regexp.MustCompile(`^\d{11}$`)
@@ -385,6 +402,29 @@ Examples:
 				cnpjRegex := regexp.MustCompile(`^\d{14}$`)
 				if !cnpjRegex.MatchString(cnpj) {
 					return fmt.Errorf("--cnpj must be exactly 14 digits")
+				}
+			}
+
+			// Validation: Singapore NRIC (9 chars, format SnnnnnnnA)
+			if nric != "" {
+				nricRegex := regexp.MustCompile(`^[STFG]\d{7}[A-Z]$`)
+				if !nricRegex.MatchString(strings.ToUpper(nric)) {
+					return fmt.Errorf("--nric must be 9 characters in format SnnnnnnnA (e.g., S1234567A)")
+				}
+			}
+
+			// Validation: Singapore UEN (8-13 chars)
+			if uen != "" {
+				if len(uen) < 8 || len(uen) > 13 {
+					return fmt.Errorf("--uen must be 8-13 characters")
+				}
+			}
+
+			// Validation: Singapore bank code (7 digits)
+			if sgBankCode != "" {
+				sgBankRegex := regexp.MustCompile(`^\d{7}$`)
+				if !sgBankRegex.MatchString(sgBankCode) {
+					return fmt.Errorf("--sg-bank-code must be exactly 7 digits")
 				}
 			}
 
@@ -500,6 +540,21 @@ Examples:
 			} else if cnaps != "" {
 				bankDetails["account_routing_type1"] = "cnaps"
 				bankDetails["account_routing_value1"] = cnaps
+			} else if koreaBankCode != "" {
+				bankDetails["account_routing_type1"] = "bank_code"
+				bankDetails["account_routing_value1"] = koreaBankCode
+			} else if nric != "" {
+				bankDetails["account_routing_type1"] = "personal_id_number"
+				bankDetails["account_routing_value1"] = strings.ToUpper(nric)
+			} else if uen != "" {
+				bankDetails["account_routing_type1"] = "business_registration_number"
+				bankDetails["account_routing_value1"] = uen
+			} else if paynowVPA != "" {
+				bankDetails["account_routing_type1"] = "virtual_payment_address"
+				bankDetails["account_routing_value1"] = paynowVPA
+			} else if sgBankCode != "" {
+				bankDetails["account_routing_type1"] = "bank_code"
+				bankDetails["account_routing_value1"] = sgBankCode
 			}
 
 			if branchCode != "" {
@@ -575,6 +630,12 @@ Examples:
 				addField("cpf", cpf)
 				addField("cnpj", cnpj)
 				addField("bank-branch", bankBranch)
+
+				// Singapore PayNow
+				addField("paynow-vpa", paynowVPA)
+				addField("uen", uen)
+				addField("nric", nric)
+				addField("sg-bank-code", sgBankCode)
 
 				// Canada EFT
 				addField("institution-number", institutionNumber)
@@ -686,6 +747,12 @@ Examples:
 	cmd.Flags().StringVar(&cpf, "cpf", "", "Brazil CPF individual tax ID (11 digits)")
 	cmd.Flags().StringVar(&cnpj, "cnpj", "", "Brazil CNPJ business tax ID (14 digits)")
 	cmd.Flags().StringVar(&bankBranch, "bank-branch", "", "Bank branch code (Brazil: 4-7 chars)")
+
+	// Singapore PayNow routing
+	cmd.Flags().StringVar(&paynowVPA, "paynow-vpa", "", "Singapore PayNow VPA (up to 21 chars)")
+	cmd.Flags().StringVar(&uen, "uen", "", "Singapore UEN for business PayNow (8-13 chars)")
+	cmd.Flags().StringVar(&nric, "nric", "", "Singapore NRIC for personal PayNow (9 chars, format: SnnnnnnnA)")
+	cmd.Flags().StringVar(&sgBankCode, "sg-bank-code", "", "Singapore bank code (7 digits)")
 
 	// Address flags (required for Interac)
 	cmd.Flags().StringVar(&addressCountry, "address-country", "", "Beneficiary country code (e.g. CA)")
