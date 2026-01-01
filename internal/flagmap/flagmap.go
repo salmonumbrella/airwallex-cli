@@ -160,7 +160,23 @@ var mappings = map[string]Mapping{
 		RoutingType: "personal_id_number",
 		Description: "Hong Kong ID for FPS routing",
 	},
-	// Brazil tax IDs
+	// Personal/Business ID fields
+	"personal-id-type": {
+		Flag:        "personal-id-type",
+		SchemaPath:  "beneficiary.personal_id_type",
+		Description: "Personal ID type (e.g., INDIVIDUAL_TAX_ID, CHINESE_NATIONAL_ID)",
+	},
+	"personal-id-number": {
+		Flag:        "personal-id-number",
+		SchemaPath:  "beneficiary.personal_id_number",
+		Description: "Personal ID number (format depends on type/country)",
+	},
+	"business-registration-number": {
+		Flag:        "business-registration-number",
+		SchemaPath:  "beneficiary.business_registration_number",
+		Description: "Business registration number (e.g., CNPJ for Brazil)",
+	},
+	// Brazil tax IDs (aliases for personal-id-number/business-registration-number)
 	"cpf": {
 		Flag:        "cpf",
 		SchemaPath:  "beneficiary.personal_id_number",
