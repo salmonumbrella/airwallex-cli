@@ -155,6 +155,12 @@ func newBeneficiariesCreateCmd() *cobra.Command {
 	var uen string
 	var nric string
 	var sgBankCode string
+	// Sweden
+	var clearingNumber string
+	// Hong Kong FPS
+	var hkBankCode string
+	var fpsID string
+	var hkid string
 	// Address fields (required for Interac)
 	var addressCountry string
 	var addressStreet string
@@ -266,9 +272,11 @@ Examples:
 			hasCNAPS := cnaps != ""
 			hasKorea := koreaBankCode != ""
 			hasPayNow := paynowVPA != "" || uen != "" || nric != "" || sgBankCode != ""
+			hasClearing := clearingNumber != ""
+			hasFPS := hkBankCode != "" || fpsID != "" || hkid != ""
 
 			hasAnyRouting := hasEmail || hasPhone || hasEFT || hasSWIFT || hasRouting ||
-				hasIBAN || hasSortCode || hasBSB || hasIFSC || hasCLABE || hasBankCode || hasZengin || hasCNAPS || hasKorea || hasPayNow
+				hasIBAN || hasSortCode || hasBSB || hasIFSC || hasCLABE || hasBankCode || hasZengin || hasCNAPS || hasKorea || hasPayNow || hasClearing || hasFPS
 
 			if !hasAnyRouting {
 				return fmt.Errorf("must provide at least one routing method (e.g., --swift-code, --iban, --routing-number, --sort-code, --bsb)")
@@ -428,6 +436,30 @@ Examples:
 				}
 			}
 
+			// Validation: Sweden clearing number (4-5 digits)
+			if clearingNumber != "" {
+				clearingRegex := regexp.MustCompile(`^\d{4,5}$`)
+				if !clearingRegex.MatchString(clearingNumber) {
+					return fmt.Errorf("--clearing-number must be 4-5 digits")
+				}
+			}
+
+			// Validation: Hong Kong bank code (3 digits)
+			if hkBankCode != "" {
+				hkBankRegex := regexp.MustCompile(`^\d{3}$`)
+				if !hkBankRegex.MatchString(hkBankCode) {
+					return fmt.Errorf("--hk-bank-code must be exactly 3 digits")
+				}
+			}
+
+			// Validation: Hong Kong FPS ID (7-9 digits)
+			if fpsID != "" {
+				fpsIDRegex := regexp.MustCompile(`^\d{7,9}$`)
+				if !fpsIDRegex.MatchString(fpsID) {
+					return fmt.Errorf("--fps-id must be 7-9 digits")
+				}
+			}
+
 			// Build beneficiary object
 			beneficiary := map[string]interface{}{
 				"entity_type": entityType,
@@ -555,6 +587,18 @@ Examples:
 			} else if sgBankCode != "" {
 				bankDetails["account_routing_type1"] = "bank_code"
 				bankDetails["account_routing_value1"] = sgBankCode
+			} else if clearingNumber != "" {
+				bankDetails["account_routing_type1"] = "bank_code"
+				bankDetails["account_routing_value1"] = clearingNumber
+			} else if hkBankCode != "" {
+				bankDetails["account_routing_type1"] = "bank_code"
+				bankDetails["account_routing_value1"] = hkBankCode
+			} else if fpsID != "" {
+				bankDetails["account_routing_type1"] = "fps_identifier"
+				bankDetails["account_routing_value1"] = fpsID
+			} else if hkid != "" {
+				bankDetails["account_routing_type1"] = "personal_id_number"
+				bankDetails["account_routing_value1"] = hkid
 			}
 
 			if branchCode != "" {
@@ -643,6 +687,14 @@ Examples:
 				// Canada EFT
 				addField("institution-number", institutionNumber)
 				addField("transit-number", transitNumber)
+
+				// Sweden
+				addField("clearing-number", clearingNumber)
+
+				// Hong Kong FPS
+				addField("hk-bank-code", hkBankCode)
+				addField("fps-id", fpsID)
+				addField("hkid", hkid)
 
 				// Email/phone routing (not in flagmap, use direct paths)
 				if email != "" {
@@ -759,6 +811,14 @@ Examples:
 	cmd.Flags().StringVar(&uen, "uen", "", "Singapore UEN for business PayNow (8-13 chars)")
 	cmd.Flags().StringVar(&nric, "nric", "", "Singapore NRIC for personal PayNow (9 chars, format: SnnnnnnnA)")
 	cmd.Flags().StringVar(&sgBankCode, "sg-bank-code", "", "Singapore bank code (7 digits)")
+
+	// Sweden routing
+	cmd.Flags().StringVar(&clearingNumber, "clearing-number", "", "Sweden clearing number (4-5 digits)")
+
+	// Hong Kong FPS routing
+	cmd.Flags().StringVar(&hkBankCode, "hk-bank-code", "", "Hong Kong bank code (3 digits)")
+	cmd.Flags().StringVar(&fpsID, "fps-id", "", "Hong Kong FPS identifier (7-9 digits)")
+	cmd.Flags().StringVar(&hkid, "hkid", "", "Hong Kong ID for FPS routing")
 
 	// Address flags (required for Interac)
 	cmd.Flags().StringVar(&addressCountry, "address-country", "", "Beneficiary country code (e.g. CA)")
