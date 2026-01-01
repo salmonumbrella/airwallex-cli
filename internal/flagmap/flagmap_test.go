@@ -27,6 +27,8 @@ func TestFlagToSchemaPath(t *testing.T) {
 		{"zengin-branch-code", "beneficiary.bank_details.account_routing_value2", "branch_code"},
 		// China CNAPS
 		{"cnaps", "beneficiary.bank_details.account_routing_value1", "cnaps"},
+		// South Korea
+		{"korea-bank-code", "beneficiary.bank_details.account_routing_value1", "bank_code"},
 		// Brazil tax IDs
 		{"cpf", "beneficiary.personal_id_number", ""},
 		{"cnpj", "beneficiary.business_registration_number", ""},
@@ -61,15 +63,15 @@ func TestGetMappingNotFound(t *testing.T) {
 
 func TestAllMappings(t *testing.T) {
 	all := AllMappings()
-	if len(all) != 33 {
-		t.Errorf("expected 33 mappings, got %d", len(all))
+	if len(all) != 34 {
+		t.Errorf("expected 34 mappings, got %d", len(all))
 	}
 }
 
 func TestRoutingFlags(t *testing.T) {
 	flags := RoutingFlags()
-	if len(flags) != 14 {
-		t.Errorf("expected 14 routing flags, got %d", len(flags))
+	if len(flags) != 15 {
+		t.Errorf("expected 15 routing flags, got %d", len(flags))
 	}
 }
 

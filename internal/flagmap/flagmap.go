@@ -102,6 +102,13 @@ var mappings = map[string]Mapping{
 		RoutingType: "cnaps",
 		Description: "China CNAPS code (12 digits)",
 	},
+	// South Korea
+	"korea-bank-code": {
+		Flag:        "korea-bank-code",
+		SchemaPath:  "beneficiary.bank_details.account_routing_value1",
+		RoutingType: "bank_code",
+		Description: "South Korea bank code (3 digits)",
+	},
 	// Brazil tax IDs
 	"cpf": {
 		Flag:        "cpf",
@@ -213,5 +220,6 @@ func RoutingFlags() []string {
 		"swift-code", "iban",
 		"zengin-bank-code", "zengin-branch-code",
 		"cnaps",
+		"korea-bank-code",
 	}
 }
