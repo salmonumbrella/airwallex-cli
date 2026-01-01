@@ -135,7 +135,11 @@ func GetMapping(flag string) (Mapping, bool) {
 
 // AllMappings returns all defined mappings
 func AllMappings() map[string]Mapping {
-	return mappings
+	result := make(map[string]Mapping, len(mappings))
+	for k, v := range mappings {
+		result[k] = v
+	}
+	return result
 }
 
 // RoutingFlags returns all flags that represent routing information

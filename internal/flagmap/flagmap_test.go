@@ -67,3 +67,25 @@ func TestRoutingFlagsConsistency(t *testing.T) {
 		}
 	}
 }
+
+func TestAllMappingsReturnsCopy(t *testing.T) {
+	// Get a copy via AllMappings
+	all := AllMappings()
+	originalLen := len(all)
+
+	// Mutate the returned map
+	all["test-key"] = Mapping{Flag: "test-key"}
+	delete(all, "swift-code")
+
+	// Get another copy and verify internal state is unchanged
+	fresh := AllMappings()
+	if len(fresh) != originalLen {
+		t.Errorf("internal mappings were mutated: got %d, want %d", len(fresh), originalLen)
+	}
+	if _, ok := fresh["swift-code"]; !ok {
+		t.Error("internal mappings lost 'swift-code' after external deletion")
+	}
+	if _, ok := fresh["test-key"]; ok {
+		t.Error("internal mappings gained 'test-key' after external addition")
+	}
+}

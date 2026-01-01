@@ -325,6 +325,14 @@ Examples:
 				}
 			}
 
+			// Validation: IFSC format (India - 11 chars: 4 letters, 0, 6 alphanumeric)
+			if ifsc != "" {
+				ifscRegex := regexp.MustCompile(`^[A-Z]{4}0[A-Z0-9]{6}$`)
+				if !ifscRegex.MatchString(strings.ToUpper(ifsc)) {
+					return fmt.Errorf("--ifsc must be 11 characters: 4 letters, 0, then 6 alphanumeric (e.g., SBIN0001234)")
+				}
+			}
+
 			// Build beneficiary object
 			beneficiary := map[string]interface{}{
 				"entity_type": entityType,

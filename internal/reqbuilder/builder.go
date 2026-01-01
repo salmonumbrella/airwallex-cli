@@ -28,10 +28,12 @@ func setNestedValue(m map[string]interface{}, path, value string) {
 			current[part] = value
 		} else {
 			// Intermediate part - ensure map exists
-			if _, ok := current[part]; !ok {
+			if nested, ok := current[part].(map[string]interface{}); ok {
+				current = nested
+			} else {
 				current[part] = make(map[string]interface{})
+				current = current[part].(map[string]interface{})
 			}
-			current = current[part].(map[string]interface{})
 		}
 	}
 }

@@ -52,6 +52,32 @@ func TestBuildRoutingFields(t *testing.T) {
 	}
 }
 
+func TestBuildNestedMap_OverwriteNonMapValue(t *testing.T) {
+	// This test verifies that setting a nested path where an intermediate
+	// path was previously set to a string value doesn't panic.
+	// For example: setting "a.b" to "first", then "a.b.c" to "second"
+	// should overwrite the string "first" with a map containing "c".
+	fields := map[string]string{
+		"parent":       "string_value",
+		"parent.child": "nested_value",
+	}
+
+	// This would panic before the fix if "parent" was processed first
+	// and set to "string_value", then "parent.child" tried to type-assert
+	// "string_value" as map[string]interface{}
+	result := BuildNestedMap(fields)
+
+	// The nested path should win, creating a map structure
+	parent, ok := result["parent"].(map[string]interface{})
+	if !ok {
+		t.Fatal("parent should be a map after nested value is set")
+	}
+
+	if parent["child"] != "nested_value" {
+		t.Errorf("child = %v, want nested_value", parent["child"])
+	}
+}
+
 func TestMergeRequest(t *testing.T) {
 	// Test simple key merge
 	base := map[string]interface{}{"a": "1"}
