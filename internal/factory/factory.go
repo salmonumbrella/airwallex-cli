@@ -2,6 +2,7 @@ package factory
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/salmonumbrella/airwallex-cli/internal/api"
 	"github.com/salmonumbrella/airwallex-cli/internal/iocontext"
@@ -44,8 +45,7 @@ func New() *Factory {
 		IO: iocontext.DefaultIO(),
 		UI: ui.New("auto"),
 		Client: func(ctx context.Context) (*api.Client, error) {
-			// Default implementation - will be set properly by root command
-			return nil, nil
+			return nil, fmt.Errorf("API client not configured; ensure command is run from root")
 		},
 		Config: func() (*Config, error) {
 			return &Config{}, nil

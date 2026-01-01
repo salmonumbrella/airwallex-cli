@@ -32,6 +32,21 @@ func TestNew(t *testing.T) {
 	}
 }
 
+func TestNew_DefaultClientReturnsError(t *testing.T) {
+	f := New()
+
+	client, err := f.Client(context.Background())
+	if err == nil {
+		t.Error("Default Client() should return an error")
+	}
+	if client != nil {
+		t.Error("Default Client() should return nil client")
+	}
+	if err.Error() != "API client not configured; ensure command is run from root" {
+		t.Errorf("unexpected error message: %v", err)
+	}
+}
+
 func TestFactory_WithIO(t *testing.T) {
 	f := New()
 
