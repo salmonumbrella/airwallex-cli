@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"net/url"
 	"strings"
 	"testing"
 )
@@ -75,5 +76,70 @@ func TestAPICommand_Usage(t *testing.T) {
 	}
 	if !strings.Contains(cmd.Long, "POST with inline JSON") {
 		t.Error("expected help to include POST example")
+	}
+}
+
+func TestAPICommand_QueryParamEncoding(t *testing.T) {
+	// Test that query parameters are properly URL-encoded
+	// This tests the encoding logic used in the api command
+	tests := []struct {
+		name     string
+		params   []string
+		expected string // expected query string (URL-encoded)
+	}{
+		{
+			name:     "simple key=value",
+			params:   []string{"status=COMPLETED"},
+			expected: "status=COMPLETED",
+		},
+		{
+			name:     "multiple params",
+			params:   []string{"status=COMPLETED", "page_size=10"},
+			expected: "page_size=10&status=COMPLETED", // url.Values sorts alphabetically
+		},
+		{
+			name:     "value with spaces",
+			params:   []string{"name=John Doe"},
+			expected: "name=John+Doe",
+		},
+		{
+			name:     "value with special chars",
+			params:   []string{"filter=a=b&c=d"},
+			expected: "filter=a%3Db%26c%3Dd",
+		},
+		{
+			name:     "value with equals sign",
+			params:   []string{"expr=1+1=2"},
+			expected: "expr=1%2B1%3D2",
+		},
+		{
+			name:     "key without value",
+			params:   []string{"flag"},
+			expected: "flag=",
+		},
+		{
+			name:     "unicode value",
+			params:   []string{"city=東京"},
+			expected: "city=%E6%9D%B1%E4%BA%AC",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Replicate the encoding logic from api.go
+			params := url.Values{}
+			for _, qp := range tt.params {
+				parts := strings.SplitN(qp, "=", 2)
+				if len(parts) == 2 {
+					params.Add(parts[0], parts[1])
+				} else {
+					params.Add(parts[0], "")
+				}
+			}
+			encoded := params.Encode()
+			if encoded != tt.expected {
+				t.Errorf("got %q, want %q", encoded, tt.expected)
+			}
+		})
 	}
 }

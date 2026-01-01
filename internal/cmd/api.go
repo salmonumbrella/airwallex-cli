@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 
@@ -76,20 +77,24 @@ Examples:
 				}
 			}
 
-			// Build URL with query params
-			url := client.BaseURL() + endpoint
+			// Build URL with query params (properly encoded)
+			reqURL := client.BaseURL() + endpoint
 			if len(queryParams) > 0 {
-				url += "?"
-				for i, qp := range queryParams {
-					if i > 0 {
-						url += "&"
+				params := url.Values{}
+				for _, qp := range queryParams {
+					parts := strings.SplitN(qp, "=", 2)
+					if len(parts) == 2 {
+						params.Add(parts[0], parts[1])
+					} else {
+						// Handle key without value (e.g., "flag" becomes "flag=")
+						params.Add(parts[0], "")
 					}
-					url += qp
 				}
+				reqURL += "?" + params.Encode()
 			}
 
 			// Create request
-			req, err := http.NewRequestWithContext(cmd.Context(), method, url, body)
+			req, err := http.NewRequestWithContext(cmd.Context(), method, reqURL, body)
 			if err != nil {
 				return fmt.Errorf("failed to create request: %w", err)
 			}
@@ -125,28 +130,30 @@ Examples:
 
 			// Print headers if requested
 			if include {
-				fmt.Fprintf(os.Stderr, "HTTP/%d.%d %s\n", resp.ProtoMajor, resp.ProtoMinor, resp.Status)
+				errOut := cmd.ErrOrStderr()
+				_, _ = fmt.Fprintf(errOut, "HTTP/%d.%d %s\n", resp.ProtoMajor, resp.ProtoMinor, resp.Status)
 				for k, v := range resp.Header {
-					fmt.Fprintf(os.Stderr, "%s: %s\n", k, strings.Join(v, ", "))
+					_, _ = fmt.Fprintf(errOut, "%s: %s\n", k, strings.Join(v, ", "))
 				}
-				fmt.Fprintln(os.Stderr)
+				_, _ = fmt.Fprintln(errOut)
 			}
 
 			// Output response body
+			out := cmd.OutOrStdout()
 			if outfmt.IsJSON(cmd.Context()) || isJSONResponse(resp) {
 				// Pretty-print JSON
 				var prettyJSON interface{}
 				if err := json.Unmarshal(respBody, &prettyJSON); err == nil {
-					if writeErr := outfmt.WriteJSONFiltered(os.Stdout, prettyJSON, outfmt.GetQuery(cmd.Context())); writeErr != nil {
+					if writeErr := outfmt.WriteJSONFiltered(out, prettyJSON, outfmt.GetQuery(cmd.Context())); writeErr != nil {
 						return writeErr
 					}
 				} else {
 					// Not valid JSON, output raw
-					fmt.Println(string(respBody))
+					_, _ = fmt.Fprintln(out, string(respBody))
 				}
 			} else {
 				// Raw output
-				fmt.Println(string(respBody))
+				_, _ = fmt.Fprintln(out, string(respBody))
 			}
 
 			// Return error for non-2xx status codes
