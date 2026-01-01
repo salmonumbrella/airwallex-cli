@@ -475,6 +475,7 @@ Examples:
 				addField("account-name", accountName)
 				addField("account-number", accountNumber)
 				addField("account-currency", accountCurrency)
+				addField("account-category", bankAccountCategory)
 
 				// SWIFT/International routing
 				addField("swift-code", swiftCode)
@@ -564,7 +565,9 @@ Examples:
 
 	// Bank account flags (EFT)
 	cmd.Flags().StringVar(&accountNumber, "account-number", "", "Bank account number")
-	cmd.Flags().StringVar(&bankAccountCategory, "bank-account-category", "", "Account category: CHECKING or SAVINGS (US)")
+	cmd.Flags().StringVar(&bankAccountCategory, "bank-account-category", "", "Account category: Checking or Savings (required for US)")
+	cmd.Flags().StringVar(&bankAccountCategory, "account-category", "", "Alias for --bank-account-category")
+	_ = cmd.Flags().MarkHidden("bank-account-category")
 	cmd.Flags().StringVar(&institutionNumber, "institution-number", "", "Institution number (Canada: 3 digits)")
 	cmd.Flags().StringVar(&transitNumber, "transit-number", "", "Transit/branch number (Canada: 5 digits)")
 

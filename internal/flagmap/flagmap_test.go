@@ -52,8 +52,8 @@ func TestGetMappingNotFound(t *testing.T) {
 
 func TestAllMappings(t *testing.T) {
 	all := AllMappings()
-	if len(all) != 25 {
-		t.Errorf("expected 25 mappings, got %d", len(all))
+	if len(all) != 27 {
+		t.Errorf("expected 27 mappings, got %d", len(all))
 	}
 }
 

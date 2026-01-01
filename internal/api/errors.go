@@ -10,9 +10,10 @@ import (
 
 // FieldError represents a specific field validation error from the API.
 type FieldError struct {
-	Source  string `json:"source"`
-	Code    string `json:"code"`
-	Message string `json:"message"`
+	Source  string                 `json:"source"`
+	Code    string                 `json:"code"`
+	Message string                 `json:"message,omitempty"`
+	Params  map[string]interface{} `json:"params,omitempty"`
 }
 
 type APIError struct {
@@ -20,6 +21,9 @@ type APIError struct {
 	Message string       `json:"message"`
 	Source  string       `json:"source,omitempty"`
 	Errors  []FieldError `json:"errors,omitempty"`
+	Details *struct {
+		Errors []FieldError `json:"errors,omitempty"`
+	} `json:"details,omitempty"`
 }
 
 func (e *APIError) Error() string {
@@ -27,10 +31,26 @@ func (e *APIError) Error() string {
 	if e.Source != "" {
 		msg += fmt.Sprintf(" (source: %s)", e.Source)
 	}
-	if len(e.Errors) > 0 {
+
+	// Get errors from either top-level or nested in details
+	errors := e.Errors
+	if len(errors) == 0 && e.Details != nil {
+		errors = e.Details.Errors
+	}
+
+	if len(errors) > 0 {
 		msg += "\nField errors:"
-		for _, fe := range e.Errors {
-			msg += fmt.Sprintf("\n  - %s: %s", fe.Source, fe.Message)
+		for _, fe := range errors {
+			errMsg := fe.Message
+			if errMsg == "" && fe.Params != nil {
+				if opts, ok := fe.Params["value_options"]; ok {
+					errMsg = fmt.Sprintf("must be one of: %v", opts)
+				}
+			}
+			if errMsg == "" {
+				errMsg = fmt.Sprintf("error code %s", fe.Code)
+			}
+			msg += fmt.Sprintf("\n  - %s: %s", fe.Source, errMsg)
 		}
 	}
 	return msg

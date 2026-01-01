@@ -106,6 +106,16 @@ var mappings = map[string]Mapping{
 		Flag:       "account-currency",
 		SchemaPath: "beneficiary.bank_details.account_currency",
 	},
+	"account-category": {
+		Flag:        "account-category",
+		SchemaPath:  "beneficiary.bank_details.bank_account_category",
+		Description: "Bank account category: Checking or Savings",
+	},
+	"bank-account-category": {
+		Flag:        "bank-account-category",
+		SchemaPath:  "beneficiary.bank_details.bank_account_category",
+		Description: "Bank account category: Checking or Savings (alias for account-category)",
+	},
 
 	// Entity details
 	"company-name": {
