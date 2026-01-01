@@ -100,7 +100,10 @@ Examples:
 				item.Description,
 			}
 		},
-		Fetch: func(ctx context.Context, client *api.Client, page, pageSize int) (ListResult[api.BalanceHistoryItem], error) {
+		IDFunc: func(item api.BalanceHistoryItem) string {
+			return item.ID
+		},
+		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[api.BalanceHistoryItem], error) {
 			// Validate date inputs
 			if err := validateDate(from); err != nil {
 				return ListResult[api.BalanceHistoryItem]{}, fmt.Errorf("--from: %w", err)
@@ -139,7 +142,7 @@ Examples:
 				}
 			}
 
-			result, err := client.GetBalanceHistory(ctx, currency, fromRFC3339, toRFC3339, page, pageSize)
+			result, err := client.GetBalanceHistory(ctx, currency, fromRFC3339, toRFC3339, 0, opts.Limit)
 			if err != nil {
 				return ListResult[api.BalanceHistoryItem]{}, err
 			}

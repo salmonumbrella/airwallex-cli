@@ -58,7 +58,10 @@ func newDisputesListCmd() *cobra.Command {
 			}
 			return []string{disputeID(d), d.TransactionID, d.Status, amount, d.Currency}
 		},
-		Fetch: func(ctx context.Context, client *api.Client, page, pageSize int) (ListResult[api.TransactionDispute], error) {
+		IDFunc: func(d api.TransactionDispute) string {
+			return disputeID(d)
+		},
+		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[api.TransactionDispute], error) {
 			if err := validateDate(from); err != nil {
 				return ListResult[api.TransactionDispute]{}, fmt.Errorf("invalid --from date: %w", err)
 			}
@@ -105,11 +108,6 @@ func newDisputesListCmd() *cobra.Command {
 				}
 			}
 
-			pageToken := ""
-			if page > 0 {
-				pageToken = fmt.Sprintf("%d", page)
-			}
-
 			result, err := client.ListTransactionDisputes(ctx, api.TransactionDisputeListParams{
 				Status:         status,
 				DetailedStatus: detailedStatus,
@@ -121,8 +119,8 @@ func newDisputesListCmd() *cobra.Command {
 				ToCreatedAt:    toRFC3339,
 				FromUpdatedAt:  fromUpdatedRFC3339,
 				ToUpdatedAt:    toUpdatedRFC3339,
-				Page:           pageToken,
-				PageSize:       pageSize,
+				Page:           "",
+				PageSize:       opts.Limit,
 			})
 			if err != nil {
 				return ListResult[api.TransactionDispute]{}, err

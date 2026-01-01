@@ -17,6 +17,12 @@ type ListResult[T any] struct {
 	HasMore bool
 }
 
+// ListOptions provides cursor-based pagination parameters
+type ListOptions struct {
+	Limit int    // Max items to return (1-100)
+	After string // Cursor for next page
+}
+
 // ListConfig defines how a list command behaves
 type ListConfig[T any] struct {
 	// Command metadata
@@ -25,20 +31,24 @@ type ListConfig[T any] struct {
 	Long    string
 	Example string
 
-	// Fetch function - called with page/pageSize, returns items and hasMore
-	Fetch func(ctx context.Context, client *api.Client, page, pageSize int) (ListResult[T], error)
+	// Fetch function - called with pagination options
+	Fetch func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[T], error)
 
 	// Output configuration
 	Headers      []string
 	RowFunc      func(T) []string
 	ColumnTypes  []outfmt.ColumnType // Optional: column types for colorization
 	EmptyMessage string
+
+	// IDFunc extracts ID from item for cursor-based pagination
+	// If nil, next cursor hint won't be shown
+	IDFunc func(T) string
 }
 
 // NewListCommand creates a cobra command from ListConfig
 func NewListCommand[T any](cfg ListConfig[T], getClient func(context.Context) (*api.Client, error)) *cobra.Command {
-	var page int
-	var pageSize int
+	var limit int
+	var after string
 
 	cmd := &cobra.Command{
 		Use:     cfg.Use,
@@ -46,9 +56,12 @@ func NewListCommand[T any](cfg ListConfig[T], getClient func(context.Context) (*
 		Long:    cfg.Long,
 		Example: cfg.Example,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Enforce minimum page size of 10
-			if pageSize < 10 {
-				pageSize = 10
+			// Enforce limits
+			if limit <= 0 {
+				limit = 20
+			}
+			if limit > 100 {
+				limit = 100
 			}
 
 			client, err := getClient(cmd.Context())
@@ -56,7 +69,10 @@ func NewListCommand[T any](cfg ListConfig[T], getClient func(context.Context) (*
 				return err
 			}
 
-			result, err := cfg.Fetch(cmd.Context(), client, page, pageSize)
+			result, err := cfg.Fetch(cmd.Context(), client, ListOptions{
+				Limit: limit,
+				After: after,
+			})
 			if err != nil {
 				return err
 			}
@@ -75,6 +91,19 @@ func NewListCommand[T any](cfg ListConfig[T], getClient func(context.Context) (*
 				return nil
 			}
 
+			// For JSON output, include pagination metadata
+			if outfmt.IsJSON(cmd.Context()) {
+				output := map[string]interface{}{
+					"items":    result.Items,
+					"has_more": result.HasMore,
+				}
+				if result.HasMore && len(result.Items) > 0 && cfg.IDFunc != nil {
+					lastID := cfg.IDFunc(result.Items[len(result.Items)-1])
+					output["next_cursor"] = lastID
+				}
+				return f.Output(output)
+			}
+
 			// Use OutputListWithColors for consistent sort/limit handling
 			// Wrap RowFunc to match OutputList's signature
 			rowFn := func(item any) []string {
@@ -86,14 +115,22 @@ func NewListCommand[T any](cfg ListConfig[T], getClient func(context.Context) (*
 			}
 
 			// Show pagination hint for text output
-			if !outfmt.IsJSON(cmd.Context()) && result.HasMore {
-				fmt.Fprintln(os.Stderr, "# More results available")
+			if result.HasMore && cfg.IDFunc != nil {
+				lastID := cfg.IDFunc(result.Items[len(result.Items)-1])
+				fmt.Fprintf(os.Stderr, "# More results available. Next page: --after %s\n", lastID)
 			}
 			return nil
 		},
 	}
 
-	cmd.Flags().IntVar(&page, "page", 0, "Page number (0 = first page)")
-	cmd.Flags().IntVar(&pageSize, "page-size", 20, "API page size (min 10)")
+	cmd.Flags().IntVar(&limit, "limit", 20, "Max items to return (1-100)")
+	cmd.Flags().StringVar(&after, "after", "", "Cursor for next page (from previous result)")
+
+	// Keep deprecated flags for backwards compatibility
+	cmd.Flags().Int("page", 0, "")
+	cmd.Flags().Int("page-size", 0, "")
+	_ = cmd.Flags().MarkDeprecated("page", "use --after for cursor-based pagination")
+	_ = cmd.Flags().MarkDeprecated("page-size", "use --limit instead")
+
 	return cmd
 }

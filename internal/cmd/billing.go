@@ -92,7 +92,10 @@ func newBillingCustomersListCmd() *cobra.Command {
 		RowFunc: func(c api.BillingCustomer) []string {
 			return []string{billingCustomerID(c), billingCustomerName(c), c.Email, c.MerchantCustomerID}
 		},
-		Fetch: func(ctx context.Context, client *api.Client, page, pageSize int) (ListResult[api.BillingCustomer], error) {
+		IDFunc: func(c api.BillingCustomer) string {
+			return billingCustomerID(c)
+		},
+		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[api.BillingCustomer], error) {
 			if err := validateDate(from); err != nil {
 				return ListResult[api.BillingCustomer]{}, fmt.Errorf("invalid --from date: %w", err)
 			}
@@ -124,8 +127,8 @@ func newBillingCustomersListCmd() *cobra.Command {
 				MerchantCustomerID: merchantCustomerID,
 				FromCreatedAt:      fromRFC3339,
 				ToCreatedAt:        toRFC3339,
-				PageNum:            page,
-				PageSize:           pageSize,
+				PageNum:            0,
+				PageSize:           opts.Limit,
 			})
 			if err != nil {
 				return ListResult[api.BillingCustomer]{}, err
@@ -286,7 +289,10 @@ func newBillingProductsListCmd() *cobra.Command {
 		RowFunc: func(p api.BillingProduct) []string {
 			return []string{billingProductID(p), p.Name, fmt.Sprintf("%t", p.Active)}
 		},
-		Fetch: func(ctx context.Context, client *api.Client, page, pageSize int) (ListResult[api.BillingProduct], error) {
+		IDFunc: func(p api.BillingProduct) string {
+			return billingProductID(p)
+		},
+		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[api.BillingProduct], error) {
 			activeVal, err := parseOptionalBool(active)
 			if err != nil {
 				return ListResult[api.BillingProduct]{}, fmt.Errorf("invalid --active: %w", err)
@@ -294,8 +300,8 @@ func newBillingProductsListCmd() *cobra.Command {
 
 			result, err := client.ListBillingProducts(ctx, api.BillingProductListParams{
 				Active:   activeVal,
-				PageNum:  page,
-				PageSize: pageSize,
+				PageNum:  0,
+				PageSize: opts.Limit,
 			})
 			if err != nil {
 				return ListResult[api.BillingProduct]{}, err
@@ -465,7 +471,10 @@ func newBillingPricesListCmd() *cobra.Command {
 			}
 			return []string{billingPriceID(p), p.ProductID, amountText, p.Currency, fmt.Sprintf("%t", p.Active)}
 		},
-		Fetch: func(ctx context.Context, client *api.Client, page, pageSize int) (ListResult[api.BillingPrice], error) {
+		IDFunc: func(p api.BillingPrice) string {
+			return billingPriceID(p)
+		},
+		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[api.BillingPrice], error) {
 			activeVal, err := parseOptionalBool(active)
 			if err != nil {
 				return ListResult[api.BillingPrice]{}, fmt.Errorf("invalid --active: %w", err)
@@ -480,8 +489,8 @@ func newBillingPricesListCmd() *cobra.Command {
 				ProductID:           productID,
 				RecurringPeriod:     recurringPeriod,
 				RecurringPeriodUnit: recurringPeriodUnit,
-				PageNum:             page,
-				PageSize:            pageSize,
+				PageNum:             0,
+				PageSize:            opts.Limit,
 			})
 			if err != nil {
 				return ListResult[api.BillingPrice]{}, err
@@ -660,7 +669,10 @@ func newBillingInvoicesListCmd() *cobra.Command {
 			}
 			return []string{billingInvoiceID(i), i.Status, amount, i.Currency, i.CustomerID}
 		},
-		Fetch: func(ctx context.Context, client *api.Client, page, pageSize int) (ListResult[api.BillingInvoice], error) {
+		IDFunc: func(i api.BillingInvoice) string {
+			return billingInvoiceID(i)
+		},
+		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[api.BillingInvoice], error) {
 			if err := validateDate(from); err != nil {
 				return ListResult[api.BillingInvoice]{}, fmt.Errorf("invalid --from date: %w", err)
 			}
@@ -694,8 +706,8 @@ func newBillingInvoicesListCmd() *cobra.Command {
 				Status:         status,
 				FromCreatedAt:  fromRFC3339,
 				ToCreatedAt:    toRFC3339,
-				PageNum:        page,
-				PageSize:       pageSize,
+				PageNum:        0,
+				PageSize:       opts.Limit,
 			})
 			if err != nil {
 				return ListResult[api.BillingInvoice]{}, err
@@ -869,7 +881,10 @@ func newBillingInvoiceItemsListCmd() *cobra.Command {
 			}
 			return []string{i.ID, i.InvoiceID, amount, i.Currency, fmt.Sprintf("%.2f", i.Quantity)}
 		},
-		Fetch: func(ctx context.Context, client *api.Client, page, pageSize int) (ListResult[api.BillingInvoiceItem], error) {
+		IDFunc: func(i api.BillingInvoiceItem) string {
+			return i.ID
+		},
+		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[api.BillingInvoiceItem], error) {
 			return ListResult[api.BillingInvoiceItem]{}, fmt.Errorf("invoice ID is required")
 		},
 	}, getClient)
@@ -881,10 +896,12 @@ func newBillingInvoiceItemsListCmd() *cobra.Command {
 			return err
 		}
 
-		page, _ := cmd.Flags().GetInt("page")
-		pageSize, _ := cmd.Flags().GetInt("page-size")
+		limit, _ := cmd.Flags().GetInt("limit")
+		if limit <= 0 {
+			limit = 20
+		}
 
-		result, err := client.ListBillingInvoiceItems(cmd.Context(), args[0], page, pageSize)
+		result, err := client.ListBillingInvoiceItems(cmd.Context(), args[0], 0, limit)
 		if err != nil {
 			return err
 		}
@@ -983,7 +1000,10 @@ func newBillingSubscriptionsListCmd() *cobra.Command {
 		RowFunc: func(s api.BillingSubscription) []string {
 			return []string{billingSubscriptionID(s), s.CustomerID, s.Status, s.CurrentPeriodEndAt}
 		},
-		Fetch: func(ctx context.Context, client *api.Client, page, pageSize int) (ListResult[api.BillingSubscription], error) {
+		IDFunc: func(s api.BillingSubscription) string {
+			return billingSubscriptionID(s)
+		},
+		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[api.BillingSubscription], error) {
 			if err := validateDate(from); err != nil {
 				return ListResult[api.BillingSubscription]{}, fmt.Errorf("invalid --from date: %w", err)
 			}
@@ -1018,8 +1038,8 @@ func newBillingSubscriptionsListCmd() *cobra.Command {
 				RecurringPeriodUnit: recurringPeriodUnit,
 				FromCreatedAt:       fromRFC3339,
 				ToCreatedAt:         toRFC3339,
-				PageNum:             page,
-				PageSize:            pageSize,
+				PageNum:             0,
+				PageSize:            opts.Limit,
 			})
 			if err != nil {
 				return ListResult[api.BillingSubscription]{}, err
@@ -1229,7 +1249,10 @@ func newBillingSubscriptionItemsListCmd() *cobra.Command {
 			}
 			return []string{i.ID, i.SubscriptionID, priceID, fmt.Sprintf("%.2f", i.Quantity)}
 		},
-		Fetch: func(ctx context.Context, client *api.Client, page, pageSize int) (ListResult[api.BillingSubscriptionItem], error) {
+		IDFunc: func(i api.BillingSubscriptionItem) string {
+			return i.ID
+		},
+		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[api.BillingSubscriptionItem], error) {
 			return ListResult[api.BillingSubscriptionItem]{}, fmt.Errorf("subscription ID is required")
 		},
 	}, getClient)
@@ -1241,10 +1264,12 @@ func newBillingSubscriptionItemsListCmd() *cobra.Command {
 			return err
 		}
 
-		page, _ := cmd.Flags().GetInt("page")
-		pageSize, _ := cmd.Flags().GetInt("page-size")
+		limit, _ := cmd.Flags().GetInt("limit")
+		if limit <= 0 {
+			limit = 20
+		}
 
-		result, err := client.ListBillingSubscriptionItems(cmd.Context(), args[0], page, pageSize)
+		result, err := client.ListBillingSubscriptionItems(cmd.Context(), args[0], 0, limit)
 		if err != nil {
 			return err
 		}

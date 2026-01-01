@@ -8,50 +8,41 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func TestTransfersListCmd_PageSizeValidation(t *testing.T) {
+func TestTransfersListCmd_LimitFlag(t *testing.T) {
 	tests := []struct {
-		name        string
-		pageSize    int
-		expectedMin int
-		description string
+		name  string
+		limit int
 	}{
 		{
-			name:        "page size below minimum gets adjusted",
-			pageSize:    5,
-			expectedMin: 10,
-			description: "page size less than 10 should be adjusted to 10",
+			name:  "limit below default",
+			limit: 5,
 		},
 		{
-			name:        "page size at minimum is unchanged",
-			pageSize:    10,
-			expectedMin: 10,
-			description: "page size of exactly 10 should remain 10",
+			name:  "limit at default",
+			limit: 20,
 		},
 		{
-			name:        "page size above minimum is unchanged",
-			pageSize:    50,
-			expectedMin: 10,
-			description: "page size above 10 should be unchanged",
+			name:  "limit above default",
+			limit: 50,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cmd := newTransfersListCmd()
-			if err := cmd.Flags().Set("page-size", intToString(tt.pageSize)); err != nil {
-				t.Fatalf("failed to set page-size flag: %v", err)
+			if err := cmd.Flags().Set("limit", intToString(tt.limit)); err != nil {
+				t.Fatalf("failed to set limit flag: %v", err)
 			}
 
-			// We can't easily test the actual API call without mocking,
-			// but we can verify the flag is set and the command validates it
-			pageSizeFlag := cmd.Flags().Lookup("page-size")
-			if pageSizeFlag == nil {
-				t.Fatal("page-size flag not found")
+			// Verify the flag exists
+			limitFlag := cmd.Flags().Lookup("limit")
+			if limitFlag == nil {
+				t.Fatal("limit flag not found")
 			}
 
-			// Verify the help text mentions minimum
-			if !strings.Contains(pageSizeFlag.Usage, "min 10") {
-				t.Errorf("page-size flag help text should mention minimum of 10")
+			// Verify the help text mentions max items
+			if !strings.Contains(limitFlag.Usage, "Max items") {
+				t.Errorf("limit flag help text should mention 'Max items', got: %s", limitFlag.Usage)
 			}
 		})
 	}

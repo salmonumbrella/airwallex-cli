@@ -15,7 +15,7 @@ type testItem struct {
 }
 
 func TestNewListCommand_PaginationDefaults(t *testing.T) {
-	var capturedPage, capturedPageSize int
+	var capturedOpts ListOptions
 
 	cfg := ListConfig[testItem]{
 		Use:          "test",
@@ -25,9 +25,11 @@ func TestNewListCommand_PaginationDefaults(t *testing.T) {
 		RowFunc: func(item testItem) []string {
 			return []string{item.ID, item.Name}
 		},
-		Fetch: func(ctx context.Context, client *api.Client, page, pageSize int) (ListResult[testItem], error) {
-			capturedPage = page
-			capturedPageSize = pageSize
+		IDFunc: func(item testItem) string {
+			return item.ID
+		},
+		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[testItem], error) {
+			capturedOpts = opts
 			return ListResult[testItem]{
 				Items:   []testItem{{ID: "1", Name: "Test"}},
 				HasMore: false,
@@ -49,29 +51,31 @@ func TestNewListCommand_PaginationDefaults(t *testing.T) {
 	}
 
 	// Verify default pagination values
-	if capturedPage != 0 {
-		t.Errorf("expected page 0, got %d", capturedPage)
+	if capturedOpts.Limit != 20 {
+		t.Errorf("expected limit 20, got %d", capturedOpts.Limit)
 	}
-	if capturedPageSize != 20 {
-		t.Errorf("expected page size 20, got %d", capturedPageSize)
+	if capturedOpts.After != "" {
+		t.Errorf("expected empty after, got %q", capturedOpts.After)
 	}
 }
 
-func TestNewListCommand_PageSizeMinimumEnforcement(t *testing.T) {
+func TestNewListCommand_LimitEnforcement(t *testing.T) {
 	tests := []struct {
-		name             string
-		inputPageSize    string
-		expectedPageSize int
+		name          string
+		inputLimit    string
+		expectedLimit int
 	}{
-		{"below minimum", "5", 10},
-		{"at minimum", "10", 10},
-		{"above minimum", "50", 50},
-		{"zero defaults to 20 then enforces minimum", "", 20},
+		{"below minimum defaults to 20", "0", 20},
+		{"negative defaults to 20", "-5", 20},
+		{"at minimum", "1", 1},
+		{"normal value", "50", 50},
+		{"at maximum", "100", 100},
+		{"above maximum capped", "200", 100},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var capturedPageSize int
+			var capturedOpts ListOptions
 
 			cfg := ListConfig[testItem]{
 				Use:          "test",
@@ -81,8 +85,8 @@ func TestNewListCommand_PageSizeMinimumEnforcement(t *testing.T) {
 				RowFunc: func(item testItem) []string {
 					return []string{item.ID, item.Name}
 				},
-				Fetch: func(ctx context.Context, client *api.Client, page, pageSize int) (ListResult[testItem], error) {
-					capturedPageSize = pageSize
+				Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[testItem], error) {
+					capturedOpts = opts
 					return ListResult[testItem]{
 						Items:   []testItem{{ID: "1", Name: "Test"}},
 						HasMore: false,
@@ -96,22 +100,55 @@ func TestNewListCommand_PageSizeMinimumEnforcement(t *testing.T) {
 
 			ctx := outfmt.WithFormat(context.Background(), "text")
 			cmd.SetContext(ctx)
-
-			if tt.inputPageSize != "" {
-				cmd.SetArgs([]string{"--page-size", tt.inputPageSize})
-			} else {
-				cmd.SetArgs([]string{})
-			}
+			cmd.SetArgs([]string{"--limit", tt.inputLimit})
 
 			err := cmd.Execute()
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
 
-			if capturedPageSize != tt.expectedPageSize {
-				t.Errorf("expected page size %d, got %d", tt.expectedPageSize, capturedPageSize)
+			if capturedOpts.Limit != tt.expectedLimit {
+				t.Errorf("expected limit %d, got %d", tt.expectedLimit, capturedOpts.Limit)
 			}
 		})
+	}
+}
+
+func TestNewListCommand_AfterCursor(t *testing.T) {
+	var capturedOpts ListOptions
+
+	cfg := ListConfig[testItem]{
+		Use:          "test",
+		Short:        "Test list command",
+		Headers:      []string{"ID", "NAME"},
+		EmptyMessage: "No items",
+		RowFunc: func(item testItem) []string {
+			return []string{item.ID, item.Name}
+		},
+		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[testItem], error) {
+			capturedOpts = opts
+			return ListResult[testItem]{
+				Items:   []testItem{{ID: "2", Name: "Test"}},
+				HasMore: false,
+			}, nil
+		},
+	}
+
+	cmd := NewListCommand(cfg, func(ctx context.Context) (*api.Client, error) {
+		return &api.Client{}, nil
+	})
+
+	ctx := outfmt.WithFormat(context.Background(), "text")
+	cmd.SetContext(ctx)
+	cmd.SetArgs([]string{"--after", "cursor_abc123"})
+
+	err := cmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if capturedOpts.After != "cursor_abc123" {
+		t.Errorf("expected after 'cursor_abc123', got %q", capturedOpts.After)
 	}
 }
 
@@ -126,7 +163,7 @@ func TestNewListCommand_EmptyResults(t *testing.T) {
 		RowFunc: func(item testItem) []string {
 			return []string{item.ID, item.Name}
 		},
-		Fetch: func(ctx context.Context, client *api.Client, page, pageSize int) (ListResult[testItem], error) {
+		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[testItem], error) {
 			emptyCalled = true
 			return ListResult[testItem]{
 				Items:   []testItem{},
@@ -174,7 +211,10 @@ func TestNewListCommand_MoreResultsMessage(t *testing.T) {
 				RowFunc: func(item testItem) []string {
 					return []string{item.ID, item.Name}
 				},
-				Fetch: func(ctx context.Context, client *api.Client, page, pageSize int) (ListResult[testItem], error) {
+				IDFunc: func(item testItem) string {
+					return item.ID
+				},
+				Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[testItem], error) {
 					hasMoreReturned = tt.hasMore
 					return ListResult[testItem]{
 						Items:   []testItem{{ID: "1", Name: "Test"}},
@@ -214,7 +254,10 @@ func TestNewListCommand_JSONOutput(t *testing.T) {
 		RowFunc: func(item testItem) []string {
 			return []string{item.ID, item.Name}
 		},
-		Fetch: func(ctx context.Context, client *api.Client, page, pageSize int) (ListResult[testItem], error) {
+		IDFunc: func(item testItem) string {
+			return item.ID
+		},
+		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[testItem], error) {
 			jsonFormatDetected = outfmt.IsJSON(ctx)
 			return ListResult[testItem]{
 				Items: []testItem{
@@ -255,7 +298,7 @@ func TestNewListCommand_FetchError(t *testing.T) {
 		RowFunc: func(item testItem) []string {
 			return []string{item.ID, item.Name}
 		},
-		Fetch: func(ctx context.Context, client *api.Client, page, pageSize int) (ListResult[testItem], error) {
+		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[testItem], error) {
 			return ListResult[testItem]{}, expectedErr
 		},
 	}
@@ -288,7 +331,7 @@ func TestNewListCommand_ClientError(t *testing.T) {
 		RowFunc: func(item testItem) []string {
 			return []string{item.ID, item.Name}
 		},
-		Fetch: func(ctx context.Context, client *api.Client, page, pageSize int) (ListResult[testItem], error) {
+		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[testItem], error) {
 			return ListResult[testItem]{
 				Items:   []testItem{{ID: "1", Name: "Test"}},
 				HasMore: false,
@@ -324,7 +367,7 @@ func TestNewListCommand_TextTableOutput(t *testing.T) {
 		RowFunc: func(item testItem) []string {
 			return []string{item.ID, item.Name}
 		},
-		Fetch: func(ctx context.Context, client *api.Client, page, pageSize int) (ListResult[testItem], error) {
+		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[testItem], error) {
 			items := []testItem{
 				{ID: "1", Name: "Item One"},
 				{ID: "2", Name: "Item Two"},
@@ -369,7 +412,7 @@ func TestNewListCommand_CustomFlagsCapture(t *testing.T) {
 		RowFunc: func(item testItem) []string {
 			return []string{item.ID, item.Name}
 		},
-		Fetch: func(ctx context.Context, client *api.Client, page, pageSize int) (ListResult[testItem], error) {
+		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[testItem], error) {
 			// Capture the custom flag value inside the closure
 			capturedStatus = customStatus
 			return ListResult[testItem]{
@@ -398,5 +441,38 @@ func TestNewListCommand_CustomFlagsCapture(t *testing.T) {
 	// Verify the custom flag value was correctly captured inside Fetch
 	if capturedStatus != "SETTLED" {
 		t.Errorf("expected captured status 'SETTLED', got '%s'", capturedStatus)
+	}
+}
+
+func TestNewListCommand_DeprecatedFlagsWork(t *testing.T) {
+	// Verify deprecated flags don't cause errors (they just do nothing now)
+	cfg := ListConfig[testItem]{
+		Use:          "test",
+		Short:        "Test list command",
+		Headers:      []string{"ID", "NAME"},
+		EmptyMessage: "No items",
+		RowFunc: func(item testItem) []string {
+			return []string{item.ID, item.Name}
+		},
+		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[testItem], error) {
+			return ListResult[testItem]{
+				Items:   []testItem{{ID: "1", Name: "Test"}},
+				HasMore: false,
+			}, nil
+		},
+	}
+
+	cmd := NewListCommand(cfg, func(ctx context.Context) (*api.Client, error) {
+		return &api.Client{}, nil
+	})
+
+	ctx := outfmt.WithFormat(context.Background(), "text")
+	cmd.SetContext(ctx)
+	// Use deprecated flags - should not error
+	cmd.SetArgs([]string{"--page", "2", "--page-size", "50"})
+
+	err := cmd.Execute()
+	if err != nil {
+		t.Fatalf("deprecated flags should still work: %v", err)
 	}
 }

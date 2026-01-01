@@ -55,8 +55,11 @@ func newBeneficiariesListCmd() *cobra.Command {
 				methods,
 			}
 		},
-		Fetch: func(ctx context.Context, client *api.Client, page, pageSize int) (ListResult[api.Beneficiary], error) {
-			result, err := client.ListBeneficiaries(ctx, page, pageSize)
+		IDFunc: func(b api.Beneficiary) string {
+			return b.BeneficiaryID
+		},
+		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[api.Beneficiary], error) {
+			result, err := client.ListBeneficiaries(ctx, 0, opts.Limit)
 			if err != nil {
 				return ListResult[api.Beneficiary]{}, err
 			}

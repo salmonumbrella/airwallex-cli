@@ -83,8 +83,13 @@ func newTransfersListCmd() *cobra.Command {
 				t.Reference,
 			}
 		},
-		Fetch: func(ctx context.Context, client *api.Client, page, pageSize int) (ListResult[api.Transfer], error) {
-			result, err := client.ListTransfers(ctx, status, page, pageSize)
+		IDFunc: func(t api.Transfer) string {
+			return t.TransferID
+		},
+		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[api.Transfer], error) {
+			// Note: API uses page-based pagination internally
+			// We pass limit as page_size, page 0 for cursor-based iteration
+			result, err := client.ListTransfers(ctx, status, 0, opts.Limit)
 			if err != nil {
 				return ListResult[api.Transfer]{}, err
 			}
