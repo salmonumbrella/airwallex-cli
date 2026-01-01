@@ -161,6 +161,10 @@ func newBeneficiariesCreateCmd() *cobra.Command {
 	var hkBankCode string
 	var fpsID string
 	var hkid string
+	// Australia PayID
+	var payidPhone string
+	var payidEmail string
+	var payidABN string
 	// China legal representative
 	var legalRepFirstName string
 	var legalRepLastName string
@@ -925,6 +929,11 @@ Examples:
 	cmd.Flags().StringVar(&hkBankCode, "hk-bank-code", "", "Hong Kong bank code (3 digits)")
 	cmd.Flags().StringVar(&fpsID, "fps-id", "", "Hong Kong FPS identifier (7-9 digits)")
 	cmd.Flags().StringVar(&hkid, "hkid", "", "Hong Kong ID for FPS routing")
+
+	// Australia PayID flags
+	cmd.Flags().StringVar(&payidPhone, "payid-phone", "", "Australia PayID phone (format: +61-nnnnnnnnn)")
+	cmd.Flags().StringVar(&payidEmail, "payid-email", "", "Australia PayID email address")
+	cmd.Flags().StringVar(&payidABN, "payid-abn", "", "Australia PayID ABN (9 or 11 digits)")
 
 	// China special fields
 	cmd.Flags().StringVar(&legalRepFirstName, "legal-rep-first-name", "", "China legal representative first name (Chinese)")
