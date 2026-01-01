@@ -109,6 +109,31 @@ var mappings = map[string]Mapping{
 		RoutingType: "bank_code",
 		Description: "South Korea bank code (3 digits)",
 	},
+	// Singapore PayNow
+	"paynow-vpa": {
+		Flag:        "paynow-vpa",
+		SchemaPath:  "beneficiary.bank_details.account_routing_value1",
+		RoutingType: "virtual_payment_address",
+		Description: "Singapore PayNow VPA (up to 21 chars)",
+	},
+	"uen": {
+		Flag:        "uen",
+		SchemaPath:  "beneficiary.bank_details.account_routing_value1",
+		RoutingType: "business_registration_number",
+		Description: "Singapore UEN for business PayNow (8-13 chars)",
+	},
+	"nric": {
+		Flag:        "nric",
+		SchemaPath:  "beneficiary.bank_details.account_routing_value1",
+		RoutingType: "personal_id_number",
+		Description: "Singapore NRIC for personal PayNow (9 chars)",
+	},
+	"sg-bank-code": {
+		Flag:        "sg-bank-code",
+		SchemaPath:  "beneficiary.bank_details.account_routing_value1",
+		RoutingType: "bank_code",
+		Description: "Singapore bank code (7 digits: 4 bank + 3 branch)",
+	},
 	// Brazil tax IDs
 	"cpf": {
 		Flag:        "cpf",
@@ -221,5 +246,6 @@ func RoutingFlags() []string {
 		"zengin-bank-code", "zengin-branch-code",
 		"cnaps",
 		"korea-bank-code",
+		"paynow-vpa", "uen", "nric", "sg-bank-code",
 	}
 }
