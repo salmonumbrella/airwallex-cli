@@ -85,6 +85,7 @@ func NewRootCmd() *cobra.Command {
 	cmd.PersistentFlags().StringVar(&flags.SortBy, "sort-by", "", "Field name to sort results by")
 	cmd.PersistentFlags().BoolVar(&flags.Desc, "desc", false, "Sort descending (requires --sort-by)")
 
+	cmd.AddCommand(newAPICmd())
 	cmd.AddCommand(newAuthCmd())
 	cmd.AddCommand(newBalancesCmd())
 	cmd.AddCommand(newIssuingCmd())

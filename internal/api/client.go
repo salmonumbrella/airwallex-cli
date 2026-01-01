@@ -219,6 +219,11 @@ func (c *Client) Do(ctx context.Context, req *http.Request) (*http.Response, err
 	return c.doWithRetry(ctx, req)
 }
 
+// BaseURL returns the configured base URL for the API.
+func (c *Client) BaseURL() string {
+	return c.baseURL
+}
+
 // doWithRetry executes the request with retry logic:
 //   - 429: exponential backoff with jitter, max 3 retries (safe for all methods)
 //     Respects Retry-After header if present
