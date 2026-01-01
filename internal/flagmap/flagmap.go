@@ -134,6 +134,13 @@ var mappings = map[string]Mapping{
 		RoutingType: "bank_code",
 		Description: "Singapore bank code (7 digits: 4 bank + 3 branch)",
 	},
+	// Sweden
+	"clearing-number": {
+		Flag:        "clearing-number",
+		SchemaPath:  "beneficiary.bank_details.account_routing_value1",
+		RoutingType: "bank_code",
+		Description: "Sweden clearing number (4-5 digits)",
+	},
 	// Brazil tax IDs
 	"cpf": {
 		Flag:        "cpf",
@@ -247,5 +254,6 @@ func RoutingFlags() []string {
 		"cnaps",
 		"korea-bank-code",
 		"paynow-vpa", "uen", "nric", "sg-bank-code",
+		"clearing-number",
 	}
 }
