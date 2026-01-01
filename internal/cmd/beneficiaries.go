@@ -540,7 +540,10 @@ Examples:
 	// Required flags
 	cmd.Flags().StringVar(&entityType, "entity-type", "", "COMPANY or PERSONAL (required)")
 	cmd.Flags().StringVar(&bankCountry, "bank-country", "", "Bank country code e.g. CA, US (required)")
-	cmd.Flags().StringVar(&transferMethod, "transfer-method", "LOCAL", "Transfer method: LOCAL or SWIFT")
+	cmd.Flags().StringVar(&paymentMethod, "payment-method", "LOCAL", "Payment method: LOCAL or SWIFT")
+	// Alias for backwards compatibility
+	cmd.Flags().StringVar(&paymentMethod, "transfer-method", "LOCAL", "Alias for --payment-method (deprecated)")
+	_ = cmd.Flags().MarkHidden("transfer-method")
 	cmd.Flags().StringVar(&accountCurrency, "account-currency", "", "Currency e.g. CAD, USD (required)")
 	cmd.Flags().StringVar(&accountName, "account-name", "", "Account holder name (required)")
 
