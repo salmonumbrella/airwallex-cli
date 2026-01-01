@@ -80,6 +80,11 @@ func calculateScore(query, value, label string) int {
 
 // FormatSuggestions formats matches for display
 func FormatSuggestions(matches []Match) string {
+	return FormatSuggestionsWithHelp(matches, "")
+}
+
+// FormatSuggestionsWithHelp formats matches with an optional help command.
+func FormatSuggestionsWithHelp(matches []Match, helpCmd string) string {
 	if len(matches) == 0 {
 		return ""
 	}
@@ -87,11 +92,14 @@ func FormatSuggestions(matches []Match) string {
 	var sb strings.Builder
 	sb.WriteString("\nDid you mean one of these?\n")
 	for _, m := range matches {
+		sb.WriteString(fmt.Sprintf("  • %s", m.Value))
 		if m.Label != "" {
-			sb.WriteString(fmt.Sprintf("  %s  %s\n", m.Value, m.Label))
-		} else {
-			sb.WriteString(fmt.Sprintf("  %s\n", m.Value))
+			sb.WriteString(fmt.Sprintf("  (%s)", m.Label))
 		}
+		sb.WriteString("\n")
+	}
+	if helpCmd != "" {
+		sb.WriteString(fmt.Sprintf("\nRun '%s' to see all options.\n", helpCmd))
 	}
 	return sb.String()
 }

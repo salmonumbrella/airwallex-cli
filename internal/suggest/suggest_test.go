@@ -46,4 +46,59 @@ func TestFormatSuggestions(t *testing.T) {
 	if !strings.Contains(output, "Did you mean") {
 		t.Error("expected 'Did you mean' in output")
 	}
+	if !strings.Contains(output, "•") {
+		t.Error("expected bullet point in output")
+	}
+}
+
+func TestFormatSuggestionsWithHelp(t *testing.T) {
+	tests := []struct {
+		name     string
+		matches  []Match
+		helpCmd  string
+		contains []string
+	}{
+		{
+			name:    "empty matches",
+			matches: nil,
+			helpCmd: "airwallex help",
+		},
+		{
+			name:     "with help command",
+			matches:  []Match{{Value: "ben_abc123", Label: "John Smith"}},
+			helpCmd:  "airwallex beneficiaries list",
+			contains: []string{"Did you mean", "ben_abc123", "(John Smith)", "Run 'airwallex beneficiaries list'"},
+		},
+		{
+			name:     "without help command",
+			matches:  []Match{{Value: "ben_abc123", Label: "John Smith"}},
+			helpCmd:  "",
+			contains: []string{"Did you mean", "ben_abc123", "(John Smith)"},
+		},
+		{
+			name:     "multiple matches",
+			matches:  []Match{{Value: "ben_abc123"}, {Value: "ben_def456"}},
+			helpCmd:  "airwallex help",
+			contains: []string{"ben_abc123", "ben_def456"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			output := FormatSuggestionsWithHelp(tt.matches, tt.helpCmd)
+
+			if len(tt.matches) == 0 {
+				if output != "" {
+					t.Errorf("expected empty output for empty matches, got %q", output)
+				}
+				return
+			}
+
+			for _, s := range tt.contains {
+				if !strings.Contains(output, s) {
+					t.Errorf("expected output to contain %q, got:\n%s", s, output)
+				}
+			}
+		})
+	}
 }
