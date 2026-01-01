@@ -211,6 +211,28 @@ var mappings = map[string]Mapping{
 		Description: "Bank account category: Checking or Savings (alias for account-category)",
 	},
 
+	// China legal representative (for business beneficiaries)
+	"legal-rep-first-name": {
+		Flag:        "legal-rep-first-name",
+		SchemaPath:  "beneficiary.additional_info.legal_rep_first_name",
+		Description: "China legal representative first name (Chinese, up to 15 chars)",
+	},
+	"legal-rep-last-name": {
+		Flag:        "legal-rep-last-name",
+		SchemaPath:  "beneficiary.additional_info.legal_rep_last_name",
+		Description: "China legal representative last name (Chinese, up to 15 chars)",
+	},
+	"legal-rep-id": {
+		Flag:        "legal-rep-id",
+		SchemaPath:  "beneficiary.additional_info.legal_rep_id_number",
+		Description: "China legal representative ID number (15 or 18 chars)",
+	},
+	"bank-name": {
+		Flag:        "bank-name",
+		SchemaPath:  "beneficiary.bank_details.bank_name",
+		Description: "Bank name (required for China, up to 200 chars)",
+	},
+
 	// Entity details
 	"company-name": {
 		Flag:       "company-name",

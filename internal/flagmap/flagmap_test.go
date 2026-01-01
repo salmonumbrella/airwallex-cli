@@ -47,6 +47,11 @@ func TestFlagToSchemaPath(t *testing.T) {
 		{"company-name", "beneficiary.company_name", ""},
 		{"first-name", "beneficiary.first_name", ""},
 		{"last-name", "beneficiary.last_name", ""},
+		// China legal representative (for business)
+		{"legal-rep-first-name", "beneficiary.additional_info.legal_rep_first_name", ""},
+		{"legal-rep-last-name", "beneficiary.additional_info.legal_rep_last_name", ""},
+		{"legal-rep-id", "beneficiary.additional_info.legal_rep_id_number", ""},
+		{"bank-name", "beneficiary.bank_details.bank_name", ""},
 	}
 
 	for _, tt := range tests {
@@ -74,8 +79,8 @@ func TestGetMappingNotFound(t *testing.T) {
 
 func TestAllMappings(t *testing.T) {
 	all := AllMappings()
-	if len(all) != 42 {
-		t.Errorf("expected 42 mappings, got %d", len(all))
+	if len(all) != 46 {
+		t.Errorf("expected 46 mappings, got %d", len(all))
 	}
 }
 
