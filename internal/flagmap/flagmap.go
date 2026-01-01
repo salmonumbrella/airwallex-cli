@@ -11,6 +11,23 @@ type Mapping struct {
 
 // mappings defines all CLI flag to schema path mappings
 var mappings = map[string]Mapping{
+	// Top-level request fields
+	"entity-type": {
+		Flag:        "entity-type",
+		SchemaPath:  "entity_type",
+		Description: "Entity type: COMPANY or PERSONAL",
+	},
+	"bank-country": {
+		Flag:        "bank-country",
+		SchemaPath:  "bank_country_code",
+		Description: "Bank country code (e.g., US, GB, AU)",
+	},
+	"payment-method": {
+		Flag:        "payment-method",
+		SchemaPath:  "transfer_method",
+		Description: "Payment method: LOCAL or SWIFT",
+	},
+
 	// SWIFT/International
 	"swift-code": {
 		Flag:        "swift-code",

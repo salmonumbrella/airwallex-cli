@@ -9,6 +9,11 @@ func TestFlagToSchemaPath(t *testing.T) {
 		wantPath string
 		wantType string // routing type if applicable
 	}{
+		// Top-level request fields
+		{"entity-type", "entity_type", ""},
+		{"bank-country", "bank_country_code", ""},
+		{"payment-method", "transfer_method", ""},
+		// Routing fields
 		{"swift-code", "beneficiary.bank_details.swift_code", ""},
 		{"iban", "beneficiary.bank_details.iban", ""},
 		{"routing-number", "beneficiary.bank_details.account_routing_value1", "aba"},
@@ -47,8 +52,8 @@ func TestGetMappingNotFound(t *testing.T) {
 
 func TestAllMappings(t *testing.T) {
 	all := AllMappings()
-	if len(all) != 22 {
-		t.Errorf("expected 22 mappings, got %d", len(all))
+	if len(all) != 25 {
+		t.Errorf("expected 25 mappings, got %d", len(all))
 	}
 }
 

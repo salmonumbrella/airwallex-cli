@@ -138,6 +138,7 @@ func newBeneficiariesCreateCmd() *cobra.Command {
 	var clabe string
 	var bankCode string
 	var branchCode string
+	var bankAccountCategory string
 	// Address fields (required for Interac)
 	var addressCountry string
 	var addressStreet string
@@ -381,6 +382,9 @@ Examples:
 			if accountNumber != "" {
 				bankDetails["account_number"] = accountNumber
 			}
+			if bankAccountCategory != "" {
+				bankDetails["bank_account_category"] = bankAccountCategory
+			}
 			if localClearingSystem != "" {
 				bankDetails["local_clearing_system"] = localClearingSystem
 			}
@@ -461,6 +465,11 @@ Examples:
 						}
 					}
 				}
+
+				// Top-level request fields
+				addField("entity-type", entityType)
+				addField("bank-country", bankCountry)
+				addField("payment-method", paymentMethod)
 
 				// Account details
 				addField("account-name", accountName)
@@ -555,6 +564,7 @@ Examples:
 
 	// Bank account flags (EFT)
 	cmd.Flags().StringVar(&accountNumber, "account-number", "", "Bank account number")
+	cmd.Flags().StringVar(&bankAccountCategory, "bank-account-category", "", "Account category: CHECKING or SAVINGS (US)")
 	cmd.Flags().StringVar(&institutionNumber, "institution-number", "", "Institution number (Canada: 3 digits)")
 	cmd.Flags().StringVar(&transitNumber, "transit-number", "", "Transit/branch number (Canada: 5 digits)")
 
