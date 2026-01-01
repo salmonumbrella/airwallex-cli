@@ -958,3 +958,141 @@ func TestFormatter_OutputList_DoesNotModifyOriginal(t *testing.T) {
 		t.Errorf("Original slice order modified: first item should still be Charlie, got %s", items[0].Name)
 	}
 }
+
+// Template output tests
+
+func TestFormatter_Output_Template(t *testing.T) {
+	ctx := WithTemplate(context.Background(), "{{.TransferID}}: {{currency .Amount .Currency}}")
+	var buf bytes.Buffer
+	f := FromContext(ctx, WithWriter(&buf))
+
+	data := struct {
+		TransferID string
+		Amount     float64
+		Currency   string
+	}{
+		TransferID: "tfr_123",
+		Amount:     1000.50,
+		Currency:   "USD",
+	}
+
+	err := f.Output(data)
+	if err != nil {
+		t.Fatalf("Output() error = %v", err)
+	}
+
+	expected := "tfr_123: 1000.50 USD"
+	if buf.String() != expected {
+		t.Errorf("got %q, want %q", buf.String(), expected)
+	}
+}
+
+func TestFormatter_Output_TemplateWithHelpers(t *testing.T) {
+	tests := []struct {
+		name     string
+		template string
+		data     any
+		expected string
+	}{
+		{
+			name:     "upper function",
+			template: "{{upper .Name}}",
+			data:     struct{ Name string }{"alice"},
+			expected: "ALICE",
+		},
+		{
+			name:     "lower function",
+			template: "{{lower .Name}}",
+			data:     struct{ Name string }{"ALICE"},
+			expected: "alice",
+		},
+		{
+			name:     "truncate function",
+			template: "{{truncate .Name 5}}",
+			data:     struct{ Name string }{"Hello World"},
+			expected: "Hello...",
+		},
+		{
+			name:     "truncate short string unchanged",
+			template: "{{truncate .Name 20}}",
+			data:     struct{ Name string }{"Hello"},
+			expected: "Hello",
+		},
+		{
+			name:     "currency function",
+			template: "{{currency .Amount .Code}}",
+			data: struct {
+				Amount float64
+				Code   string
+			}{1234.56, "EUR"},
+			expected: "1234.56 EUR",
+		},
+		{
+			name:     "join function",
+			template: "{{join .Tags \", \"}}",
+			data:     struct{ Tags []string }{[]string{"a", "b", "c"}},
+			expected: "a, b, c",
+		},
+		{
+			name:     "default with empty value",
+			template: "{{default \"N/A\" .Value}}",
+			data:     struct{ Value string }{""},
+			expected: "N/A",
+		},
+		{
+			name:     "default with non-empty value",
+			template: "{{default \"N/A\" .Value}}",
+			data:     struct{ Value string }{"present"},
+			expected: "present",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := WithTemplate(context.Background(), tt.template)
+			var buf bytes.Buffer
+			f := FromContext(ctx, WithWriter(&buf))
+
+			err := f.Output(tt.data)
+			if err != nil {
+				t.Fatalf("Output() error = %v", err)
+			}
+
+			if buf.String() != tt.expected {
+				t.Errorf("got %q, want %q", buf.String(), tt.expected)
+			}
+		})
+	}
+}
+
+func TestFormatter_Output_TemplateInvalidSyntax(t *testing.T) {
+	ctx := WithTemplate(context.Background(), "{{.InvalidBracket")
+	var buf bytes.Buffer
+	f := FromContext(ctx, WithWriter(&buf))
+
+	err := f.Output(struct{ Name string }{"test"})
+	if err == nil {
+		t.Error("expected error for invalid template syntax")
+	}
+	if !strings.Contains(err.Error(), "invalid template") {
+		t.Errorf("error should mention 'invalid template', got: %v", err)
+	}
+}
+
+func TestFormatter_Output_TemplateTakesPrecedence(t *testing.T) {
+	// When both template and JSON are set, template should take precedence
+	ctx := WithFormat(context.Background(), "json")
+	ctx = WithTemplate(ctx, "{{.Name}}")
+	var buf bytes.Buffer
+	f := FromContext(ctx, WithWriter(&buf))
+
+	err := f.Output(struct{ Name string }{"test"})
+	if err != nil {
+		t.Fatalf("Output() error = %v", err)
+	}
+
+	// Should use template, not JSON
+	if buf.String() != "test" {
+		t.Errorf("template should take precedence over JSON, got: %q", buf.String())
+	}
+}

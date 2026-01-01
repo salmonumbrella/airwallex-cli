@@ -11,12 +11,13 @@ import (
 type contextKey string
 
 const (
-	formatKey contextKey = "output_format"
-	queryKey  contextKey = "query_filter"
-	yesKey    contextKey = "yes_flag"
-	limitKey  contextKey = "limit_flag"
-	sortByKey contextKey = "sort_by_flag"
-	descKey   contextKey = "desc_flag"
+	formatKey   contextKey = "output_format"
+	queryKey    contextKey = "query_filter"
+	templateKey contextKey = "template_format"
+	yesKey      contextKey = "yes_flag"
+	limitKey    contextKey = "limit_flag"
+	sortByKey   contextKey = "sort_by_flag"
+	descKey     contextKey = "desc_flag"
 )
 
 func WithFormat(ctx context.Context, format string) context.Context {
@@ -40,6 +41,17 @@ func WithQuery(ctx context.Context, query string) context.Context {
 
 func GetQuery(ctx context.Context) string {
 	if v, ok := ctx.Value(queryKey).(string); ok {
+		return v
+	}
+	return ""
+}
+
+func WithTemplate(ctx context.Context, tmpl string) context.Context {
+	return context.WithValue(ctx, templateKey, tmpl)
+}
+
+func GetTemplate(ctx context.Context) string {
+	if v, ok := ctx.Value(templateKey).(string); ok {
 		return v
 	}
 	return ""

@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strings"
 	"text/tabwriter"
+	"text/template"
 	"time"
 
 	"github.com/salmonumbrella/airwallex-cli/internal/iocontext"
@@ -63,13 +64,50 @@ func FromContext(ctx context.Context, opts ...OutputOption) *Formatter {
 	return f
 }
 
-// Output writes data as JSON or text based on context format.
+// Output writes data as JSON, template, or text based on context format.
+// Priority: template > JSON > text (default nil).
 // For JSON mode, applies JQ filtering if a query is present.
 func (f *Formatter) Output(data any) error {
+	if tmpl := GetTemplate(f.ctx); tmpl != "" {
+		return f.OutputWithTemplate(data, tmpl)
+	}
 	if IsJSON(f.ctx) {
 		return WriteJSONFiltered(f.out, data, GetQuery(f.ctx))
 	}
 	return nil
+}
+
+// OutputWithTemplate applies a Go template to data.
+func (f *Formatter) OutputWithTemplate(data any, tmplStr string) error {
+	tmpl, err := template.New("output").Funcs(templateFuncs()).Parse(tmplStr)
+	if err != nil {
+		return fmt.Errorf("invalid template: %w", err)
+	}
+	return tmpl.Execute(f.out, data)
+}
+
+// templateFuncs returns helper functions for templates.
+func templateFuncs() template.FuncMap {
+	return template.FuncMap{
+		"join":  strings.Join,
+		"upper": strings.ToUpper,
+		"lower": strings.ToLower,
+		"truncate": func(s string, n int) string {
+			if len(s) <= n {
+				return s
+			}
+			return s[:n] + "..."
+		},
+		"currency": func(amount float64, code string) string {
+			return fmt.Sprintf("%.2f %s", amount, code)
+		},
+		"default": func(def, val any) any {
+			if val == nil || val == "" {
+				return def
+			}
+			return val
+		},
+	}
 }
 
 // StartTable writes table headers and returns true if in text mode.

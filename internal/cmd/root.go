@@ -15,11 +15,12 @@ import (
 )
 
 type rootFlags struct {
-	Account string
-	Output  string
-	Color   string
-	Debug   bool
-	Query   string
+	Account  string
+	Output   string
+	Color    string
+	Debug    bool
+	Query    string
+	Template string // Go template for custom output
 	// Agent-friendly flags
 	Yes    bool   // skip confirmation prompts
 	Limit  int    // limit number of results (0 = no limit)
@@ -61,6 +62,9 @@ func NewRootCmd() *cobra.Command {
 			// Inject query filter context
 			ctx = outfmt.WithQuery(ctx, flags.Query)
 
+			// Inject template format context
+			ctx = outfmt.WithTemplate(ctx, flags.Template)
+
 			// Inject agent-friendly flags
 			ctx = outfmt.WithYes(ctx, flags.Yes)
 			ctx = outfmt.WithLimit(ctx, flags.Limit)
@@ -77,6 +81,7 @@ func NewRootCmd() *cobra.Command {
 	cmd.PersistentFlags().StringVar(&flags.Color, "color", getEnvOrDefault("AWX_COLOR", "auto"), "Color output: auto|always|never")
 	cmd.PersistentFlags().BoolVar(&flags.Debug, "debug", false, "Enable debug output (shows API requests/responses)")
 	cmd.PersistentFlags().StringVar(&flags.Query, "query", "", "JQ filter expression for JSON output")
+	cmd.PersistentFlags().StringVar(&flags.Template, "format", "", "Go template for custom output (e.g., '{{.ID}}: {{.Status}}')")
 
 	// Agent-friendly flags
 	cmd.PersistentFlags().BoolVarP(&flags.Yes, "yes", "y", false, "Skip confirmation prompts")
