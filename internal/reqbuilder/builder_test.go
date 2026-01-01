@@ -51,3 +51,37 @@ func TestBuildRoutingFields(t *testing.T) {
 		t.Errorf("routing type = %v", bankDetails["account_routing_type1"])
 	}
 }
+
+func TestMergeRequest(t *testing.T) {
+	// Test simple key merge
+	base := map[string]interface{}{"a": "1"}
+	additional := map[string]interface{}{"b": "2"}
+	result := MergeRequest(base, additional)
+
+	if result["a"] != "1" || result["b"] != "2" {
+		t.Errorf("simple merge failed: %v", result)
+	}
+
+	// Test nested map merge
+	base = map[string]interface{}{
+		"beneficiary": map[string]interface{}{"name": "John"},
+	}
+	additional = map[string]interface{}{
+		"beneficiary": map[string]interface{}{"account": "123"},
+	}
+	result = MergeRequest(base, additional)
+
+	beneficiary := result["beneficiary"].(map[string]interface{})
+	if beneficiary["name"] != "John" || beneficiary["account"] != "123" {
+		t.Errorf("nested merge failed: %v", beneficiary)
+	}
+
+	// Test value overwrite
+	base = map[string]interface{}{"key": "old"}
+	additional = map[string]interface{}{"key": "new"}
+	result = MergeRequest(base, additional)
+
+	if result["key"] != "new" {
+		t.Errorf("overwrite failed: got %v", result["key"])
+	}
+}
