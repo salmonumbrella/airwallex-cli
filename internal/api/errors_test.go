@@ -134,6 +134,45 @@ func TestParseAPIError_WithFieldErrors(t *testing.T) {
 	}
 }
 
+func TestParseAPIError_WithNestedDetailsErrors(t *testing.T) {
+	body := []byte(`{
+		"code": "validation_failed",
+		"message": "Validation error",
+		"details": {
+			"errors": [
+				{
+					"source": "beneficiary.bank_details.account_name",
+					"code": "field_required",
+					"message": "Account name is required"
+				}
+			]
+		}
+	}`)
+	err := ParseAPIError(body)
+
+	if err.Code != "validation_failed" {
+		t.Errorf("Code = %q, want 'validation_failed'", err.Code)
+	}
+	if err.Details == nil {
+		t.Fatal("Details should not be nil")
+	}
+	if len(err.Details.Errors) != 1 {
+		t.Fatalf("len(Details.Errors) = %d, want 1", len(err.Details.Errors))
+	}
+	if err.Details.Errors[0].Source != "beneficiary.bank_details.account_name" {
+		t.Errorf("Details.Errors[0].Source = %q, want 'beneficiary.bank_details.account_name'", err.Details.Errors[0].Source)
+	}
+
+	// Verify Error() output includes nested details.errors
+	got := err.Error()
+	if !strings.Contains(got, "beneficiary.bank_details.account_name") {
+		t.Errorf("Error() = %q, want to contain nested details.errors field", got)
+	}
+	if !strings.Contains(got, "Account name is required") {
+		t.Errorf("Error() = %q, want to contain nested error message", got)
+	}
+}
+
 func TestContextualError(t *testing.T) {
 	inner := &APIError{Code: "not_found", Message: "Transfer not found"}
 	err := WrapError("GET", "/api/v1/transfers/123", 404, inner)

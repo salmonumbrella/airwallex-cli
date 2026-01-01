@@ -97,6 +97,24 @@ func ParseAPIError(body []byte) *APIError {
 		}
 	}
 
+	// Sanitize nested details.errors
+	if e.Details != nil {
+		if len(e.Details.Errors) > maxFieldErrors {
+			e.Details.Errors = e.Details.Errors[:maxFieldErrors]
+		}
+		for i := range e.Details.Errors {
+			if len(e.Details.Errors[i].Source) > maxSourceLength {
+				e.Details.Errors[i].Source = e.Details.Errors[i].Source[:maxSourceLength]
+			}
+			if len(e.Details.Errors[i].Code) > maxCodeLength {
+				e.Details.Errors[i].Code = e.Details.Errors[i].Code[:maxCodeLength]
+			}
+			if len(e.Details.Errors[i].Message) > maxMessageLength {
+				e.Details.Errors[i].Message = e.Details.Errors[i].Message[:maxMessageLength] + "..."
+			}
+		}
+	}
+
 	if e.Code == "" && e.Message == "" {
 		return &APIError{
 			Code:    "unknown_error",
