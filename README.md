@@ -188,6 +188,7 @@ airwallex beneficiaries validate --entity-type ... --bank-country ...
 | 🇬🇧 UK | Faster Payments | `--sort-code` |
 | 🇪🇺 Europe | SEPA | `--iban`, `--swift-code` |
 | 🇦🇺 Australia | BECS | `--bsb` |
+| 🇦🇺 Australia | PayID/NPP | `--payid-phone`, `--payid-email`, `--payid-abn` |
 | 🇨🇦 Canada | EFT | `--institution-number`, `--transit-number` |
 | 🇨🇦 Canada | Interac e-Transfer | `--email`, `--phone`, `--clearing-system INTERAC` |
 | 🇮🇳 India | NEFT/RTGS/IMPS | `--ifsc` |
