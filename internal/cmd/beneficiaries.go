@@ -430,6 +430,9 @@ Examples:
 				if !zenginBranchRegex.MatchString(zenginBranchCode) {
 					return fmt.Errorf("--zengin-branch-code must be exactly 3 digits")
 				}
+				if zenginBankCode == "" {
+					return fmt.Errorf("--zengin-bank-code is required when --zengin-branch-code is provided")
+				}
 			}
 
 			// Validation: China CNAPS (12 digits)
@@ -487,6 +490,13 @@ Examples:
 				}
 			}
 
+			// Validation: Singapore PayNow VPA (up to 21 chars)
+			if paynowVPA != "" {
+				if len(paynowVPA) > 21 {
+					return fmt.Errorf("--paynow-vpa must be 21 characters or fewer")
+				}
+			}
+
 			// Validation: Sweden clearing number (4-5 digits)
 			if clearingNumber != "" {
 				clearingRegex := regexp.MustCompile(`^\d{4,5}$`)
@@ -508,6 +518,13 @@ Examples:
 				fpsIDRegex := regexp.MustCompile(`^\d{7,9}$`)
 				if !fpsIDRegex.MatchString(fpsID) {
 					return fmt.Errorf("--fps-id must be 7-9 digits")
+				}
+			}
+
+			// Validation: China legal representative ID (15 or 18 chars)
+			if legalRepID != "" {
+				if len(legalRepID) != 15 && len(legalRepID) != 18 {
+					return fmt.Errorf("--legal-rep-id must be 15 or 18 characters")
 				}
 			}
 

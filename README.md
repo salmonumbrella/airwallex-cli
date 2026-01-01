@@ -210,6 +210,27 @@ airwallex beneficiaries validate --entity-type ... --bank-country ...
 
 See `airwallex beneficiaries create --help` for country-specific examples.
 
+#### International Routing Support
+
+The CLI supports country-specific routing codes and payment rails for 15+ countries:
+
+| Country | Routing Method | Flags |
+|---------|---------------|-------|
+| 🇺🇸 USA | ACH/Fedwire | `--routing-number` |
+| 🇬🇧 UK | Faster Payments | `--sort-code` |
+| 🇦🇺 Australia | BECS | `--bsb` |
+| 🇨🇦 Canada | EFT | `--institution-number`, `--transit-number` |
+| 🇮🇳 India | NEFT/RTGS/IMPS | `--ifsc` |
+| 🇲🇽 Mexico | SPEI | `--clabe` |
+| 🇯🇵 Japan | Zengin | `--zengin-bank-code`, `--zengin-branch-code` |
+| 🇨🇳 China | CNAPS | `--cnaps`, `--bank-name`, `--personal-id-type` |
+| 🇧🇷 Brazil | PIX/TED | `--cpf`, `--cnpj`, `--bank-branch` |
+| 🇰🇷 South Korea | - | `--korea-bank-code` |
+| 🇸🇬 Singapore | PayNow/FAST | `--nric`, `--uen`, `--sg-bank-code`, `--paynow-vpa` |
+| 🇭🇰 Hong Kong | FPS | `--hk-bank-code`, `--fps-id`, `--hkid` |
+| 🇸🇪 Sweden | Bankgiro | `--clearing-number` |
+| 🇪🇺 Europe | SEPA | `--iban`, `--swift-code` |
+
 ### Payers
 
 ```bash
