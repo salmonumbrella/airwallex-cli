@@ -561,6 +561,13 @@ make setup
 
 This installs [lefthook](https://github.com/evilmartians/lefthook) pre-commit and pre-push hooks for linting and testing.
 
+### Future Infrastructure
+
+The following packages are ready for integration but not yet used:
+
+- **`internal/schemacache`** - Local caching for beneficiary schemas with TTL. Reduces API calls by caching schemas after fetching.
+- **`internal/reqbuilder`** - Converts flat CLI flag paths (e.g., `beneficiary.bank_details.account_name`) into nested JSON structures for API requests.
+
 ## License
 
 MIT

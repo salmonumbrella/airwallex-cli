@@ -1,3 +1,22 @@
+// Package schemacache provides local caching for beneficiary schemas.
+//
+// FUTURE INFRASTRUCTURE: This package is not yet integrated into the beneficiaries
+// command but is ready for use. It was created as part of the schema-driven
+// architecture to reduce API calls by caching schemas locally with TTL.
+//
+// Integration points:
+//   - beneficiaries create: cache schemas after fetching to avoid repeated API calls
+//   - beneficiaries validate: use cached schemas for local validation
+//   - schemas beneficiary: populate cache when user explicitly fetches schema
+//
+// Example usage:
+//
+//	cache := schemacache.New("~/.config/airwallex/schemas", 24*time.Hour)
+//	key := schemacache.CacheKey("US", "COMPANY", "LOCAL")
+//	if schema, ok := cache.Get(key); ok {
+//	    // use cached schema
+//	}
+//	cache.Set(key, schema) // cache for future use
 package schemacache
 
 import (
