@@ -138,6 +138,9 @@ func newBeneficiariesCreateCmd() *cobra.Command {
 	var clabe string
 	var bankCode string
 	var branchCode string
+	// Japan Zengin
+	var zenginBankCode string
+	var zenginBranchCode string
 	var bankAccountCategory string
 	// Address fields (required for Interac)
 	var addressCountry string
@@ -588,6 +591,10 @@ Examples:
 	cmd.Flags().StringVar(&clabe, "clabe", "", "Mexican CLABE (18 digits)")
 	cmd.Flags().StringVar(&bankCode, "bank-code", "", "Generic bank code")
 	cmd.Flags().StringVar(&branchCode, "branch-code", "", "Generic branch code")
+
+	// Japan Zengin routing
+	cmd.Flags().StringVar(&zenginBankCode, "zengin-bank-code", "", "Japan Zengin bank code (4 digits)")
+	cmd.Flags().StringVar(&zenginBranchCode, "zengin-branch-code", "", "Japan Zengin branch code (3 digits)")
 
 	// Address flags (required for Interac)
 	cmd.Flags().StringVar(&addressCountry, "address-country", "", "Beneficiary country code (e.g. CA)")
