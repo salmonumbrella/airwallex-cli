@@ -7,6 +7,8 @@ import (
 	"io"
 	"net/url"
 	"time"
+
+	"github.com/salmonumbrella/airwallex-cli/internal/wait"
 )
 
 // TransferFinalStatuses are statuses that indicate the transfer is complete
@@ -169,36 +171,31 @@ func (c *Client) CancelTransfer(ctx context.Context, transferID string) (*Transf
 	return &t, nil
 }
 
-// WaitForTransfer polls until the transfer reaches a final status
+// WaitForTransfer polls until the transfer reaches a final status.
+// Uses the unified wait pattern for consistent polling behavior.
 func (c *Client) WaitForTransfer(ctx context.Context, transferID string, timeout time.Duration) (*Transfer, error) {
 	if err := ValidateResourceID(transferID, "transfer"); err != nil {
 		return nil, err
 	}
 
-	deadline := time.Now().Add(timeout)
-	pollInterval := 2 * time.Second
-
-	for {
-		if time.Now().After(deadline) {
-			return nil, fmt.Errorf("timeout waiting for transfer %s", transferID)
-		}
-
-		transfer, err := c.GetTransfer(ctx, transferID)
-		if err != nil {
-			return nil, err
-		}
-
-		if TransferFinalStatuses[transfer.Status] {
-			return transfer, nil
-		}
-
-		select {
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		case <-time.After(pollInterval):
-			// Continue polling
-		}
+	cfg := wait.Config{
+		Timeout:       timeout,
+		PollInterval:  2 * time.Second,
+		SuccessStates: []string{"COMPLETED"},
+		FailureStates: []string{"FAILED", "CANCELLED", "RETURNED"},
 	}
+
+	var transfer *Transfer
+	_, err := wait.For(ctx, cfg, func() (string, error) {
+		t, err := c.GetTransfer(ctx, transferID)
+		if err != nil {
+			return "", err
+		}
+		transfer = t
+		return t.Status, nil
+	})
+
+	return transfer, err
 }
 
 // ListBeneficiaries lists all beneficiaries
