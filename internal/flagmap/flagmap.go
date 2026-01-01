@@ -141,6 +141,25 @@ var mappings = map[string]Mapping{
 		RoutingType: "bank_code",
 		Description: "Sweden clearing number (4-5 digits)",
 	},
+	// Hong Kong FPS
+	"hk-bank-code": {
+		Flag:        "hk-bank-code",
+		SchemaPath:  "beneficiary.bank_details.account_routing_value1",
+		RoutingType: "bank_code",
+		Description: "Hong Kong bank code (3 digits)",
+	},
+	"fps-id": {
+		Flag:        "fps-id",
+		SchemaPath:  "beneficiary.bank_details.account_routing_value1",
+		RoutingType: "fps_identifier",
+		Description: "Hong Kong FPS identifier (7-9 digits)",
+	},
+	"hkid": {
+		Flag:        "hkid",
+		SchemaPath:  "beneficiary.bank_details.account_routing_value1",
+		RoutingType: "personal_id_number",
+		Description: "Hong Kong ID for FPS routing",
+	},
 	// Brazil tax IDs
 	"cpf": {
 		Flag:        "cpf",
@@ -255,5 +274,6 @@ func RoutingFlags() []string {
 		"korea-bank-code",
 		"paynow-vpa", "uen", "nric", "sg-bank-code",
 		"clearing-number",
+		"hk-bank-code", "fps-id", "hkid",
 	}
 }
