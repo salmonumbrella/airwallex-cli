@@ -249,9 +249,10 @@ Examples:
 			hasIFSC := ifsc != ""
 			hasCLABE := clabe != ""
 			hasBankCode := bankCode != ""
+			hasZengin := zenginBankCode != ""
 
 			hasAnyRouting := hasEmail || hasPhone || hasEFT || hasSWIFT || hasRouting ||
-				hasIBAN || hasSortCode || hasBSB || hasIFSC || hasCLABE || hasBankCode
+				hasIBAN || hasSortCode || hasBSB || hasIFSC || hasCLABE || hasBankCode || hasZengin
 
 			if !hasAnyRouting {
 				return fmt.Errorf("must provide at least one routing method (e.g., --swift-code, --iban, --routing-number, --sort-code, --bsb)")
@@ -334,6 +335,25 @@ Examples:
 				ifscRegex := regexp.MustCompile(`^[A-Z]{4}0[A-Z0-9]{6}$`)
 				if !ifscRegex.MatchString(strings.ToUpper(ifsc)) {
 					return fmt.Errorf("--ifsc must be 11 characters: 4 letters, 0, then 6 alphanumeric (e.g., SBIN0001234)")
+				}
+			}
+
+			// Validation: Japan Zengin bank code (4 digits)
+			if zenginBankCode != "" {
+				zenginBankRegex := regexp.MustCompile(`^\d{4}$`)
+				if !zenginBankRegex.MatchString(zenginBankCode) {
+					return fmt.Errorf("--zengin-bank-code must be exactly 4 digits")
+				}
+				if zenginBranchCode == "" {
+					return fmt.Errorf("--zengin-branch-code is required when --zengin-bank-code is provided")
+				}
+			}
+
+			// Validation: Japan Zengin branch code (3 digits)
+			if zenginBranchCode != "" {
+				zenginBranchRegex := regexp.MustCompile(`^\d{3}$`)
+				if !zenginBranchRegex.MatchString(zenginBranchCode) {
+					return fmt.Errorf("--zengin-branch-code must be exactly 3 digits")
 				}
 			}
 
