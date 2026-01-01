@@ -277,6 +277,24 @@ Examples:
     --account-currency HKD --account-number 12345678901234 \
     --hk-bank-code 004
 
+  # Australia PayID (phone)
+  airwallex beneficiaries create --entity-type PERSONAL \
+    --bank-country AU --account-currency AUD \
+    --payid-phone "+61-412345678" --account-name "Jane Smith" \
+    --first-name Jane --last-name Smith
+
+  # Australia PayID (email)
+  airwallex beneficiaries create --entity-type PERSONAL \
+    --bank-country AU --account-currency AUD \
+    --payid-email "jane@example.com" --account-name "Jane Smith" \
+    --first-name Jane --last-name Smith
+
+  # Australia PayID (ABN for business)
+  airwallex beneficiaries create --entity-type COMPANY \
+    --bank-country AU --account-currency AUD \
+    --payid-abn "12345678901" --account-name "Acme Pty Ltd" \
+    --company-name "Acme Pty Ltd"
+
   # Sweden with clearing number
   airwallex beneficiaries create --entity-type PERSONAL --bank-country SE \
     --first-name Erik --last-name Svensson --account-name "Erik Svensson" \
