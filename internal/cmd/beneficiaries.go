@@ -722,6 +722,15 @@ Examples:
 			} else if hkid != "" {
 				bankDetails["account_routing_type1"] = "personal_id_number"
 				bankDetails["account_routing_value1"] = hkid
+			} else if payidPhone != "" {
+				bankDetails["account_routing_type1"] = "phone_number"
+				bankDetails["account_routing_value1"] = payidPhone
+			} else if payidEmail != "" {
+				bankDetails["account_routing_type1"] = "email_address"
+				bankDetails["account_routing_value1"] = payidEmail
+			} else if payidABN != "" {
+				bankDetails["account_routing_type1"] = "australian_business_number"
+				bankDetails["account_routing_value1"] = payidABN
 			}
 
 			if branchCode != "" {
