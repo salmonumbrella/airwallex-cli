@@ -102,6 +102,22 @@ var mappings = map[string]Mapping{
 		RoutingType: "cnaps",
 		Description: "China CNAPS code (12 digits)",
 	},
+	// Brazil tax IDs
+	"cpf": {
+		Flag:        "cpf",
+		SchemaPath:  "beneficiary.personal_id_number",
+		Description: "Brazil CPF (individual tax ID, 11 digits)",
+	},
+	"cnpj": {
+		Flag:        "cnpj",
+		SchemaPath:  "beneficiary.business_registration_number",
+		Description: "Brazil CNPJ (business tax ID, 14 digits)",
+	},
+	"bank-branch": {
+		Flag:        "bank-branch",
+		SchemaPath:  "beneficiary.bank_details.bank_branch",
+		Description: "Bank branch code (Brazil: 4-7 chars)",
+	},
 	"bank-code": {
 		Flag:        "bank-code",
 		SchemaPath:  "beneficiary.bank_details.bank_code",
