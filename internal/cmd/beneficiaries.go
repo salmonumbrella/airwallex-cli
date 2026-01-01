@@ -12,6 +12,7 @@ import (
 
 	"github.com/salmonumbrella/airwallex-cli/internal/api"
 	"github.com/salmonumbrella/airwallex-cli/internal/outfmt"
+	"github.com/salmonumbrella/airwallex-cli/internal/schemavalidator"
 	"github.com/salmonumbrella/airwallex-cli/internal/ui"
 )
 
@@ -142,6 +143,8 @@ func newBeneficiariesCreateCmd() *cobra.Command {
 	var addressCity string
 	var addressState string
 	var addressPostcode string
+	// Validation mode
+	var validateOnly bool
 
 	cmd := &cobra.Command{
 		Use:   "create",
@@ -431,6 +434,71 @@ Examples:
 				req["nickname"] = nickname
 			}
 
+			// Optional: Fetch schema and validate
+			if validateOnly {
+				schema, err := client.GetBeneficiarySchema(cmd.Context(), bankCountry, entityType, transferMethod)
+				if err != nil {
+					return fmt.Errorf("failed to fetch schema: %w", err)
+				}
+
+				// Build provided fields map for validation
+				provided := make(map[string]string)
+				if accountName != "" {
+					provided["beneficiary.bank_details.account_name"] = accountName
+				}
+				if accountNumber != "" {
+					provided["beneficiary.bank_details.account_number"] = accountNumber
+				}
+				if swiftCode != "" {
+					provided["beneficiary.bank_details.swift_code"] = swiftCode
+				}
+				if iban != "" {
+					provided["beneficiary.bank_details.iban"] = iban
+				}
+				if routingNumber != "" {
+					provided["beneficiary.bank_details.account_routing_value1"] = routingNumber
+				}
+				if sortCode != "" {
+					provided["beneficiary.bank_details.account_routing_value1"] = sortCode
+				}
+				if bsb != "" {
+					provided["beneficiary.bank_details.account_routing_value1"] = bsb
+				}
+				if ifsc != "" {
+					provided["beneficiary.bank_details.account_routing_value1"] = ifsc
+				}
+				if clabe != "" {
+					provided["beneficiary.bank_details.clabe"] = clabe
+				}
+				if companyName != "" {
+					provided["beneficiary.company_name"] = companyName
+				}
+				if firstName != "" {
+					provided["beneficiary.first_name"] = firstName
+				}
+				if lastName != "" {
+					provided["beneficiary.last_name"] = lastName
+				}
+
+				// Validate using schemavalidator package
+				missing, err := schemavalidator.Validate(schema, provided)
+				if err != nil {
+					return fmt.Errorf("validation error: %w", err)
+				}
+
+				if len(missing) > 0 {
+					return fmt.Errorf("%s", schemavalidator.FormatMissingFields(missing))
+				}
+
+				// Show what would be sent
+				u.Success("Schema validation passed")
+				if outfmt.IsJSON(cmd.Context()) {
+					return outfmt.WriteJSON(os.Stdout, req)
+				}
+				u.Info(fmt.Sprintf("Would create beneficiary in %s with %s routing", bankCountry, transferMethod))
+				return nil
+			}
+
 			b, err := client.CreateBeneficiary(cmd.Context(), req)
 			if err != nil {
 				return err
@@ -487,6 +555,9 @@ Examples:
 	cmd.Flags().StringVar(&addressCity, "address-city", "", "Beneficiary city")
 	cmd.Flags().StringVar(&addressState, "address-state", "", "Beneficiary state/province")
 	cmd.Flags().StringVar(&addressPostcode, "address-postcode", "", "Beneficiary postal code")
+
+	// Validation mode flag
+	cmd.Flags().BoolVar(&validateOnly, "validate", false, "Validate against schema without creating")
 
 	mustMarkRequired(cmd, "entity-type")
 	mustMarkRequired(cmd, "bank-country")
