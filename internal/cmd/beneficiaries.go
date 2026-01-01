@@ -452,6 +452,13 @@ Examples:
 					bankDetails["account_routing_type2"] = "transit_number"
 					bankDetails["account_routing_value2"] = transitNumber
 				}
+			} else if zenginBankCode != "" {
+				bankDetails["account_routing_type1"] = "bank_code"
+				bankDetails["account_routing_value1"] = zenginBankCode
+				if zenginBranchCode != "" {
+					bankDetails["account_routing_type2"] = "branch_code"
+					bankDetails["account_routing_value2"] = zenginBranchCode
+				}
 			}
 
 			if branchCode != "" {
@@ -512,6 +519,10 @@ Examples:
 				addField("ifsc", ifsc)
 				addField("bank-code", bankCode)
 				addField("branch-code", branchCode)
+
+				// Japan Zengin
+				addField("zengin-bank-code", zenginBankCode)
+				addField("zengin-branch-code", zenginBranchCode)
 
 				// Canada EFT
 				addField("institution-number", institutionNumber)
