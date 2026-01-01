@@ -21,13 +21,34 @@
 //	// Result: {"beneficiary": {"bank_details": {"account_name": "John Doe", ...}, "entity_type": "PERSONAL"}}
 package reqbuilder
 
-import "strings"
+import (
+	"sort"
+	"strings"
+)
 
 // BuildNestedMap converts flat "path.to.field" keys into nested maps
 func BuildNestedMap(fields map[string]string) map[string]interface{} {
 	result := make(map[string]interface{})
 
-	for path, value := range fields {
+	// Sort keys to ensure deterministic processing order.
+	// Shorter paths are processed first, then alphabetically.
+	// This ensures "parent" is processed before "parent.child",
+	// allowing nested paths to overwrite scalar values with maps.
+	keys := make([]string, 0, len(fields))
+	for k := range fields {
+		keys = append(keys, k)
+	}
+	sort.Slice(keys, func(i, j int) bool {
+		// First by length (shorter first)
+		if len(keys[i]) != len(keys[j]) {
+			return len(keys[i]) < len(keys[j])
+		}
+		// Then alphabetically for determinism
+		return keys[i] < keys[j]
+	})
+
+	for _, path := range keys {
+		value := fields[path]
 		if value == "" {
 			continue
 		}
