@@ -54,7 +54,7 @@ func TestListWebhooks_WithPagination(t *testing.T) {
 		},
 	}
 
-	result, err := c.ListWebhooks(context.Background(), 1, 20)
+	result, err := c.ListWebhooks(context.Background(), 0, 20)
 	if err != nil {
 		t.Fatalf("ListWebhooks() error: %v", err)
 	}

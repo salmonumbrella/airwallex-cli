@@ -183,7 +183,7 @@ func TestListDeposits_WithPagination(t *testing.T) {
 		},
 	}
 
-	result, err := c.ListDeposits(context.Background(), "", "", "", 1, 20)
+	result, err := c.ListDeposits(context.Background(), "", "", "", 0, 20)
 	if err != nil {
 		t.Fatalf("ListDeposits() error: %v", err)
 	}

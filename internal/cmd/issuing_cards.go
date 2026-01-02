@@ -136,7 +136,10 @@ func newCardsCreateCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "create <nickname>",
 		Short: "Create a new card",
-		Long: `Create a new card with optional spending limits.
+		Long: `Create a new card with spending limits.
+
+IMPORTANT: The --limit flag is required. Airwallex requires all cards to have
+a spending limit configured.
 
 Card types:
   - Employee card (default): Personalized for a single cardholder
@@ -148,7 +151,7 @@ Examples:
 
   # Create a company card shared by multiple employees (comma-separated IDs)
   airwallex issuing cards create "Office Supplies" --cardholder-id chld_123 --company \
-    --additional-cardholders chld_456,chld_789
+    --additional-cardholders chld_456,chld_789 --limit 500
 
   # Create a card with a $500 all-time limit
   airwallex issuing cards create "Travel" --cardholder-id <id> --limit 500 --limit-interval ALL_TIME
@@ -288,7 +291,7 @@ Program types: PREPAID, DEBIT, CREDIT, DEFERRED_DEBIT`,
 	cmd.Flags().StringVar(&cardholderID, "cardholder-id", "", "Cardholder ID (required)")
 	cmd.Flags().StringVar(&formFactor, "form-factor", "VIRTUAL", "VIRTUAL or PHYSICAL")
 	cmd.Flags().StringVar(&currency, "currency", "", "Primary currency")
-	cmd.Flags().Float64Var(&limitAmount, "limit", 0, "Spending limit amount")
+	cmd.Flags().Float64Var(&limitAmount, "limit", 0, "Spending limit amount (required)")
 	cmd.Flags().StringVar(&limitInterval, "limit-interval", "MONTHLY", "Limit interval: PER_TRANSACTION, DAILY, WEEKLY, MONTHLY, QUARTERLY, YEARLY, ALL_TIME")
 	cmd.Flags().StringVar(&limitCurrency, "limit-currency", "USD", "Limit currency (default: USD)")
 	cmd.Flags().StringVar(&createdBy, "created-by", "Airwallex CLI", "Name of person creating the card")
@@ -297,6 +300,7 @@ Program types: PREPAID, DEBIT, CREDIT, DEFERRED_DEBIT`,
 	cmd.Flags().BoolVar(&companyCard, "company", false, "Create a company card (shared, not personalized)")
 	cmd.Flags().StringSliceVar(&additionalCardholders, "additional-cardholders", nil, "Additional cardholder IDs for company cards (max 3)")
 	mustMarkRequired(cmd, "cardholder-id")
+	mustMarkRequired(cmd, "limit")
 	return cmd
 }
 

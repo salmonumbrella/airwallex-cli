@@ -29,6 +29,7 @@ func TestCardsCreateValidation(t *testing.T) {
 			args: []string{
 				"MyCard",
 				"--cardholder-id", "chld_123",
+				"--limit", "100",
 				"--additional-cardholders", "chld_456",
 			},
 			wantErr:     true,
@@ -39,6 +40,7 @@ func TestCardsCreateValidation(t *testing.T) {
 			args: []string{
 				"MyCard",
 				"--cardholder-id", "chld_123",
+				"--limit", "100",
 				"--company",
 				"--additional-cardholders", "chld_1,chld_2,chld_3,chld_4",
 			},
@@ -50,6 +52,7 @@ func TestCardsCreateValidation(t *testing.T) {
 			args: []string{
 				"MyCard",
 				"--cardholder-id", "chld_123",
+				"--limit", "100",
 				"--company",
 				"--additional-cardholders", "chld_456,chld_789",
 			},
@@ -60,11 +63,12 @@ func TestCardsCreateValidation(t *testing.T) {
 			args: []string{
 				"MyCard",
 				"--cardholder-id", "chld_123",
+				"--limit", "100",
 			},
 			wantErr: false,
 		},
 		{
-			name: "missing required cardholder-id",
+			name: "missing required cardholder-id and limit",
 			args: []string{
 				"MyCard",
 			},
@@ -75,6 +79,7 @@ func TestCardsCreateValidation(t *testing.T) {
 			name: "missing nickname argument",
 			args: []string{
 				"--cardholder-id", "chld_123",
+				"--limit", "100",
 			},
 			wantErr:     true,
 			errContains: "accepts 1 arg",

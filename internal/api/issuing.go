@@ -74,8 +74,44 @@ type Cardholder struct {
 	Email        string `json:"email"`
 	FirstName    string `json:"first_name"`
 	LastName     string `json:"last_name"`
+	MobileNumber string `json:"mobile_number"`
 	Status       string `json:"status"`
 	CreatedAt    string `json:"created_at"`
+}
+
+// UnmarshalJSON implements custom unmarshaling to handle nested individual.name fields
+func (c *Cardholder) UnmarshalJSON(data []byte) error {
+	// First try to unmarshal with the nested structure
+	type nestedCardholder struct {
+		CardholderID string `json:"cardholder_id"`
+		Type         string `json:"type"`
+		Email        string `json:"email"`
+		MobileNumber string `json:"mobile_number"`
+		Individual   struct {
+			Name struct {
+				FirstName string `json:"first_name"`
+				LastName  string `json:"last_name"`
+			} `json:"name"`
+		} `json:"individual"`
+		Status    string `json:"status"`
+		CreatedAt string `json:"created_at"`
+	}
+
+	var nested nestedCardholder
+	if err := json.Unmarshal(data, &nested); err != nil {
+		return err
+	}
+
+	c.CardholderID = nested.CardholderID
+	c.Type = nested.Type
+	c.Email = nested.Email
+	c.MobileNumber = nested.MobileNumber
+	c.FirstName = nested.Individual.Name.FirstName
+	c.LastName = nested.Individual.Name.LastName
+	c.Status = nested.Status
+	c.CreatedAt = nested.CreatedAt
+
+	return nil
 }
 
 type CardholdersResponse struct {
@@ -121,8 +157,8 @@ func (c *Client) ListCards(ctx context.Context, status, cardholderID string, pag
 	}
 	// Airwallex API requires both page_num and page_size together
 	if pageSize > 0 {
-		if pageNum < 1 {
-			pageNum = 1 // API uses 1-based page numbering
+		if pageNum < 0 {
+			pageNum = 0 // API uses 0-based page numbering
 		}
 		params.Set("page_num", fmt.Sprintf("%d", pageNum))
 		params.Set("page_size", fmt.Sprintf("%d", pageSize))
@@ -305,8 +341,8 @@ func (c *Client) ListCardholders(ctx context.Context, pageNum, pageSize int) (*C
 	params := url.Values{}
 	// Airwallex API requires both page_num and page_size together
 	if pageSize > 0 {
-		if pageNum < 1 {
-			pageNum = 1 // API uses 1-based page numbering
+		if pageNum < 0 {
+			pageNum = 0 // API uses 0-based page numbering
 		}
 		params.Set("page_num", fmt.Sprintf("%d", pageNum))
 		params.Set("page_size", fmt.Sprintf("%d", pageSize))
@@ -423,8 +459,8 @@ func (c *Client) ListTransactions(ctx context.Context, cardID string, from, to s
 	}
 	// Airwallex API requires both page_num and page_size together
 	if pageSize > 0 {
-		if pageNum < 1 {
-			pageNum = 1 // API uses 1-based page numbering
+		if pageNum < 0 {
+			pageNum = 0 // API uses 0-based page numbering
 		}
 		params.Set("page_num", fmt.Sprintf("%d", pageNum))
 		params.Set("page_size", fmt.Sprintf("%d", pageSize))
