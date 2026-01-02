@@ -3,6 +3,10 @@ package factory
 import (
 	"context"
 	"fmt"
+	"io"
+	"os"
+
+	"github.com/spf13/cobra"
 
 	"github.com/salmonumbrella/airwallex-cli/internal/api"
 	"github.com/salmonumbrella/airwallex-cli/internal/iocontext"
@@ -80,4 +84,29 @@ func (f *Factory) WithConfig(config func() (*Config, error)) *Factory {
 	cp := *f
 	cp.Config = config
 	return &cp
+}
+
+// GetIO returns IO streams with proper fallback chain:
+// 1. Factory IO if set
+// 2. Context IO if present
+// 3. Cobra command writers
+func (f *Factory) GetIO(cmd *cobra.Command) (out, errOut io.Writer) {
+	var ioCtx *iocontext.IO
+	if f != nil && f.IO != nil {
+		ioCtx = f.IO
+	} else {
+		ioCtx = iocontext.GetIO(cmd.Context())
+	}
+	out = ioCtx.Out
+	errOut = ioCtx.ErrOut
+
+	// If IO is still the default (os.Stdout/os.Stderr), check if cobra has custom writers
+	if out == os.Stdout {
+		out = cmd.OutOrStdout()
+	}
+	if errOut == os.Stderr {
+		errOut = cmd.OutOrStderr()
+	}
+
+	return out, errOut
 }
