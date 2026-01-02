@@ -87,9 +87,14 @@ func (f *Factory) WithConfig(config func() (*Config, error)) *Factory {
 }
 
 // GetIO returns IO streams with proper fallback chain:
-// 1. Factory IO if set
-// 2. Context IO if present
-// 3. Cobra command writers
+//
+//  1. Factory IO - if f != nil && f.IO != nil, use factory's IO streams
+//  2. Context IO - otherwise, use iocontext.GetIO(ctx) which returns DefaultIO() if not set
+//  3. Cobra override - if out is still os.Stdout, check cmd.OutOrStdout()
+//     (same for errOut with os.Stderr via cmd.OutOrStderr())
+//
+// This allows tests to inject custom writers at any level while ensuring
+// production code falls back to sensible defaults. Safe to call with nil factory.
 func (f *Factory) GetIO(cmd *cobra.Command) (out, errOut io.Writer) {
 	var ioCtx *iocontext.IO
 	if f != nil && f.IO != nil {
