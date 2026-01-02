@@ -154,3 +154,134 @@ func TestFromError_ContextualError_StatusCodes(t *testing.T) {
 		})
 	}
 }
+
+// Integration tests for WrapError → FromError flow
+
+func TestFromError_WrapError_Integration(t *testing.T) {
+	tests := []struct {
+		name       string
+		method     string
+		url        string
+		statusCode int
+		innerErr   error
+		wantCode   int
+	}{
+		{
+			name:       "WrapError with 401 maps to AuthRequired",
+			method:     "GET",
+			url:        "/api/v1/accounts",
+			statusCode: 401,
+			innerErr:   errors.New("unauthorized"),
+			wantCode:   AuthRequired,
+		},
+		{
+			name:       "WrapError with 404 maps to NotFound",
+			method:     "GET",
+			url:        "/api/v1/transfers/tfr_123",
+			statusCode: 404,
+			innerErr:   errors.New("not found"),
+			wantCode:   NotFound,
+		},
+		{
+			name:       "WrapError with 500 maps to ServerErr",
+			method:     "POST",
+			url:        "/api/v1/payments",
+			statusCode: 500,
+			innerErr:   errors.New("internal server error"),
+			wantCode:   ServerErr,
+		},
+		{
+			name:       "WrapError with APIError inner error",
+			method:     "POST",
+			url:        "/api/v1/beneficiaries",
+			statusCode: 400,
+			innerErr:   &api.APIError{Code: "invalid_request", Message: "bad input"},
+			wantCode:   Validation,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := api.WrapError(tt.method, tt.url, tt.statusCode, tt.innerErr)
+			if got := FromError(err); got != tt.wantCode {
+				t.Errorf("FromError(WrapError(%s, %s, %d)) = %d, want %d",
+					tt.method, tt.url, tt.statusCode, got, tt.wantCode)
+			}
+		})
+	}
+}
+
+func TestFromError_WrapError_DoubleWrapped(t *testing.T) {
+	// Test that double-wrapped errors still map correctly
+	innerErr := errors.New("original error")
+	firstWrap := api.WrapError("GET", "/api/v1/inner", 404, innerErr)
+	// Wrap again with a different status - outer status should win
+	doubleWrap := api.WrapError("POST", "/api/v1/outer", 500, firstWrap)
+
+	got := FromError(doubleWrap)
+	if got != ServerErr {
+		t.Errorf("FromError(double-wrapped) = %d, want %d (ServerErr from outer 500)", got, ServerErr)
+	}
+}
+
+func TestFromError_WrapError_WithJoin(t *testing.T) {
+	// Test WrapError combined with errors.Join
+	wrapped := api.WrapError("DELETE", "/api/v1/resource/123", 403, errors.New("forbidden"))
+	joined := errors.Join(errors.New("operation failed"), wrapped)
+
+	got := FromError(joined)
+	if got != AuthRequired {
+		t.Errorf("FromError(joined with WrapError) = %d, want %d (AuthRequired from 403)", got, AuthRequired)
+	}
+}
+
+func TestWrapError_ErrorMessage_Formatting(t *testing.T) {
+	tests := []struct {
+		name     string
+		method   string
+		url      string
+		status   int
+		innerErr error
+		wantMsg  string
+	}{
+		{
+			name:     "basic error message",
+			method:   "GET",
+			url:      "/api/v1/accounts",
+			status:   401,
+			innerErr: errors.New("unauthorized"),
+			wantMsg:  "GET /api/v1/accounts failed (status 401): unauthorized",
+		},
+		{
+			name:     "POST with APIError",
+			method:   "POST",
+			url:      "/api/v1/payments",
+			status:   400,
+			innerErr: &api.APIError{Code: "invalid_amount", Message: "amount must be positive"},
+			wantMsg:  "POST /api/v1/payments failed (status 400): invalid_amount: amount must be positive",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := api.WrapError(tt.method, tt.url, tt.status, tt.innerErr)
+			if got := err.Error(); got != tt.wantMsg {
+				t.Errorf("WrapError().Error() = %q, want %q", got, tt.wantMsg)
+			}
+		})
+	}
+}
+
+func TestContextualError_Unwrap(t *testing.T) {
+	// Verify that the inner error can be unwrapped
+	innerErr := &api.APIError{Code: "test_code", Message: "test message"}
+	wrapped := api.WrapError("GET", "/test", 400, innerErr)
+
+	var apiErr *api.APIError
+	if !errors.As(wrapped, &apiErr) {
+		t.Error("errors.As failed to extract inner APIError from wrapped error")
+	}
+	if apiErr.Code != "test_code" {
+		t.Errorf("unwrapped APIError.Code = %q, want %q", apiErr.Code, "test_code")
+	}
+}
