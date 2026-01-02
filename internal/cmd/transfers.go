@@ -63,8 +63,46 @@ func newTransfersListCmd() *cobra.Command {
 	var status string
 
 	cmd := NewListCommand(ListConfig[api.Transfer]{
-		Use:          "list",
-		Short:        "List transfers",
+		Use:   "list",
+		Short: "List transfers",
+		Long: `List payment transfers with optional filters.
+
+Use --output json with --query for advanced filtering using jq syntax.
+
+Examples:
+  # List recent transfers
+  airwallex transfers list --limit 20
+
+  # Filter by status
+  airwallex transfers list --status PAID
+
+  # Sort by amount (highest first)
+  airwallex transfers list --output json --query \
+    'sort_by(.transfer_amount) | reverse | .[0:10]'
+
+  # Transfers over $1000
+  airwallex transfers list --output json --query \
+    '[.[] | select(.transfer_amount > 1000)]'
+
+  # Failed/pending transfers (not PAID)
+  airwallex transfers list --output json --query \
+    '[.[] | select(.status != "PAID")]'
+
+  # Total amount transferred
+  airwallex transfers list --output json --query \
+    'map(.transfer_amount) | add'
+
+  # Total by currency
+  airwallex transfers list --output json --query \
+    'group_by(.transfer_currency) | map({currency: .[0].transfer_currency, total: (map(.transfer_amount) | add)})'
+
+  # Filter by reference pattern
+  airwallex transfers list --output json --query \
+    '[.[] | select(.reference | test("Invoice"; "i"))]'
+
+  # Compact view with selected fields
+  airwallex transfers list --output json --query \
+    '.[] | {ref: .reference, amount: .transfer_amount, currency: .transfer_currency, status: .status}'`,
 		Headers:      []string{"TRANSFER_ID", "AMOUNT", "CURRENCY", "STATUS", "REFERENCE"},
 		EmptyMessage: "No transfers found",
 		ColumnTypes: []outfmt.ColumnType{

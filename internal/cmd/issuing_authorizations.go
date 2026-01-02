@@ -66,6 +66,10 @@ func newAuthorizationsListCmd() *cobra.Command {
 				}
 			}
 
+			if pageSize < 10 {
+				return fmt.Errorf("--page-size must be at least 10 (got %d)", pageSize)
+			}
+
 			result, err := client.ListAuthorizations(cmd.Context(), api.AuthorizationListParams{
 				Status:               status,
 				CardID:               cardID,
@@ -121,7 +125,7 @@ func newAuthorizationsListCmd() *cobra.Command {
 	cmd.Flags().StringVar(&from, "from", "", "From date (YYYY-MM-DD)")
 	cmd.Flags().StringVar(&to, "to", "", "To date (YYYY-MM-DD)")
 	cmd.Flags().IntVar(&page, "page", 0, "Page number (0 = first page)")
-	cmd.Flags().IntVar(&pageSize, "page-size", 20, "API page size")
+	cmd.Flags().IntVar(&pageSize, "page-size", 20, "API page size (min 10)")
 	return cmd
 }
 

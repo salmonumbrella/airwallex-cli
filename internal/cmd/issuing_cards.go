@@ -42,6 +42,10 @@ func newCardsListCmd() *cobra.Command {
 				return err
 			}
 
+			if pageSize < 10 {
+				return fmt.Errorf("--page-size must be at least 10 (got %d)", pageSize)
+			}
+
 			cards, err := client.ListCards(cmd.Context(), status, cardholderID, page, pageSize)
 			if err != nil {
 				return err
@@ -81,7 +85,7 @@ func newCardsListCmd() *cobra.Command {
 	cmd.Flags().StringVar(&status, "status", "", "Filter by status (ACTIVE, INACTIVE, CLOSED)")
 	cmd.Flags().StringVar(&cardholderID, "cardholder-id", "", "Filter by cardholder")
 	cmd.Flags().IntVar(&page, "page", 0, "Page number (0 = first page)")
-	cmd.Flags().IntVar(&pageSize, "page-size", 20, "API page size")
+	cmd.Flags().IntVar(&pageSize, "page-size", 20, "API page size (min 10)")
 	return cmd
 }
 

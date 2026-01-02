@@ -45,7 +45,7 @@ func newFXConversionsListCmd() *cobra.Command {
 			}
 
 			if pageSize < 10 {
-				pageSize = 10
+				return fmt.Errorf("--page-size must be at least 10 (got %d)", pageSize)
 			}
 
 			client, err := getClient(cmd.Context())
