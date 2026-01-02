@@ -92,7 +92,7 @@ func (c *Client) ListTransfers(ctx context.Context, status string, pageNum, page
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("GET", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var result TransfersResponse
@@ -107,7 +107,8 @@ func (c *Client) GetTransfer(ctx context.Context, transferID string) (*Transfer,
 	if err := ValidateResourceID(transferID, "transfer"); err != nil {
 		return nil, err
 	}
-	resp, err := c.Get(ctx, "/api/v1/transfers/"+url.PathEscape(transferID))
+	path := "/api/v1/transfers/" + url.PathEscape(transferID)
+	resp, err := c.Get(ctx, path)
 	if err != nil {
 		return nil, err
 	}
@@ -115,7 +116,7 @@ func (c *Client) GetTransfer(ctx context.Context, transferID string) (*Transfer,
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("GET", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var t Transfer
@@ -138,7 +139,7 @@ func (c *Client) CreateTransfer(ctx context.Context, req map[string]interface{})
 
 	if resp.StatusCode != 200 && resp.StatusCode != 201 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("POST", Endpoints.TransfersCreate.Path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var t Transfer
@@ -153,7 +154,8 @@ func (c *Client) CancelTransfer(ctx context.Context, transferID string) (*Transf
 	if err := ValidateResourceID(transferID, "transfer"); err != nil {
 		return nil, err
 	}
-	resp, err := c.Post(ctx, "/api/v1/transfers/"+url.PathEscape(transferID)+"/cancel", nil)
+	path := "/api/v1/transfers/" + url.PathEscape(transferID) + "/cancel"
+	resp, err := c.Post(ctx, path, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -161,7 +163,7 @@ func (c *Client) CancelTransfer(ctx context.Context, transferID string) (*Transf
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("POST", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var t Transfer
@@ -223,7 +225,7 @@ func (c *Client) ListBeneficiaries(ctx context.Context, pageNum, pageSize int) (
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("GET", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var result BeneficiariesResponse
@@ -238,7 +240,8 @@ func (c *Client) GetBeneficiary(ctx context.Context, beneficiaryID string) (*Ben
 	if err := ValidateResourceID(beneficiaryID, "beneficiary"); err != nil {
 		return nil, err
 	}
-	resp, err := c.Get(ctx, "/api/v1/beneficiaries/"+url.PathEscape(beneficiaryID))
+	path := "/api/v1/beneficiaries/" + url.PathEscape(beneficiaryID)
+	resp, err := c.Get(ctx, path)
 	if err != nil {
 		return nil, err
 	}
@@ -246,7 +249,7 @@ func (c *Client) GetBeneficiary(ctx context.Context, beneficiaryID string) (*Ben
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("GET", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var b Beneficiary
@@ -261,7 +264,8 @@ func (c *Client) GetBeneficiaryRaw(ctx context.Context, beneficiaryID string) (m
 	if err := ValidateResourceID(beneficiaryID, "beneficiary"); err != nil {
 		return nil, err
 	}
-	resp, err := c.Get(ctx, "/api/v1/beneficiaries/"+url.PathEscape(beneficiaryID))
+	path := "/api/v1/beneficiaries/" + url.PathEscape(beneficiaryID)
+	resp, err := c.Get(ctx, path)
 	if err != nil {
 		return nil, err
 	}
@@ -269,7 +273,7 @@ func (c *Client) GetBeneficiaryRaw(ctx context.Context, beneficiaryID string) (m
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("GET", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var result map[string]interface{}
@@ -284,7 +288,8 @@ func (c *Client) CreateBeneficiary(ctx context.Context, req map[string]interface
 	ctx, cancel := withDefaultTimeout(ctx)
 	defer cancel()
 
-	resp, err := c.Post(ctx, "/api/v1/beneficiaries/create", req)
+	path := "/api/v1/beneficiaries/create"
+	resp, err := c.Post(ctx, path, req)
 	if err != nil {
 		return nil, err
 	}
@@ -292,7 +297,7 @@ func (c *Client) CreateBeneficiary(ctx context.Context, req map[string]interface
 
 	if resp.StatusCode != 200 && resp.StatusCode != 201 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("POST", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var b Beneficiary
@@ -308,7 +313,8 @@ func (c *Client) UpdateBeneficiary(ctx context.Context, beneficiaryID string, up
 		return nil, err
 	}
 
-	resp, err := c.Post(ctx, "/api/v1/beneficiaries/"+url.PathEscape(beneficiaryID)+"/update", update)
+	path := "/api/v1/beneficiaries/" + url.PathEscape(beneficiaryID) + "/update"
+	resp, err := c.Post(ctx, path, update)
 	if err != nil {
 		return nil, err
 	}
@@ -316,7 +322,7 @@ func (c *Client) UpdateBeneficiary(ctx context.Context, beneficiaryID string, up
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("POST", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var b Beneficiary
@@ -331,7 +337,8 @@ func (c *Client) DeleteBeneficiary(ctx context.Context, beneficiaryID string) er
 	if err := ValidateResourceID(beneficiaryID, "beneficiary"); err != nil {
 		return err
 	}
-	resp, err := c.Post(ctx, "/api/v1/beneficiaries/"+url.PathEscape(beneficiaryID)+"/delete", nil)
+	path := "/api/v1/beneficiaries/" + url.PathEscape(beneficiaryID) + "/delete"
+	resp, err := c.Post(ctx, path, nil)
 	if err != nil {
 		return err
 	}
@@ -339,14 +346,15 @@ func (c *Client) DeleteBeneficiary(ctx context.Context, beneficiaryID string) er
 
 	if resp.StatusCode != 200 && resp.StatusCode != 204 {
 		body, _ := io.ReadAll(resp.Body)
-		return ParseAPIError(body)
+		return WrapError("POST", path, resp.StatusCode, ParseAPIError(body))
 	}
 	return nil
 }
 
 // ValidateBeneficiary validates beneficiary details without creating
 func (c *Client) ValidateBeneficiary(ctx context.Context, req map[string]interface{}) error {
-	resp, err := c.Post(ctx, "/api/v1/beneficiaries/validate", req)
+	path := "/api/v1/beneficiaries/validate"
+	resp, err := c.Post(ctx, path, req)
 	if err != nil {
 		return err
 	}
@@ -354,7 +362,7 @@ func (c *Client) ValidateBeneficiary(ctx context.Context, req map[string]interfa
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return ParseAPIError(body)
+		return WrapError("POST", path, resp.StatusCode, ParseAPIError(body))
 	}
 	return nil
 }
@@ -369,7 +377,8 @@ func (c *Client) GetConfirmationLetter(ctx context.Context, transferID string, f
 		"format":         format,
 	}
 
-	resp, err := c.Post(ctx, "/api/v1/confirmation_letters/create", req)
+	path := "/api/v1/confirmation_letters/create"
+	resp, err := c.Post(ctx, path, req)
 	if err != nil {
 		return nil, err
 	}
@@ -377,7 +386,7 @@ func (c *Client) GetConfirmationLetter(ctx context.Context, transferID string, f
 
 	if resp.StatusCode != 200 && resp.StatusCode != 201 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("POST", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	pdfData, err := io.ReadAll(resp.Body)

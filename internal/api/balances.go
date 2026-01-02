@@ -44,7 +44,7 @@ func (c *Client) GetBalances(ctx context.Context) (*BalancesResponse, error) {
 
 	if resp.StatusCode != Endpoints.BalancesCurrent.ExpectedStatus {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("GET", Endpoints.BalancesCurrent.Path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	// API returns an array directly, not wrapped in an object
@@ -88,7 +88,7 @@ func (c *Client) GetBalanceHistory(ctx context.Context, currency string, from, t
 
 	if resp.StatusCode != Endpoints.BalancesHistory.ExpectedStatus {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("GET", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var result BalanceHistoryResponse

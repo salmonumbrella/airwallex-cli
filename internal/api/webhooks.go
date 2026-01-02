@@ -116,7 +116,7 @@ func (c *Client) ListWebhooks(ctx context.Context, pageNum, pageSize int) (*Webh
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("GET", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var result WebhooksResponse
@@ -132,7 +132,8 @@ func (c *Client) GetWebhook(ctx context.Context, webhookID string) (*Webhook, er
 		return nil, err
 	}
 
-	resp, err := c.Get(ctx, "/api/v1/webhooks/"+url.PathEscape(webhookID))
+	path := "/api/v1/webhooks/" + url.PathEscape(webhookID)
+	resp, err := c.Get(ctx, path)
 	if err != nil {
 		return nil, err
 	}
@@ -140,7 +141,7 @@ func (c *Client) GetWebhook(ctx context.Context, webhookID string) (*Webhook, er
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("GET", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var wh Webhook
@@ -165,7 +166,8 @@ func (c *Client) CreateWebhook(ctx context.Context, webhookURL string, events []
 		"events": events,
 	}
 
-	resp, err := c.Post(ctx, "/api/v1/webhooks/create", req)
+	path := "/api/v1/webhooks/create"
+	resp, err := c.Post(ctx, path, req)
 	if err != nil {
 		return nil, err
 	}
@@ -173,7 +175,7 @@ func (c *Client) CreateWebhook(ctx context.Context, webhookURL string, events []
 
 	if resp.StatusCode != 200 && resp.StatusCode != 201 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("POST", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var wh Webhook
@@ -192,7 +194,8 @@ func (c *Client) DeleteWebhook(ctx context.Context, webhookID string) error {
 	ctx, cancel := withDefaultTimeout(ctx)
 	defer cancel()
 
-	resp, err := c.Post(ctx, "/api/v1/webhooks/"+url.PathEscape(webhookID)+"/delete", nil)
+	path := "/api/v1/webhooks/" + url.PathEscape(webhookID) + "/delete"
+	resp, err := c.Post(ctx, path, nil)
 	if err != nil {
 		return err
 	}
@@ -200,7 +203,7 @@ func (c *Client) DeleteWebhook(ctx context.Context, webhookID string) error {
 
 	if resp.StatusCode != 204 && resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return ParseAPIError(body)
+		return WrapError("POST", path, resp.StatusCode, ParseAPIError(body))
 	}
 	return nil
 }

@@ -75,7 +75,7 @@ func (c *Client) GetRates(ctx context.Context, sellCurrency, buyCurrency string)
 
 	body, _ := io.ReadAll(resp.Body)
 	if resp.StatusCode != 200 {
-		return nil, ParseAPIError(body)
+		return nil, WrapError("GET", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	// Try parsing as array response first (RatesResponse)
@@ -110,7 +110,7 @@ func (c *Client) CreateQuote(ctx context.Context, req map[string]interface{}) (*
 	// Accept both 200 and 201 for backward compatibility
 	if resp.StatusCode != 200 && resp.StatusCode != 201 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("POST", Endpoints.FXQuotesCreate.Path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var q Quote
@@ -126,7 +126,8 @@ func (c *Client) GetQuote(ctx context.Context, quoteID string) (*Quote, error) {
 		return nil, err
 	}
 
-	resp, err := c.Get(ctx, "/api/v1/fx/quotes/"+url.PathEscape(quoteID))
+	path := "/api/v1/fx/quotes/" + url.PathEscape(quoteID)
+	resp, err := c.Get(ctx, path)
 	if err != nil {
 		return nil, err
 	}
@@ -134,7 +135,7 @@ func (c *Client) GetQuote(ctx context.Context, quoteID string) (*Quote, error) {
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("GET", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var q Quote
@@ -178,7 +179,7 @@ func (c *Client) ListConversions(ctx context.Context, status string, fromDate, t
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("GET", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var result ConversionsResponse
@@ -194,7 +195,8 @@ func (c *Client) GetConversion(ctx context.Context, conversionID string) (*Conve
 		return nil, err
 	}
 
-	resp, err := c.Get(ctx, "/api/v1/fx/conversions/"+url.PathEscape(conversionID))
+	path := "/api/v1/fx/conversions/" + url.PathEscape(conversionID)
+	resp, err := c.Get(ctx, path)
 	if err != nil {
 		return nil, err
 	}
@@ -202,7 +204,7 @@ func (c *Client) GetConversion(ctx context.Context, conversionID string) (*Conve
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("GET", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var conv Conversion
@@ -226,7 +228,7 @@ func (c *Client) CreateConversion(ctx context.Context, req map[string]interface{
 	// Accept both 200 and 201 for backward compatibility
 	if resp.StatusCode != 200 && resp.StatusCode != 201 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("POST", Endpoints.FXConversionsCreate.Path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var conv Conversion

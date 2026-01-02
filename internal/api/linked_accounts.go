@@ -58,7 +58,7 @@ func (c *Client) ListLinkedAccounts(ctx context.Context, pageNum, pageSize int) 
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("GET", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var result LinkedAccountsResponse
@@ -74,7 +74,8 @@ func (c *Client) GetLinkedAccount(ctx context.Context, accountID string) (*Linke
 		return nil, err
 	}
 
-	resp, err := c.Get(ctx, "/api/v1/linked_accounts/"+url.PathEscape(accountID))
+	path := "/api/v1/linked_accounts/" + url.PathEscape(accountID)
+	resp, err := c.Get(ctx, path)
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +83,7 @@ func (c *Client) GetLinkedAccount(ctx context.Context, accountID string) (*Linke
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("GET", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var la LinkedAccount
@@ -97,7 +98,8 @@ func (c *Client) CreateLinkedAccount(ctx context.Context, req map[string]interfa
 	ctx, cancel := withDefaultTimeout(ctx)
 	defer cancel()
 
-	resp, err := c.Post(ctx, "/api/v1/linked_accounts/create", req)
+	path := "/api/v1/linked_accounts/create"
+	resp, err := c.Post(ctx, path, req)
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +107,7 @@ func (c *Client) CreateLinkedAccount(ctx context.Context, req map[string]interfa
 
 	if resp.StatusCode != 200 && resp.StatusCode != 201 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("POST", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var la LinkedAccount
@@ -129,7 +131,8 @@ func (c *Client) InitiateDeposit(ctx context.Context, accountID string, amount f
 		"currency": currency,
 	}
 
-	resp, err := c.Post(ctx, "/api/v1/linked_accounts/"+url.PathEscape(accountID)+"/initiate_deposit", req)
+	path := "/api/v1/linked_accounts/" + url.PathEscape(accountID) + "/initiate_deposit"
+	resp, err := c.Post(ctx, path, req)
 	if err != nil {
 		return nil, err
 	}
@@ -137,7 +140,7 @@ func (c *Client) InitiateDeposit(ctx context.Context, accountID string, amount f
 
 	if resp.StatusCode != 200 && resp.StatusCode != 201 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("POST", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var di DepositInitiation

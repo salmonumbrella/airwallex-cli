@@ -91,7 +91,7 @@ func (c *Client) ListAuthorizations(ctx context.Context, params AuthorizationLis
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("GET", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var result AuthorizationsResponse
@@ -106,7 +106,8 @@ func (c *Client) GetAuthorization(ctx context.Context, transactionID string) (*A
 	if err := ValidateResourceID(transactionID, "transaction"); err != nil {
 		return nil, err
 	}
-	resp, err := c.Get(ctx, "/api/v1/issuing/authorizations/"+url.PathEscape(transactionID))
+	path := "/api/v1/issuing/authorizations/" + url.PathEscape(transactionID)
+	resp, err := c.Get(ctx, path)
 	if err != nil {
 		return nil, err
 	}
@@ -114,7 +115,7 @@ func (c *Client) GetAuthorization(ctx context.Context, transactionID string) (*A
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("GET", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var auth Authorization

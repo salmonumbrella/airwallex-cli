@@ -52,7 +52,7 @@ func (c *Client) ListGlobalAccounts(ctx context.Context, pageNum, pageSize int) 
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("GET", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var result GlobalAccountsResponse
@@ -67,7 +67,8 @@ func (c *Client) GetGlobalAccount(ctx context.Context, accountID string) (*Globa
 	if err := ValidateResourceID(accountID, "account"); err != nil {
 		return nil, err
 	}
-	resp, err := c.Get(ctx, "/api/v1/global_accounts/"+url.PathEscape(accountID))
+	path := "/api/v1/global_accounts/" + url.PathEscape(accountID)
+	resp, err := c.Get(ctx, path)
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +76,7 @@ func (c *Client) GetGlobalAccount(ctx context.Context, accountID string) (*Globa
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("GET", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var a GlobalAccount

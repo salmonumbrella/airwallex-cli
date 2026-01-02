@@ -94,7 +94,7 @@ func (c *Client) ListTransactionDisputes(ctx context.Context, params Transaction
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("GET", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var result TransactionDisputesResponse
@@ -109,7 +109,8 @@ func (c *Client) GetTransactionDispute(ctx context.Context, disputeID string) (*
 	if err := ValidateResourceID(disputeID, "dispute"); err != nil {
 		return nil, err
 	}
-	resp, err := c.Get(ctx, "/api/v1/issuing/transaction_disputes/"+url.PathEscape(disputeID))
+	path := "/api/v1/issuing/transaction_disputes/" + url.PathEscape(disputeID)
+	resp, err := c.Get(ctx, path)
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +118,7 @@ func (c *Client) GetTransactionDispute(ctx context.Context, disputeID string) (*
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("GET", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var dispute TransactionDispute
@@ -140,7 +141,7 @@ func (c *Client) CreateTransactionDispute(ctx context.Context, req map[string]in
 
 	if resp.StatusCode != 200 && resp.StatusCode != 201 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("POST", Endpoints.TransactionDisputesCreate.Path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var dispute TransactionDispute
@@ -156,7 +157,8 @@ func (c *Client) UpdateTransactionDispute(ctx context.Context, disputeID string,
 		return nil, err
 	}
 
-	resp, err := c.Post(ctx, "/api/v1/issuing/transaction_disputes/"+url.PathEscape(disputeID)+"/update", req)
+	path := "/api/v1/issuing/transaction_disputes/" + url.PathEscape(disputeID) + "/update"
+	resp, err := c.Post(ctx, path, req)
 	if err != nil {
 		return nil, err
 	}
@@ -164,7 +166,7 @@ func (c *Client) UpdateTransactionDispute(ctx context.Context, disputeID string,
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("POST", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var dispute TransactionDispute
@@ -180,7 +182,8 @@ func (c *Client) SubmitTransactionDispute(ctx context.Context, disputeID string)
 		return nil, err
 	}
 
-	resp, err := c.Post(ctx, "/api/v1/issuing/transaction_disputes/"+url.PathEscape(disputeID)+"/submit", nil)
+	path := "/api/v1/issuing/transaction_disputes/" + url.PathEscape(disputeID) + "/submit"
+	resp, err := c.Post(ctx, path, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -188,7 +191,7 @@ func (c *Client) SubmitTransactionDispute(ctx context.Context, disputeID string)
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("POST", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var dispute TransactionDispute
@@ -204,7 +207,8 @@ func (c *Client) CancelTransactionDispute(ctx context.Context, disputeID string)
 		return nil, err
 	}
 
-	resp, err := c.Post(ctx, "/api/v1/issuing/transaction_disputes/"+url.PathEscape(disputeID)+"/cancel", nil)
+	path := "/api/v1/issuing/transaction_disputes/" + url.PathEscape(disputeID) + "/cancel"
+	resp, err := c.Post(ctx, path, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -212,7 +216,7 @@ func (c *Client) CancelTransactionDispute(ctx context.Context, disputeID string)
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("POST", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var dispute TransactionDispute

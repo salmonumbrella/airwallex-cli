@@ -73,7 +73,7 @@ func (c *Client) ListPayers(ctx context.Context, params PayerListParams) (*Payer
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("GET", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var result PayersResponse
@@ -89,7 +89,8 @@ func (c *Client) GetPayer(ctx context.Context, payerID string) (*Payer, error) {
 		return nil, err
 	}
 
-	resp, err := c.Get(ctx, "/api/v1/payers/"+url.PathEscape(payerID))
+	path := "/api/v1/payers/" + url.PathEscape(payerID)
+	resp, err := c.Get(ctx, path)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +98,7 @@ func (c *Client) GetPayer(ctx context.Context, payerID string) (*Payer, error) {
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("GET", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var payer Payer
@@ -120,7 +121,7 @@ func (c *Client) CreatePayer(ctx context.Context, req map[string]interface{}) (*
 
 	if resp.StatusCode != 200 && resp.StatusCode != 201 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("POST", Endpoints.PayersCreate.Path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var payer Payer
@@ -136,7 +137,8 @@ func (c *Client) UpdatePayer(ctx context.Context, payerID string, req map[string
 		return nil, err
 	}
 
-	resp, err := c.Post(ctx, "/api/v1/payers/update/"+url.PathEscape(payerID), req)
+	path := "/api/v1/payers/update/" + url.PathEscape(payerID)
+	resp, err := c.Post(ctx, path, req)
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +146,7 @@ func (c *Client) UpdatePayer(ctx context.Context, payerID string, req map[string
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("POST", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var payer Payer
@@ -160,7 +162,8 @@ func (c *Client) DeletePayer(ctx context.Context, payerID string) error {
 		return err
 	}
 
-	resp, err := c.Post(ctx, "/api/v1/payers/delete/"+url.PathEscape(payerID), nil)
+	path := "/api/v1/payers/delete/" + url.PathEscape(payerID)
+	resp, err := c.Post(ctx, path, nil)
 	if err != nil {
 		return err
 	}
@@ -168,7 +171,7 @@ func (c *Client) DeletePayer(ctx context.Context, payerID string) error {
 
 	if resp.StatusCode != 200 && resp.StatusCode != 204 {
 		body, _ := io.ReadAll(resp.Body)
-		return ParseAPIError(body)
+		return WrapError("POST", path, resp.StatusCode, ParseAPIError(body))
 	}
 	return nil
 }
@@ -183,7 +186,7 @@ func (c *Client) ValidatePayer(ctx context.Context, req map[string]interface{}) 
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return ParseAPIError(body)
+		return WrapError("POST", Endpoints.PayersValidate.Path, resp.StatusCode, ParseAPIError(body))
 	}
 	return nil
 }

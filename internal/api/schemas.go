@@ -69,7 +69,8 @@ func (c *Client) GetBeneficiarySchema(ctx context.Context, bankCountry, entityTy
 		req["payment_method"] = paymentMethod
 	}
 
-	resp, err := c.Post(ctx, "/api/v1/beneficiary_api_schemas/generate", req)
+	path := "/api/v1/beneficiary_api_schemas/generate"
+	resp, err := c.Post(ctx, path, req)
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +78,7 @@ func (c *Client) GetBeneficiarySchema(ctx context.Context, bankCountry, entityTy
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("POST", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var schema Schema
@@ -97,7 +98,8 @@ func (c *Client) GetTransferSchema(ctx context.Context, sourceCurrency, destCurr
 		req["payment_method"] = paymentMethod
 	}
 
-	resp, err := c.Post(ctx, "/api/v1/transfer_api_schemas/generate", req)
+	path := "/api/v1/transfer_api_schemas/generate"
+	resp, err := c.Post(ctx, path, req)
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +107,7 @@ func (c *Client) GetTransferSchema(ctx context.Context, sourceCurrency, destCurr
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("POST", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var schema Schema

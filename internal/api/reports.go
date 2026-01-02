@@ -67,7 +67,8 @@ func (c *Client) CreateFinancialReport(ctx context.Context, req *CreateReportReq
 	ctx, cancel := withDefaultTimeout(ctx)
 	defer cancel()
 
-	resp, err := c.Post(ctx, "/api/v1/finance/financial_reports/create", req)
+	path := "/api/v1/finance/financial_reports/create"
+	resp, err := c.Post(ctx, path, req)
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +76,7 @@ func (c *Client) CreateFinancialReport(ctx context.Context, req *CreateReportReq
 
 	if resp.StatusCode != 200 && resp.StatusCode != 201 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("POST", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var report FinancialReport
@@ -110,7 +111,7 @@ func (c *Client) ListFinancialReports(ctx context.Context, pageNum, pageSize int
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("GET", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var result FinancialReportsResponse
@@ -125,7 +126,8 @@ func (c *Client) GetFinancialReport(ctx context.Context, reportID string) (*Fina
 	if err := ValidateResourceID(reportID, "report"); err != nil {
 		return nil, err
 	}
-	resp, err := c.Get(ctx, "/api/v1/finance/financial_reports/"+url.PathEscape(reportID))
+	path := "/api/v1/finance/financial_reports/" + url.PathEscape(reportID)
+	resp, err := c.Get(ctx, path)
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +135,7 @@ func (c *Client) GetFinancialReport(ctx context.Context, reportID string) (*Fina
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("GET", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var report FinancialReport
@@ -149,7 +151,8 @@ func (c *Client) DownloadFinancialReport(ctx context.Context, reportID string) (
 	if err := ValidateResourceID(reportID, "report"); err != nil {
 		return nil, "", err
 	}
-	resp, err := c.Get(ctx, "/api/v1/finance/financial_reports/"+url.PathEscape(reportID)+"/content")
+	path := "/api/v1/finance/financial_reports/" + url.PathEscape(reportID) + "/content"
+	resp, err := c.Get(ctx, path)
 	if err != nil {
 		return nil, "", err
 	}
@@ -157,7 +160,7 @@ func (c *Client) DownloadFinancialReport(ctx context.Context, reportID string) (
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, "", ParseAPIError(body)
+		return nil, "", WrapError("GET", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	content, err := io.ReadAll(resp.Body)

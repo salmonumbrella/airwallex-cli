@@ -141,7 +141,7 @@ func (c *Client) ListCards(ctx context.Context, status, cardholderID string, pag
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("GET", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var result CardsResponse
@@ -156,7 +156,8 @@ func (c *Client) GetCard(ctx context.Context, cardID string) (*Card, error) {
 	if err := ValidateResourceID(cardID, "card"); err != nil {
 		return nil, err
 	}
-	resp, err := c.Get(ctx, "/api/v1/issuing/cards/"+url.PathEscape(cardID))
+	path := "/api/v1/issuing/cards/" + url.PathEscape(cardID)
+	resp, err := c.Get(ctx, path)
 	if err != nil {
 		return nil, err
 	}
@@ -164,7 +165,7 @@ func (c *Client) GetCard(ctx context.Context, cardID string) (*Card, error) {
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("GET", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var card Card
@@ -179,7 +180,8 @@ func (c *Client) GetCardDetails(ctx context.Context, cardID string) (*CardDetail
 	if err := ValidateResourceID(cardID, "card"); err != nil {
 		return nil, err
 	}
-	resp, err := c.Get(ctx, "/api/v1/issuing/cards/"+url.PathEscape(cardID)+"/details")
+	path := "/api/v1/issuing/cards/" + url.PathEscape(cardID) + "/details"
+	resp, err := c.Get(ctx, path)
 	if err != nil {
 		return nil, err
 	}
@@ -187,7 +189,7 @@ func (c *Client) GetCardDetails(ctx context.Context, cardID string) (*CardDetail
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("GET", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var details CardDetails
@@ -202,7 +204,8 @@ func (c *Client) GetCardLimits(ctx context.Context, cardID string) (*CardLimits,
 	if err := ValidateResourceID(cardID, "card"); err != nil {
 		return nil, err
 	}
-	resp, err := c.Get(ctx, "/api/v1/issuing/cards/"+url.PathEscape(cardID)+"/limits")
+	path := "/api/v1/issuing/cards/" + url.PathEscape(cardID) + "/limits"
+	resp, err := c.Get(ctx, path)
 	if err != nil {
 		return nil, err
 	}
@@ -210,7 +213,7 @@ func (c *Client) GetCardLimits(ctx context.Context, cardID string) (*CardLimits,
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("GET", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var limits CardLimits
@@ -225,7 +228,8 @@ func (c *Client) UpdateCard(ctx context.Context, cardID string, update map[strin
 	if err := ValidateResourceID(cardID, "card"); err != nil {
 		return nil, err
 	}
-	resp, err := c.Post(ctx, "/api/v1/issuing/cards/"+url.PathEscape(cardID)+"/update", update)
+	path := "/api/v1/issuing/cards/" + url.PathEscape(cardID) + "/update"
+	resp, err := c.Post(ctx, path, update)
 	if err != nil {
 		return nil, err
 	}
@@ -233,7 +237,7 @@ func (c *Client) UpdateCard(ctx context.Context, cardID string, update map[strin
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("POST", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var card Card
@@ -251,7 +255,8 @@ func (c *Client) ActivateCard(ctx context.Context, cardID string) (*Card, error)
 	if err := ValidateResourceID(cardID, "card"); err != nil {
 		return nil, err
 	}
-	resp, err := c.Post(ctx, "/api/v1/issuing/cards/"+url.PathEscape(cardID)+"/activate", nil)
+	path := "/api/v1/issuing/cards/" + url.PathEscape(cardID) + "/activate"
+	resp, err := c.Post(ctx, path, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -259,7 +264,7 @@ func (c *Client) ActivateCard(ctx context.Context, cardID string) (*Card, error)
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("POST", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var card Card
@@ -274,7 +279,8 @@ func (c *Client) CreateCard(ctx context.Context, req map[string]interface{}) (*C
 	ctx, cancel := withDefaultTimeout(ctx)
 	defer cancel()
 
-	resp, err := c.Post(ctx, "/api/v1/issuing/cards/create", req)
+	path := "/api/v1/issuing/cards/create"
+	resp, err := c.Post(ctx, path, req)
 	if err != nil {
 		return nil, err
 	}
@@ -284,7 +290,7 @@ func (c *Client) CreateCard(ctx context.Context, req map[string]interface{}) (*C
 
 	// Accept 200, 201, and 202 (Accepted) as success
 	if resp.StatusCode != 200 && resp.StatusCode != 201 && resp.StatusCode != 202 {
-		return nil, ParseAPIError(body)
+		return nil, WrapError("POST", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var card Card
@@ -319,7 +325,7 @@ func (c *Client) ListCardholders(ctx context.Context, pageNum, pageSize int) (*C
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("GET", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var result CardholdersResponse
@@ -334,7 +340,8 @@ func (c *Client) GetCardholder(ctx context.Context, cardholderID string) (*Cardh
 	if err := ValidateResourceID(cardholderID, "cardholder"); err != nil {
 		return nil, err
 	}
-	resp, err := c.Get(ctx, "/api/v1/issuing/cardholders/"+url.PathEscape(cardholderID))
+	path := "/api/v1/issuing/cardholders/" + url.PathEscape(cardholderID)
+	resp, err := c.Get(ctx, path)
 	if err != nil {
 		return nil, err
 	}
@@ -342,7 +349,7 @@ func (c *Client) GetCardholder(ctx context.Context, cardholderID string) (*Cardh
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("GET", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var ch Cardholder
@@ -354,7 +361,8 @@ func (c *Client) GetCardholder(ctx context.Context, cardholderID string) (*Cardh
 
 // CreateCardholder creates a new cardholder
 func (c *Client) CreateCardholder(ctx context.Context, req map[string]interface{}) (*Cardholder, error) {
-	resp, err := c.Post(ctx, "/api/v1/issuing/cardholders/create", req)
+	path := "/api/v1/issuing/cardholders/create"
+	resp, err := c.Post(ctx, path, req)
 	if err != nil {
 		return nil, err
 	}
@@ -362,7 +370,7 @@ func (c *Client) CreateCardholder(ctx context.Context, req map[string]interface{
 
 	if resp.StatusCode != 200 && resp.StatusCode != 201 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("POST", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var ch Cardholder
@@ -377,7 +385,8 @@ func (c *Client) UpdateCardholder(ctx context.Context, cardholderID string, upda
 	if err := ValidateResourceID(cardholderID, "cardholder"); err != nil {
 		return nil, err
 	}
-	resp, err := c.Post(ctx, "/api/v1/issuing/cardholders/"+url.PathEscape(cardholderID)+"/update", update)
+	path := "/api/v1/issuing/cardholders/" + url.PathEscape(cardholderID) + "/update"
+	resp, err := c.Post(ctx, path, update)
 	if err != nil {
 		return nil, err
 	}
@@ -385,7 +394,7 @@ func (c *Client) UpdateCardholder(ctx context.Context, cardholderID string, upda
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("POST", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var ch Cardholder
@@ -434,7 +443,7 @@ func (c *Client) ListTransactions(ctx context.Context, cardID string, from, to s
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("GET", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var result TransactionsResponse
@@ -449,7 +458,8 @@ func (c *Client) GetTransaction(ctx context.Context, transactionID string) (*Tra
 	if err := ValidateResourceID(transactionID, "transaction"); err != nil {
 		return nil, err
 	}
-	resp, err := c.Get(ctx, "/api/v1/issuing/transactions/"+url.PathEscape(transactionID))
+	path := "/api/v1/issuing/transactions/" + url.PathEscape(transactionID)
+	resp, err := c.Get(ctx, path)
 	if err != nil {
 		return nil, err
 	}
@@ -457,7 +467,7 @@ func (c *Client) GetTransaction(ctx context.Context, transactionID string) (*Tra
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("GET", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var txn Transaction

@@ -50,7 +50,7 @@ func (c *Client) ListPaymentLinks(ctx context.Context, pageNum, pageSize int) (*
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("GET", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var result PaymentLinksResponse
@@ -66,7 +66,8 @@ func (c *Client) GetPaymentLink(ctx context.Context, linkID string) (*PaymentLin
 		return nil, err
 	}
 
-	resp, err := c.Get(ctx, "/api/v1/pa/payment_links/"+url.PathEscape(linkID))
+	path := "/api/v1/pa/payment_links/" + url.PathEscape(linkID)
+	resp, err := c.Get(ctx, path)
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +75,7 @@ func (c *Client) GetPaymentLink(ctx context.Context, linkID string) (*PaymentLin
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("GET", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var pl PaymentLink
@@ -89,7 +90,8 @@ func (c *Client) CreatePaymentLink(ctx context.Context, req map[string]interface
 	ctx, cancel := withDefaultTimeout(ctx)
 	defer cancel()
 
-	resp, err := c.Post(ctx, "/api/v1/pa/payment_links/create", req)
+	path := "/api/v1/pa/payment_links/create"
+	resp, err := c.Post(ctx, path, req)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +99,7 @@ func (c *Client) CreatePaymentLink(ctx context.Context, req map[string]interface
 
 	if resp.StatusCode != 200 && resp.StatusCode != 201 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("POST", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var pl PaymentLink

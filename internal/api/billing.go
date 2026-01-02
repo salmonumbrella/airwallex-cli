@@ -245,7 +245,7 @@ func (c *Client) ListBillingCustomers(ctx context.Context, params BillingCustome
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("GET", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var result BillingCustomersResponse
@@ -261,7 +261,8 @@ func (c *Client) GetBillingCustomer(ctx context.Context, customerID string) (*Bi
 		return nil, err
 	}
 
-	resp, err := c.Get(ctx, "/api/v1/pa/customers/"+url.PathEscape(customerID))
+	path := "/api/v1/pa/customers/" + url.PathEscape(customerID)
+	resp, err := c.Get(ctx, path)
 	if err != nil {
 		return nil, err
 	}
@@ -269,7 +270,7 @@ func (c *Client) GetBillingCustomer(ctx context.Context, customerID string) (*Bi
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("GET", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var customer BillingCustomer
@@ -292,7 +293,7 @@ func (c *Client) CreateBillingCustomer(ctx context.Context, req map[string]inter
 
 	if resp.StatusCode != 200 && resp.StatusCode != 201 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("POST", Endpoints.BillingCustomersCreate.Path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var customer BillingCustomer
@@ -308,7 +309,8 @@ func (c *Client) UpdateBillingCustomer(ctx context.Context, customerID string, r
 		return nil, err
 	}
 
-	resp, err := c.Post(ctx, "/api/v1/pa/customers/"+url.PathEscape(customerID)+"/update", req)
+	path := "/api/v1/pa/customers/" + url.PathEscape(customerID) + "/update"
+	resp, err := c.Post(ctx, path, req)
 	if err != nil {
 		return nil, err
 	}
@@ -316,7 +318,7 @@ func (c *Client) UpdateBillingCustomer(ctx context.Context, customerID string, r
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("POST", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var customer BillingCustomer
@@ -345,7 +347,7 @@ func (c *Client) ListBillingProducts(ctx context.Context, params BillingProductL
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("GET", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var result BillingProductsResponse
@@ -361,7 +363,8 @@ func (c *Client) GetBillingProduct(ctx context.Context, productID string) (*Bill
 		return nil, err
 	}
 
-	resp, err := c.Get(ctx, "/api/v1/products/"+url.PathEscape(productID))
+	path := "/api/v1/products/" + url.PathEscape(productID)
+	resp, err := c.Get(ctx, path)
 	if err != nil {
 		return nil, err
 	}
@@ -369,7 +372,7 @@ func (c *Client) GetBillingProduct(ctx context.Context, productID string) (*Bill
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("GET", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var product BillingProduct
@@ -392,7 +395,7 @@ func (c *Client) CreateBillingProduct(ctx context.Context, req map[string]interf
 
 	if resp.StatusCode != 200 && resp.StatusCode != 201 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("POST", Endpoints.BillingProductsCreate.Path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var product BillingProduct
@@ -408,7 +411,8 @@ func (c *Client) UpdateBillingProduct(ctx context.Context, productID string, req
 		return nil, err
 	}
 
-	resp, err := c.Post(ctx, "/api/v1/products/"+url.PathEscape(productID)+"/update", req)
+	path := "/api/v1/products/" + url.PathEscape(productID) + "/update"
+	resp, err := c.Post(ctx, path, req)
 	if err != nil {
 		return nil, err
 	}
@@ -416,7 +420,7 @@ func (c *Client) UpdateBillingProduct(ctx context.Context, productID string, req
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("POST", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var product BillingProduct
@@ -457,7 +461,7 @@ func (c *Client) ListBillingPrices(ctx context.Context, params BillingPriceListP
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("GET", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var result BillingPricesResponse
@@ -473,7 +477,8 @@ func (c *Client) GetBillingPrice(ctx context.Context, priceID string) (*BillingP
 		return nil, err
 	}
 
-	resp, err := c.Get(ctx, "/api/v1/prices/"+url.PathEscape(priceID))
+	path := "/api/v1/prices/" + url.PathEscape(priceID)
+	resp, err := c.Get(ctx, path)
 	if err != nil {
 		return nil, err
 	}
@@ -481,7 +486,7 @@ func (c *Client) GetBillingPrice(ctx context.Context, priceID string) (*BillingP
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("GET", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var price BillingPrice
@@ -504,7 +509,7 @@ func (c *Client) CreateBillingPrice(ctx context.Context, req map[string]interfac
 
 	if resp.StatusCode != 200 && resp.StatusCode != 201 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("POST", Endpoints.BillingPricesCreate.Path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var price BillingPrice
@@ -520,7 +525,8 @@ func (c *Client) UpdateBillingPrice(ctx context.Context, priceID string, req map
 		return nil, err
 	}
 
-	resp, err := c.Post(ctx, "/api/v1/prices/"+url.PathEscape(priceID)+"/update", req)
+	path := "/api/v1/prices/" + url.PathEscape(priceID) + "/update"
+	resp, err := c.Post(ctx, path, req)
 	if err != nil {
 		return nil, err
 	}
@@ -528,7 +534,7 @@ func (c *Client) UpdateBillingPrice(ctx context.Context, priceID string, req map
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("POST", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var price BillingPrice
@@ -571,7 +577,7 @@ func (c *Client) ListBillingInvoices(ctx context.Context, params BillingInvoiceL
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("GET", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var result BillingInvoicesResponse
@@ -587,7 +593,8 @@ func (c *Client) GetBillingInvoice(ctx context.Context, invoiceID string) (*Bill
 		return nil, err
 	}
 
-	resp, err := c.Get(ctx, "/api/v1/invoices/"+url.PathEscape(invoiceID))
+	path := "/api/v1/invoices/" + url.PathEscape(invoiceID)
+	resp, err := c.Get(ctx, path)
 	if err != nil {
 		return nil, err
 	}
@@ -595,7 +602,7 @@ func (c *Client) GetBillingInvoice(ctx context.Context, invoiceID string) (*Bill
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("GET", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var invoice BillingInvoice
@@ -618,7 +625,7 @@ func (c *Client) CreateBillingInvoice(ctx context.Context, req map[string]interf
 
 	if resp.StatusCode != 200 && resp.StatusCode != 201 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("POST", Endpoints.BillingInvoicesCreate.Path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var invoice BillingInvoice
@@ -641,7 +648,7 @@ func (c *Client) PreviewBillingInvoice(ctx context.Context, req map[string]inter
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("POST", Endpoints.BillingInvoicesPreview.Path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var preview BillingInvoicePreview
@@ -672,7 +679,7 @@ func (c *Client) ListBillingInvoiceItems(ctx context.Context, invoiceID string, 
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("GET", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var result BillingInvoiceItemsResponse
@@ -700,7 +707,7 @@ func (c *Client) GetBillingInvoiceItem(ctx context.Context, invoiceID, itemID st
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("GET", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var item BillingInvoiceItem
@@ -746,7 +753,7 @@ func (c *Client) ListBillingSubscriptions(ctx context.Context, params BillingSub
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("GET", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var result BillingSubscriptionsResponse
@@ -762,7 +769,8 @@ func (c *Client) GetBillingSubscription(ctx context.Context, subscriptionID stri
 		return nil, err
 	}
 
-	resp, err := c.Get(ctx, "/api/v1/subscriptions/"+url.PathEscape(subscriptionID))
+	path := "/api/v1/subscriptions/" + url.PathEscape(subscriptionID)
+	resp, err := c.Get(ctx, path)
 	if err != nil {
 		return nil, err
 	}
@@ -770,7 +778,7 @@ func (c *Client) GetBillingSubscription(ctx context.Context, subscriptionID stri
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("GET", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var sub BillingSubscription
@@ -793,7 +801,7 @@ func (c *Client) CreateBillingSubscription(ctx context.Context, req map[string]i
 
 	if resp.StatusCode != 200 && resp.StatusCode != 201 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("POST", Endpoints.BillingSubscriptionsCreate.Path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var sub BillingSubscription
@@ -809,7 +817,8 @@ func (c *Client) UpdateBillingSubscription(ctx context.Context, subscriptionID s
 		return nil, err
 	}
 
-	resp, err := c.Post(ctx, "/api/v1/subscriptions/"+url.PathEscape(subscriptionID)+"/update", req)
+	path := "/api/v1/subscriptions/" + url.PathEscape(subscriptionID) + "/update"
+	resp, err := c.Post(ctx, path, req)
 	if err != nil {
 		return nil, err
 	}
@@ -817,7 +826,7 @@ func (c *Client) UpdateBillingSubscription(ctx context.Context, subscriptionID s
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("POST", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var sub BillingSubscription
@@ -833,7 +842,8 @@ func (c *Client) CancelBillingSubscription(ctx context.Context, subscriptionID s
 		return nil, err
 	}
 
-	resp, err := c.Post(ctx, "/api/v1/subscriptions/"+url.PathEscape(subscriptionID)+"/cancel", req)
+	path := "/api/v1/subscriptions/" + url.PathEscape(subscriptionID) + "/cancel"
+	resp, err := c.Post(ctx, path, req)
 	if err != nil {
 		return nil, err
 	}
@@ -841,7 +851,7 @@ func (c *Client) CancelBillingSubscription(ctx context.Context, subscriptionID s
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("POST", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var sub BillingSubscription
@@ -872,7 +882,7 @@ func (c *Client) ListBillingSubscriptionItems(ctx context.Context, subscriptionI
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("GET", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var result BillingSubscriptionItemsResponse
@@ -900,7 +910,7 @@ func (c *Client) GetBillingSubscriptionItem(ctx context.Context, subscriptionID,
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("GET", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var item BillingSubscriptionItem

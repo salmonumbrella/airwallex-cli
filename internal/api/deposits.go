@@ -61,7 +61,7 @@ func (c *Client) ListDeposits(ctx context.Context, status, fromDate, toDate stri
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("GET", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var result DepositsResponse
@@ -77,7 +77,8 @@ func (c *Client) GetDeposit(ctx context.Context, depositID string) (*Deposit, er
 		return nil, err
 	}
 
-	resp, err := c.Get(ctx, "/api/v1/deposits/"+url.PathEscape(depositID))
+	path := "/api/v1/deposits/" + url.PathEscape(depositID)
+	resp, err := c.Get(ctx, path)
 	if err != nil {
 		return nil, err
 	}
@@ -85,7 +86,7 @@ func (c *Client) GetDeposit(ctx context.Context, depositID string) (*Deposit, er
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, ParseAPIError(body)
+		return nil, WrapError("GET", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var d Deposit
