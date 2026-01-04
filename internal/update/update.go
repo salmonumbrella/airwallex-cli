@@ -11,11 +11,18 @@ import (
 )
 
 const (
-	// GitHubReleasesURL is the API endpoint for releases
-	GitHubReleasesURL = "https://api.github.com/repos/salmonumbrella/airwallex-cli/releases/latest"
+	// DefaultReleasesURL is the default API endpoint for releases
+	DefaultReleasesURL = "https://api.github.com/repos/salmonumbrella/airwallex-cli/releases/latest"
+	// GitHubReleasesURL is kept for backwards compatibility
+	GitHubReleasesURL = DefaultReleasesURL
 	// CheckTimeout is the timeout for version check
 	CheckTimeout = 5 * time.Second
 )
+
+// HTTPClient defines the interface for HTTP operations
+type HTTPClient interface {
+	Do(req *http.Request) (*http.Response, error)
+}
 
 // Release represents a GitHub release
 type Release struct {
@@ -31,25 +38,66 @@ type CheckResult struct {
 	UpdateAvailable bool
 }
 
+// Checker provides configurable update checking functionality
+type Checker struct {
+	HTTPClient  HTTPClient
+	ReleasesURL string
+	Timeout     time.Duration
+}
+
+// NewChecker creates a new Checker with default settings
+func NewChecker() *Checker {
+	return &Checker{
+		HTTPClient:  http.DefaultClient,
+		ReleasesURL: DefaultReleasesURL,
+		Timeout:     CheckTimeout,
+	}
+}
+
+// defaultChecker is the package-level checker instance
+var defaultChecker = NewChecker()
+
 // CheckForUpdate checks if a newer version is available on GitHub.
 // Returns nil if the check fails (network error, etc.) - never blocks the CLI.
+// This is a convenience function that uses the default checker.
 func CheckForUpdate(ctx context.Context, currentVersion string) *CheckResult {
+	return defaultChecker.Check(ctx, currentVersion)
+}
+
+// Check checks if a newer version is available on GitHub.
+// Returns nil if the check fails (network error, etc.) - never blocks the CLI.
+func (c *Checker) Check(ctx context.Context, currentVersion string) *CheckResult {
 	// Don't check dev builds
 	if currentVersion == "dev" || currentVersion == "" {
 		return nil
 	}
 
-	ctx, cancel := context.WithTimeout(ctx, CheckTimeout)
+	timeout := c.Timeout
+	if timeout == 0 {
+		timeout = CheckTimeout
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(ctx, "GET", GitHubReleasesURL, nil)
+	releasesURL := c.ReleasesURL
+	if releasesURL == "" {
+		releasesURL = DefaultReleasesURL
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "GET", releasesURL, nil)
 	if err != nil {
 		return nil
 	}
 	req.Header.Set("Accept", "application/vnd.github.v3+json")
 	req.Header.Set("User-Agent", "airwallex-cli/"+currentVersion)
 
-	resp, err := http.DefaultClient.Do(req)
+	client := c.HTTPClient
+	if client == nil {
+		client = http.DefaultClient
+	}
+
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil
 	}
