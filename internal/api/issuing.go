@@ -79,10 +79,11 @@ type Cardholder struct {
 	CreatedAt    string `json:"created_at"`
 }
 
-// UnmarshalJSON implements custom unmarshaling to handle nested individual.name fields
+// UnmarshalJSON implements custom unmarshaling to handle both nested individual.name
+// and flat first_name/last_name structures from the Airwallex API.
 func (c *Cardholder) UnmarshalJSON(data []byte) error {
-	// First try to unmarshal with the nested structure
-	type nestedCardholder struct {
+	// Type alias with both nested and flat name fields
+	type cardholderAlias struct {
 		CardholderID string `json:"cardholder_id"`
 		Type         string `json:"type"`
 		Email        string `json:"email"`
@@ -93,23 +94,32 @@ func (c *Cardholder) UnmarshalJSON(data []byte) error {
 				LastName  string `json:"last_name"`
 			} `json:"name"`
 		} `json:"individual"`
+		// Flat name fields (fallback if nested is empty)
+		FirstName string `json:"first_name"`
+		LastName  string `json:"last_name"`
 		Status    string `json:"status"`
 		CreatedAt string `json:"created_at"`
 	}
 
-	var nested nestedCardholder
-	if err := json.Unmarshal(data, &nested); err != nil {
+	var alias cardholderAlias
+	if err := json.Unmarshal(data, &alias); err != nil {
 		return err
 	}
 
-	c.CardholderID = nested.CardholderID
-	c.Type = nested.Type
-	c.Email = nested.Email
-	c.MobileNumber = nested.MobileNumber
-	c.FirstName = nested.Individual.Name.FirstName
-	c.LastName = nested.Individual.Name.LastName
-	c.Status = nested.Status
-	c.CreatedAt = nested.CreatedAt
+	c.CardholderID = alias.CardholderID
+	c.Type = alias.Type
+	c.Email = alias.Email
+	c.MobileNumber = alias.MobileNumber
+	c.Status = alias.Status
+	c.CreatedAt = alias.CreatedAt
+
+	// Prefer nested individual.name, fall back to flat fields
+	c.FirstName = alias.Individual.Name.FirstName
+	c.LastName = alias.Individual.Name.LastName
+	if c.FirstName == "" && c.LastName == "" {
+		c.FirstName = alias.FirstName
+		c.LastName = alias.LastName
+	}
 
 	return nil
 }
