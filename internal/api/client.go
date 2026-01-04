@@ -62,6 +62,11 @@ const (
 	CircuitBreakerResetTime = 30 * time.Second
 )
 
+var (
+	rateLimitBaseDelay    = RateLimitBaseDelay
+	serverErrorRetryDelay = ServerErrorRetryDelay
+)
+
 // financialEndpoints contains all endpoints that require idempotency keys.
 // This list is defined at package level to avoid allocating a new slice on every call.
 var financialEndpoints = []Endpoint{
@@ -89,6 +94,28 @@ func closeBody(resp *http.Response) {
 			slog.Debug("failed to close response body", "error", err)
 		}
 	}
+}
+
+// parseRetryAfter computes a delay from Retry-After header.
+// Supports seconds or HTTP-date formats. Returns ok=false if header is invalid.
+func parseRetryAfter(header string, now time.Time) (delay time.Duration, ok bool) {
+	header = strings.TrimSpace(header)
+	if header == "" {
+		return 0, false
+	}
+	if seconds, err := strconv.Atoi(header); err == nil {
+		if seconds < 0 {
+			return 0, false
+		}
+		return time.Duration(seconds) * time.Second, true
+	}
+	if t, err := http.ParseTime(header); err == nil {
+		if t.Before(now) {
+			return 0, true
+		}
+		return t.Sub(now), true
+	}
+	return 0, false
 }
 
 type circuitBreaker struct {
@@ -154,37 +181,31 @@ type TokenCache struct {
 }
 
 func NewClient(clientID, apiKey string) (*Client, error) {
-	if !strings.HasPrefix(BaseURL, "https://") {
-		return nil, fmt.Errorf("api base URL must use HTTPS")
-	}
-	return &Client{
-		baseURL:  BaseURL,
-		clientID: clientID,
-		apiKey:   apiKey,
-		httpClient: &http.Client{
-			Timeout: DefaultHTTPTimeout,
-			Transport: &http.Transport{
-				MaxIdleConns:    MaxIdleConns,
-				MaxConnsPerHost: MaxConnsPerHost,
-				IdleConnTimeout: IdleConnTimeout,
-				TLSClientConfig: &tls.Config{
-					MinVersion:         tls.VersionTLS12,
-					InsecureSkipVerify: false, // Explicit: always verify certificates
-				},
-			},
-		},
-		circuitBreaker: &circuitBreaker{},
-	}, nil
+	return newClient(BaseURL, clientID, apiKey, "", true)
 }
 
 // NewClientWithAccount creates a client with an account ID for x-login-as header.
 // Use this when your API key has access to multiple accounts.
 func NewClientWithAccount(clientID, apiKey, accountID string) (*Client, error) {
-	if !strings.HasPrefix(BaseURL, "https://") {
-		return nil, fmt.Errorf("api base URL must use HTTPS")
+	return newClient(BaseURL, clientID, apiKey, accountID, true)
+}
+
+// NewClientWithBaseURL creates a client with a custom base URL (primarily for tests).
+func NewClientWithBaseURL(baseURL, clientID, apiKey string) (*Client, error) {
+	return newClient(baseURL, clientID, apiKey, "", false)
+}
+
+// NewClientWithBaseURLAndAccount creates a client with a custom base URL and account ID.
+func NewClientWithBaseURLAndAccount(baseURL, clientID, apiKey, accountID string) (*Client, error) {
+	return newClient(baseURL, clientID, apiKey, accountID, false)
+}
+
+func newClient(baseURL, clientID, apiKey, accountID string, requireHTTPS bool) (*Client, error) {
+	if err := validateBaseURL(baseURL, requireHTTPS); err != nil {
+		return nil, err
 	}
 	return &Client{
-		baseURL:   BaseURL,
+		baseURL:   baseURL,
 		clientID:  clientID,
 		apiKey:    apiKey,
 		accountID: accountID,
@@ -202,6 +223,22 @@ func NewClientWithAccount(clientID, apiKey, accountID string) (*Client, error) {
 		},
 		circuitBreaker: &circuitBreaker{},
 	}, nil
+}
+
+func validateBaseURL(baseURL string, requireHTTPS bool) error {
+	if baseURL == "" {
+		return fmt.Errorf("api base URL cannot be empty")
+	}
+	if strings.HasPrefix(baseURL, "https://") {
+		return nil
+	}
+	if requireHTTPS {
+		return fmt.Errorf("api base URL must use HTTPS")
+	}
+	if strings.HasPrefix(baseURL, "http://") {
+		return nil
+	}
+	return fmt.Errorf("api base URL must start with http:// or https://")
 }
 
 func (c *Client) Do(ctx context.Context, req *http.Request) (*http.Response, error) {
@@ -279,18 +316,19 @@ func (c *Client) doWithRetry(ctx context.Context, req *http.Request) (*http.Resp
 				return resp, nil
 			}
 
-			// Calculate backoff: 1s, 2s, 4s with jitter
-			baseDelay := RateLimitBaseDelay * time.Duration(1<<retries429)
+			// Calculate backoff: base, 2x, 4x with jitter
+			baseDelay := rateLimitBaseDelay
+			if baseDelay <= 0 {
+				baseDelay = RateLimitBaseDelay
+			}
+			baseDelay *= time.Duration(1 << retries429)
 			//nolint:gosec // G404: jitter doesn't need crypto-strength randomness
 			jitter := time.Duration(mathrand.Int63n(int64(baseDelay / 2)))
 			delay := baseDelay + jitter
 
-			// Check for Retry-After header (can be seconds or HTTP date)
-			if retryAfter := resp.Header.Get("Retry-After"); retryAfter != "" {
-				if seconds, err := strconv.Atoi(retryAfter); err == nil {
-					delay = time.Duration(seconds) * time.Second
-				}
-				// Could also parse HTTP date format, but seconds is more common
+			// Check for Retry-After header (seconds or HTTP date)
+			if retryAfterDelay, ok := parseRetryAfter(resp.Header.Get("Retry-After"), time.Now()); ok {
+				delay = retryAfterDelay
 			}
 
 			slog.Info("rate limited, retrying", "delay", delay, "attempt", retries429+1, "max_retries", MaxRateLimitRetries)
@@ -337,7 +375,11 @@ func (c *Client) doWithRetry(ctx context.Context, req *http.Request) (*http.Resp
 				return resp, nil
 			}
 
-			slog.Info("retrying after server error", "status", resp.StatusCode, "attempt", retries5xx+1, "delay", ServerErrorRetryDelay)
+			delay := serverErrorRetryDelay
+			if delay <= 0 {
+				delay = ServerErrorRetryDelay
+			}
+			slog.Info("retrying after server error", "status", resp.StatusCode, "attempt", retries5xx+1, "delay", delay)
 
 			closeBody(resp)
 
@@ -349,7 +391,13 @@ func (c *Client) doWithRetry(ctx context.Context, req *http.Request) (*http.Resp
 				}
 			}
 
-			time.Sleep(ServerErrorRetryDelay)
+			// Context-aware sleep for cancellation support
+			select {
+			case <-time.After(delay):
+				// Continue with retry
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			}
 			retries5xx++
 			continue
 		}

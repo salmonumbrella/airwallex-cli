@@ -2,6 +2,7 @@ package batch
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -64,7 +65,8 @@ func parseJSON(r io.Reader) ([]map[string]interface{}, error) {
 
 	// Try parsing as NDJSON (newline-delimited JSON)
 	items = nil
-	scanner := bufio.NewScanner(strings.NewReader(string(data)))
+	scanner := bufio.NewScanner(bytes.NewReader(data))
+	scanner.Buffer(make([]byte, 0, 64*1024), MaxInputSize)
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 		if line == "" {

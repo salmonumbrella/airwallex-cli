@@ -127,7 +127,7 @@ Examples:
 			}
 
 			if to != "" {
-				toRFC3339, err = convertDateToRFC3339(to)
+				toRFC3339, err = convertDateToRFC3339End(to)
 				if err != nil {
 					return ListResult[api.BalanceHistoryItem]{}, fmt.Errorf("invalid --to date: %w", err)
 				}

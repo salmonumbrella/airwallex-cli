@@ -78,3 +78,21 @@ func TestParseJSON_MaxItemCount(t *testing.T) {
 		t.Errorf("expected 'too many' error, got: %v", err)
 	}
 }
+
+func TestParseJSON_NDJSONLargeLine(t *testing.T) {
+	largeValue := strings.Repeat("a", 70*1024) // >64KB default scanner token
+	input := fmt.Sprintf("{\"data\":%q}\n", largeValue)
+	reader := strings.NewReader(input)
+
+	items, err := parseJSON(reader)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(items) != 1 {
+		t.Errorf("expected 1 item, got %d", len(items))
+	}
+	if items[0]["data"] != largeValue {
+		t.Errorf("expected data length %d, got %d", len(largeValue), len(items[0]["data"].(string)))
+	}
+}

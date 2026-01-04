@@ -87,14 +87,14 @@ Examples:
 			}
 
 			if to != "" {
-				toRFC3339, err = convertDateToRFC3339(to)
+				toRFC3339, err = convertDateToRFC3339End(to)
 				if err != nil {
 					return fmt.Errorf("invalid --to date: %w", err)
 				}
 			}
 
 			if pageSize < 10 {
-				return fmt.Errorf("--page-size must be at least 10 (got %d)", pageSize)
+				pageSize = 10
 			}
 
 			result, err := client.ListTransactions(cmd.Context(), cardID, fromRFC3339, toRFC3339, page, pageSize)

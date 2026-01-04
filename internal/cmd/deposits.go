@@ -49,7 +49,7 @@ Examples:
 			}
 
 			if pageSize < 10 {
-				return fmt.Errorf("--page-size must be at least 10 (got %d)", pageSize)
+				pageSize = 10
 			}
 
 			client, err := getClient(cmd.Context())

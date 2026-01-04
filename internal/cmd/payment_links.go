@@ -34,7 +34,7 @@ func newPaymentLinksListCmd() *cobra.Command {
 		Short: "List payment links",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if pageSize < 10 {
-				return fmt.Errorf("--page-size must be at least 10 (got %d)", pageSize)
+				pageSize = 10
 			}
 
 			client, err := getClient(cmd.Context())

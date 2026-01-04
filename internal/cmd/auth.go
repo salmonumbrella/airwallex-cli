@@ -13,7 +13,6 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 
-	"github.com/salmonumbrella/airwallex-cli/internal/api"
 	"github.com/salmonumbrella/airwallex-cli/internal/auth"
 	"github.com/salmonumbrella/airwallex-cli/internal/outfmt"
 	"github.com/salmonumbrella/airwallex-cli/internal/secrets"
@@ -257,12 +256,7 @@ func newAuthTestCmd() *cobra.Command {
 			u.Info(fmt.Sprintf("Testing account: %s (client_id: %s)", account, creds.ClientID))
 
 			// Actually test the credentials by fetching a token
-			var client *api.Client
-			if creds.AccountID != "" {
-				client, err = api.NewClientWithAccount(creds.ClientID, creds.APIKey, creds.AccountID)
-			} else {
-				client, err = api.NewClient(creds.ClientID, creds.APIKey)
-			}
+			client, err := newClientForCreds(creds)
 			if err != nil {
 				u.Error(fmt.Sprintf("Failed to create client: %v", err))
 				return err

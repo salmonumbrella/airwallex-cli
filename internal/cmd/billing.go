@@ -117,7 +117,7 @@ func newBillingCustomersListCmd() *cobra.Command {
 			toRFC3339 := ""
 			if to != "" {
 				var err error
-				toRFC3339, err = convertDateToRFC3339(to)
+				toRFC3339, err = convertDateToRFC3339End(to)
 				if err != nil {
 					return ListResult[api.BillingCustomer]{}, fmt.Errorf("invalid --to date: %w", err)
 				}
@@ -694,7 +694,7 @@ func newBillingInvoicesListCmd() *cobra.Command {
 			toRFC3339 := ""
 			if to != "" {
 				var err error
-				toRFC3339, err = convertDateToRFC3339(to)
+				toRFC3339, err = convertDateToRFC3339End(to)
 				if err != nil {
 					return ListResult[api.BillingInvoice]{}, fmt.Errorf("invalid --to date: %w", err)
 				}
@@ -1025,7 +1025,7 @@ func newBillingSubscriptionsListCmd() *cobra.Command {
 			toRFC3339 := ""
 			if to != "" {
 				var err error
-				toRFC3339, err = convertDateToRFC3339(to)
+				toRFC3339, err = convertDateToRFC3339End(to)
 				if err != nil {
 					return ListResult[api.BillingSubscription]{}, fmt.Errorf("invalid --to date: %w", err)
 				}

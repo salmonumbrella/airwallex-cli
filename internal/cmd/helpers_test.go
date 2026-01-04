@@ -95,6 +95,61 @@ func TestConvertDateToRFC3339(t *testing.T) {
 	}
 }
 
+func TestConvertDateToRFC3339End(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   string
+		want    string
+		wantErr bool
+		errMsg  string
+	}{
+		{
+			name:    "valid date",
+			input:   "2024-01-15",
+			want:    "2024-01-15T23:59:59Z",
+			wantErr: false,
+		},
+		{
+			name:    "valid date end of month",
+			input:   "2024-12-31",
+			want:    "2024-12-31T23:59:59Z",
+			wantErr: false,
+		},
+		{
+			name:    "invalid format",
+			input:   "2024/01/15",
+			wantErr: true,
+			errMsg:  "expected format YYYY-MM-DD",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := convertDateToRFC3339End(tt.input)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("expected error containing %q, got nil", tt.errMsg)
+					return
+				}
+				if tt.errMsg != "" && !strings.Contains(err.Error(), tt.errMsg) {
+					t.Errorf("expected error containing %q, got %q", tt.errMsg, err.Error())
+				}
+				return
+			}
+
+			if err != nil {
+				t.Errorf("unexpected error: %v", err)
+				return
+			}
+
+			if got != tt.want {
+				t.Errorf("got %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestConfirmOrYes(t *testing.T) {
 	// Save original isTerminal and restore after tests
 	origIsTerminal := isTerminal

@@ -86,7 +86,7 @@ func newDisputesListCmd() *cobra.Command {
 			toRFC3339 := ""
 			if to != "" {
 				var err error
-				toRFC3339, err = convertDateToRFC3339(to)
+				toRFC3339, err = convertDateToRFC3339End(to)
 				if err != nil {
 					return ListResult[api.TransactionDispute]{}, fmt.Errorf("invalid --to date: %w", err)
 				}
@@ -102,7 +102,7 @@ func newDisputesListCmd() *cobra.Command {
 			toUpdatedRFC3339 := ""
 			if toUpdated != "" {
 				var err error
-				toUpdatedRFC3339, err = convertDateToRFC3339(toUpdated)
+				toUpdatedRFC3339, err = convertDateToRFC3339End(toUpdated)
 				if err != nil {
 					return ListResult[api.TransactionDispute]{}, fmt.Errorf("invalid --to-updated date: %w", err)
 				}

@@ -11,6 +11,16 @@ import (
 	"time"
 )
 
+const (
+	testRateLimitBaseDelay    = 10 * time.Millisecond
+	testServerErrorRetryDelay = 10 * time.Millisecond
+)
+
+func init() {
+	rateLimitBaseDelay = testRateLimitBaseDelay
+	serverErrorRetryDelay = testServerErrorRetryDelay
+}
+
 func TestClient_ensureValidToken_fetchesWhenEmpty(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/api/v1/authentication/login" {
@@ -190,9 +200,10 @@ func TestClient_doWithRetry_retriesOn429WithExponentialBackoff(t *testing.T) {
 		t.Errorf("status = %d, want %d", resp.StatusCode, http.StatusOK)
 	}
 
-	// Verify exponential backoff: 1s + 2s = ~3s (with jitter could be more)
-	if elapsed < 3*time.Second {
-		t.Errorf("elapsed = %v, expected at least 3s for exponential backoff", elapsed)
+	// Verify exponential backoff: base + 2x base (with jitter could be more)
+	minDelay := testRateLimitBaseDelay + (2 * testRateLimitBaseDelay)
+	if elapsed < minDelay {
+		t.Errorf("elapsed = %v, expected at least %v for exponential backoff", elapsed, minDelay)
 	}
 }
 
@@ -239,7 +250,7 @@ func TestClient_doWithRetry_respectsRetryAfterHeader(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		callCount++
 		if callCount == 1 {
-			w.Header().Set("Retry-After", "2")
+			w.Header().Set("Retry-After", "1")
 			w.WriteHeader(http.StatusTooManyRequests)
 			_, _ = w.Write([]byte(`{"error": "rate limit"}`))
 			return
@@ -279,13 +290,67 @@ func TestClient_doWithRetry_respectsRetryAfterHeader(t *testing.T) {
 		t.Errorf("status = %d, want %d", resp.StatusCode, http.StatusOK)
 	}
 
-	// Verify we waited for the Retry-After duration (2 seconds)
-	if elapsed < 2*time.Second {
-		t.Errorf("elapsed = %v, expected at least 2s based on Retry-After header", elapsed)
+	// Verify we waited for the Retry-After duration (1 second)
+	if elapsed < 1*time.Second {
+		t.Errorf("elapsed = %v, expected at least 1s based on Retry-After header", elapsed)
 	}
-	// Should be close to 2s, not the exponential backoff of ~1s
-	if elapsed > 3*time.Second {
-		t.Errorf("elapsed = %v, expected around 2s based on Retry-After header, not exponential backoff", elapsed)
+	// Should be close to 1s, not the exponential backoff of ~10ms
+	if elapsed > 2*time.Second {
+		t.Errorf("elapsed = %v, expected around 1s based on Retry-After header, not exponential backoff", elapsed)
+	}
+}
+
+func TestClient_doWithRetry_respectsRetryAfterHeaderDate(t *testing.T) {
+	callCount := 0
+	var retryAt time.Time
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		callCount++
+		if callCount == 1 {
+			retryAt = time.Now().Add(2 * time.Second).UTC()
+			w.Header().Set("Retry-After", retryAt.Format(http.TimeFormat))
+			w.WriteHeader(http.StatusTooManyRequests)
+			_, _ = w.Write([]byte(`{"error": "rate limit"}`))
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"data": "success"}`))
+	}))
+	defer server.Close()
+
+	c := &Client{
+		baseURL:        server.URL,
+		clientID:       "test-id",
+		apiKey:         "test-key",
+		httpClient:     http.DefaultClient,
+		circuitBreaker: &circuitBreaker{},
+
+		token: &TokenCache{
+			Token:     "test-token",
+			ExpiresAt: time.Now().Add(10 * time.Minute),
+		},
+	}
+
+	req, _ := http.NewRequest("GET", server.URL+"/test", nil)
+	start := time.Now()
+	resp, err := c.doWithRetry(context.Background(), req)
+	elapsed := time.Since(start)
+
+	if err != nil {
+		t.Fatalf("doWithRetry() error: %v", err)
+	}
+	defer closeBody(resp)
+
+	if callCount != 2 {
+		t.Errorf("expected 2 calls (1 retry), got %d", callCount)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("status = %d, want %d", resp.StatusCode, http.StatusOK)
+	}
+	if retryAt.IsZero() {
+		t.Fatalf("retryAt not set by handler")
+	}
+	if elapsed < 1*time.Second {
+		t.Errorf("elapsed = %v, expected delay based on Retry-After date header", elapsed)
 	}
 }
 
@@ -314,9 +379,9 @@ func TestClient_doWithRetry_contextCancellationDuringRetry(t *testing.T) {
 	// Create a context that we'll cancel during retry
 	ctx, cancel := context.WithCancel(context.Background())
 
-	// Cancel after 500ms (during the retry delay)
+	// Cancel after 5ms (during the retry delay)
 	go func() {
-		time.Sleep(500 * time.Millisecond)
+		time.Sleep(5 * time.Millisecond)
 		cancel()
 	}()
 
@@ -333,9 +398,9 @@ func TestClient_doWithRetry_contextCancellationDuringRetry(t *testing.T) {
 		t.Errorf("error = %v, want context.Canceled", err)
 	}
 
-	// Should fail quickly (around 500ms), not wait for full retry delay
-	if elapsed > 1*time.Second {
-		t.Errorf("elapsed = %v, expected cancellation within ~500ms", elapsed)
+	// Should fail quickly, not wait for full retry delay
+	if elapsed > 50*time.Millisecond {
+		t.Errorf("elapsed = %v, expected cancellation within ~50ms", elapsed)
 	}
 
 	// Should have made 1 call before context was cancelled
@@ -388,9 +453,57 @@ func TestClient_doWithRetry_retriesOnce5xx(t *testing.T) {
 		t.Errorf("status = %d, want %d", resp.StatusCode, http.StatusOK)
 	}
 
-	// Verify 1s delay
-	if elapsed < 1*time.Second {
-		t.Errorf("elapsed = %v, expected at least 1s delay", elapsed)
+	// Verify delay
+	if elapsed < testServerErrorRetryDelay {
+		t.Errorf("elapsed = %v, expected at least %v delay", elapsed, testServerErrorRetryDelay)
+	}
+}
+
+func TestClient_doWithRetry_contextCancellationDuring5xxRetry(t *testing.T) {
+	callCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte(`{"error": "server error"}`))
+	}))
+	defer server.Close()
+
+	c := &Client{
+		baseURL:        server.URL,
+		clientID:       "test-id",
+		apiKey:         "test-key",
+		httpClient:     http.DefaultClient,
+		circuitBreaker: &circuitBreaker{},
+
+		token: &TokenCache{
+			Token:     "test-token",
+			ExpiresAt: time.Now().Add(10 * time.Minute),
+		},
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		time.Sleep(5 * time.Millisecond)
+		cancel()
+	}()
+
+	req, _ := http.NewRequest("GET", server.URL+"/test", nil)
+	start := time.Now()
+	resp, err := c.doWithRetry(ctx, req)
+	elapsed := time.Since(start)
+
+	if err == nil {
+		_ = resp.Body.Close()
+		t.Fatal("expected context.Canceled error, got nil")
+	}
+	if err != context.Canceled {
+		t.Errorf("error = %v, want context.Canceled", err)
+	}
+	if elapsed > 50*time.Millisecond {
+		t.Errorf("elapsed = %v, expected cancellation within ~50ms", elapsed)
+	}
+	if callCount != 1 {
+		t.Errorf("expected 1 call before cancellation, got %d", callCount)
 	}
 }
 

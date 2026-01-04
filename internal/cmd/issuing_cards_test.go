@@ -1,11 +1,13 @@
 package cmd
 
 import (
+	"errors"
 	"strings"
 	"testing"
 
 	"github.com/spf13/cobra"
 
+	"github.com/salmonumbrella/airwallex-cli/internal/api"
 	"github.com/salmonumbrella/airwallex-cli/internal/secrets"
 )
 
@@ -118,12 +120,10 @@ func TestCardsCreateValidation(t *testing.T) {
 }
 
 func isExpectedAPIError(err error) bool {
-	msg := err.Error()
-	return strings.Contains(msg, "client") ||
-		strings.Contains(msg, "context") ||
-		strings.Contains(msg, "API") ||
-		strings.Contains(msg, "auth") ||
-		strings.Contains(msg, "403") ||
-		strings.Contains(msg, "401") ||
-		strings.Contains(msg, "Forbidden")
+	var contextual *api.ContextualError
+	if errors.As(err, &contextual) {
+		return true
+	}
+	var apiErr *api.APIError
+	return errors.As(err, &apiErr)
 }

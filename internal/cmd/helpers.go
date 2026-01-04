@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -31,6 +32,14 @@ func mustMarkRequired(cmd *cobra.Command, name string) {
 	}
 }
 
+// newClientForCreds is a variable that can be overridden in tests.
+var newClientForCreds = func(creds secrets.Credentials) (*api.Client, error) {
+	if creds.AccountID != "" {
+		return api.NewClientWithAccount(creds.ClientID, creds.APIKey, creds.AccountID)
+	}
+	return api.NewClient(creds.ClientID, creds.APIKey)
+}
+
 // getClient creates an API client from the current account
 func getClient(ctx context.Context) (*api.Client, error) {
 	account, err := requireAccount(&flags)
@@ -48,10 +57,7 @@ func getClient(ctx context.Context) (*api.Client, error) {
 		return nil, fmt.Errorf("account not found: %s", account)
 	}
 
-	if creds.AccountID != "" {
-		return api.NewClientWithAccount(creds.ClientID, creds.APIKey, creds.AccountID)
-	}
-	return api.NewClient(creds.ClientID, creds.APIKey)
+	return newClientForCreds(creds)
 }
 
 // convertDateToRFC3339 converts a date string in YYYY-MM-DD format to RFC3339 format
@@ -63,6 +69,17 @@ func convertDateToRFC3339(dateStr string) (string, error) {
 	}
 	// Convert to RFC3339 format with UTC timezone
 	return t.UTC().Format(time.RFC3339), nil
+}
+
+// convertDateToRFC3339End converts a date string in YYYY-MM-DD format to RFC3339 format
+// with time set to 23:59:59 UTC (inclusive end-of-day).
+func convertDateToRFC3339End(dateStr string) (string, error) {
+	t, err := time.Parse("2006-01-02", dateStr)
+	if err != nil {
+		return "", fmt.Errorf("expected format YYYY-MM-DD, got %q", dateStr)
+	}
+	endOfDay := t.UTC().Add(24*time.Hour - time.Second)
+	return endOfDay.Format(time.RFC3339), nil
 }
 
 // validateDate validates that a date string is in YYYY-MM-DD format
@@ -200,7 +217,9 @@ func readJSONPayload(data, fromFile string) (map[string]interface{}, error) {
 	}
 
 	var result map[string]interface{}
-	if err := json.Unmarshal(payload, &result); err != nil {
+	decoder := json.NewDecoder(bytes.NewReader(payload))
+	decoder.UseNumber()
+	if err := decoder.Decode(&result); err != nil {
 		return nil, fmt.Errorf("invalid JSON object: %w", err)
 	}
 	return result, nil

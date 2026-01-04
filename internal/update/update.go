@@ -47,6 +47,7 @@ func CheckForUpdate(ctx context.Context, currentVersion string) *CheckResult {
 		return nil
 	}
 	req.Header.Set("Accept", "application/vnd.github.v3+json")
+	req.Header.Set("User-Agent", "airwallex-cli/"+currentVersion)
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {

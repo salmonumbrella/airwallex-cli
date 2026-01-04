@@ -1,11 +1,14 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
-	"strings"
+	"os"
 	"testing"
 	"time"
 
+	"github.com/salmonumbrella/airwallex-cli/internal/api"
+	apitestutil "github.com/salmonumbrella/airwallex-cli/internal/api/testutil"
 	"github.com/salmonumbrella/airwallex-cli/internal/secrets"
 )
 
@@ -53,14 +56,31 @@ func isExpectedTestError(err error) bool {
 	if err == nil {
 		return false
 	}
-	msg := err.Error()
-	return strings.Contains(msg, "client") ||
-		strings.Contains(msg, "context") ||
-		strings.Contains(msg, "config") ||
-		strings.Contains(msg, "API") ||
-		strings.Contains(msg, "auth") ||
-		strings.Contains(msg, "403") ||
-		strings.Contains(msg, "Forbidden")
+	var contextual *api.ContextualError
+	if errors.As(err, &contextual) {
+		return true
+	}
+	var apiErr *api.APIError
+	return errors.As(err, &apiErr)
+}
+
+var testMockServer *apitestutil.MockServer
+
+func TestMain(m *testing.M) {
+	testMockServer = apitestutil.NewMockServer()
+	originalNewClient := newClientForCreds
+	newClientForCreds = func(creds secrets.Credentials) (*api.Client, error) {
+		if creds.AccountID != "" {
+			return api.NewClientWithBaseURLAndAccount(testMockServer.URL(), creds.ClientID, creds.APIKey, creds.AccountID)
+		}
+		return api.NewClientWithBaseURL(testMockServer.URL(), creds.ClientID, creds.APIKey)
+	}
+
+	code := m.Run()
+
+	newClientForCreds = originalNewClient
+	testMockServer.Close()
+	os.Exit(code)
 }
 
 // setupTestEnvironment sets up the test environment with mocked secrets store.
