@@ -42,9 +42,7 @@ func newCardsListCmd() *cobra.Command {
 				return err
 			}
 
-			if pageSize < 10 {
-				pageSize = 10
-			}
+			pageSize = normalizePageSize(pageSize)
 
 			cards, err := client.ListCards(cmd.Context(), status, cardholderID, page, pageSize)
 			if err != nil {

@@ -93,9 +93,7 @@ Examples:
 				}
 			}
 
-			if pageSize < 10 {
-				pageSize = 10
-			}
+			pageSize = normalizePageSize(pageSize)
 
 			result, err := client.ListTransactions(cmd.Context(), cardID, fromRFC3339, toRFC3339, page, pageSize)
 			if err != nil {

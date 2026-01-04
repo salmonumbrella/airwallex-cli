@@ -34,9 +34,7 @@ func newAccountsListCmd() *cobra.Command {
 				return err
 			}
 
-			if pageSize < 10 {
-				pageSize = 10
-			}
+			pageSize = normalizePageSize(pageSize)
 
 			result, err := client.ListGlobalAccounts(cmd.Context(), page, pageSize)
 			if err != nil {

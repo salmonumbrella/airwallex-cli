@@ -56,9 +56,7 @@ func newPayersListCmd() *cobra.Command {
 				return err
 			}
 
-			if pageSize < 10 {
-				pageSize = 10
-			}
+			pageSize = normalizePageSize(pageSize)
 
 			client, err := getClient(cmd.Context())
 			if err != nil {

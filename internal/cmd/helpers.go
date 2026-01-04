@@ -231,3 +231,11 @@ func readOptionalJSONPayload(data, fromFile string) (map[string]interface{}, err
 	}
 	return readJSONPayload(data, fromFile)
 }
+
+// normalizePageSize ensures page size is at least the API minimum (10)
+func normalizePageSize(pageSize int) int {
+	if pageSize < 10 {
+		return 10
+	}
+	return pageSize
+}

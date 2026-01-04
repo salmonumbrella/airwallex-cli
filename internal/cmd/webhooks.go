@@ -109,9 +109,7 @@ func newWebhooksListCmd() *cobra.Command {
 		Use:   "list",
 		Short: "List webhook subscriptions",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if pageSize < 10 {
-				pageSize = 10
-			}
+			pageSize = normalizePageSize(pageSize)
 
 			client, err := getClient(cmd.Context())
 			if err != nil {

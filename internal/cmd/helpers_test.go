@@ -406,3 +406,40 @@ func TestConfirmOrYes_PromptsToStderr(t *testing.T) {
 		t.Errorf("expected stderr to contain [y/N], got: %s", stderr.String())
 	}
 }
+
+func TestNormalizePageSize(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    int
+		expected int
+	}{
+		// Negative values
+		{name: "negative value", input: -1, expected: 10},
+		{name: "large negative value", input: -100, expected: 10},
+
+		// Zero
+		{name: "zero", input: 0, expected: 10},
+
+		// Values below minimum
+		{name: "one", input: 1, expected: 10},
+		{name: "five", input: 5, expected: 10},
+		{name: "nine (just below minimum)", input: 9, expected: 10},
+
+		// Minimum boundary
+		{name: "ten (minimum)", input: 10, expected: 10},
+
+		// Values above minimum
+		{name: "eleven (just above minimum)", input: 11, expected: 11},
+		{name: "twenty", input: 20, expected: 20},
+		{name: "one hundred", input: 100, expected: 100},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := normalizePageSize(tt.input)
+			if got != tt.expected {
+				t.Errorf("normalizePageSize(%d) = %d, want %d", tt.input, got, tt.expected)
+			}
+		})
+	}
+}
