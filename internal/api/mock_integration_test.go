@@ -186,9 +186,9 @@ func TestMockIntegration_RateLimitRetry(t *testing.T) {
 		t.Errorf("callCount = %d, want 2", callCount)
 	}
 
-	// Verify there was a delay for the retry (at least 1s base delay)
-	if elapsed < 1*time.Second {
-		t.Errorf("elapsed = %v, expected at least 1s for retry delay", elapsed)
+	// Verify there was a delay for the retry (uses test delay from init())
+	if elapsed < testRateLimitBaseDelay {
+		t.Errorf("elapsed = %v, expected at least %v for retry delay", elapsed, testRateLimitBaseDelay)
 	}
 }
 
