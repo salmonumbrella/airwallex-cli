@@ -513,7 +513,7 @@ func newTransfersCancelCmd() *cobra.Command {
 				return err
 			}
 			if !confirmed {
-				fmt.Println("Cancellation aborted.")
+				u.Info("Operation cancelled.")
 				return nil
 			}
 

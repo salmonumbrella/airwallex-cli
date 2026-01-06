@@ -1157,7 +1157,7 @@ func newBeneficiariesDeleteCmd() *cobra.Command {
 				return err
 			}
 			if !confirmed {
-				fmt.Println("Deletion cancelled.")
+				u.Info("Deletion cancelled.")
 				return nil
 			}
 

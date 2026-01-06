@@ -289,7 +289,7 @@ func newWebhooksDeleteCmd() *cobra.Command {
 				return err
 			}
 			if !confirmed {
-				fmt.Println("Deletion aborted.")
+				u.Info("Deletion cancelled.")
 				return nil
 			}
 
