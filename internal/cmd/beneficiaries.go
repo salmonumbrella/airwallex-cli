@@ -34,8 +34,19 @@ func newBeneficiariesCmd() *cobra.Command {
 
 func newBeneficiariesListCmd() *cobra.Command {
 	return NewListCommand(ListConfig[api.Beneficiary]{
-		Use:          "list",
-		Short:        "List beneficiaries",
+		Use:   "list",
+		Short: "List beneficiaries",
+		Long: `List beneficiaries for payouts.
+
+Use --output json with --query for advanced filtering using jq syntax.
+
+Examples:
+  # List recent beneficiaries
+  airwallex beneficiaries list --limit 20
+
+  # Filter by nickname (case-insensitive) and show key fields
+  airwallex beneficiaries list --output json --query \
+    '.items[] | select((.nickname // "") | test("Jason|Jing Sen|Huang"; "i")) | {id: .id, nickname: .nickname, account_name: .beneficiary.bank_details.account_name}'`,
 		Headers:      []string{"BENEFICIARY_ID", "TYPE", "NAME", "BANK_COUNTRY", "METHODS"},
 		EmptyMessage: "No beneficiaries found",
 		RowFunc: func(b api.Beneficiary) []string {

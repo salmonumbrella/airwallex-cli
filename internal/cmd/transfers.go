@@ -78,31 +78,31 @@ Examples:
 
   # Sort by amount (highest first)
   airwallex transfers list --output json --query \
-    'sort_by(.transfer_amount) | reverse | .[0:10]'
+    '.items | sort_by(.transfer_amount) | reverse | .[0:10]'
 
   # Transfers over $1000
   airwallex transfers list --output json --query \
-    '[.[] | select(.transfer_amount > 1000)]'
+    '[.items[] | select(.transfer_amount > 1000)]'
 
   # Failed/pending transfers (not PAID)
   airwallex transfers list --output json --query \
-    '[.[] | select(.status != "PAID")]'
+    '[.items[] | select(.status != "PAID")]'
 
   # Total amount transferred
   airwallex transfers list --output json --query \
-    'map(.transfer_amount) | add'
+    '.items | map(.transfer_amount) | add'
 
   # Total by currency
   airwallex transfers list --output json --query \
-    'group_by(.transfer_currency) | map({currency: .[0].transfer_currency, total: (map(.transfer_amount) | add)})'
+    '.items | group_by(.transfer_currency) | map({currency: .[0].transfer_currency, total: (map(.transfer_amount) | add)})'
 
   # Filter by reference pattern
   airwallex transfers list --output json --query \
-    '[.[] | select(.reference | test("Invoice"; "i"))]'
+    '[.items[] | select(.reference | test("Invoice"; "i"))]'
 
   # Compact view with selected fields
   airwallex transfers list --output json --query \
-    '.[] | {ref: .reference, amount: .transfer_amount, currency: .transfer_currency, status: .status}'`,
+    '.items[] | {ref: .reference, amount: .transfer_amount, currency: .transfer_currency, status: .status}'`,
 		Headers:      []string{"TRANSFER_ID", "AMOUNT", "CURRENCY", "STATUS", "REFERENCE"},
 		EmptyMessage: "No transfers found",
 		ColumnTypes: []outfmt.ColumnType{

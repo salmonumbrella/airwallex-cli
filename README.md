@@ -503,6 +503,8 @@ airwallex transfers batch-create --from-file data.json --continue-on-error
 
 Filter JSON output with JQ expressions:
 
+List commands return `{items, has_more, next_cursor}` in JSON mode, so use `.items[]` when filtering.
+
 ```bash
 # Get only USD balance
 airwallex balances --output json --query '.balances[] | select(.currency=="USD")'
@@ -512,6 +514,10 @@ airwallex transfers list --output json --query '[.items[].id]'
 
 # Filter by status
 airwallex transfers list --output json --query '.items[] | select(.status=="PENDING")'
+
+# Filter beneficiaries by nickname (case-insensitive)
+airwallex beneficiaries list --output json --query \
+  '.items[] | select((.nickname // "") | test("Jason|Jing Sen|Huang"; "i")) | {id: .id, nickname: .nickname, account_name: .beneficiary.bank_details.account_name}'
 ```
 
 ## Global Flags

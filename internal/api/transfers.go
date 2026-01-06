@@ -54,7 +54,7 @@ type BeneficiaryDetails struct {
 // Beneficiary represents a transfer beneficiary
 type Beneficiary struct {
 	BeneficiaryID   string             `json:"id"`
-	Nickname        string             `json:"nickname,omitempty"`
+	Nickname        string             `json:"nickname"`
 	Beneficiary     BeneficiaryDetails `json:"beneficiary"`
 	TransferMethods []string           `json:"transfer_methods"`
 }
