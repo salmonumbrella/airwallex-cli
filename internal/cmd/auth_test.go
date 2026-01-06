@@ -300,7 +300,7 @@ func TestAuthCommandStructure(t *testing.T) {
 		t.Error("expected Short description to be set")
 	}
 
-	expectedSubcommands := []string{"login", "add", "list", "remove", "test"}
+	expectedSubcommands := []string{"login", "add", "list", "remove", "rename", "test"}
 	subcommands := authCmd.Commands()
 
 	if len(subcommands) != len(expectedSubcommands) {
