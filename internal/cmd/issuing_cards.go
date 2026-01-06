@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/salmonumbrella/airwallex-cli/internal/api"
+	"github.com/salmonumbrella/airwallex-cli/internal/iocontext"
 	"github.com/salmonumbrella/airwallex-cli/internal/outfmt"
 	"github.com/salmonumbrella/airwallex-cli/internal/ui"
 )
@@ -103,11 +104,12 @@ func newCardsGetCmd() *cobra.Command {
 				return err
 			}
 
+			io := iocontext.GetIO(cmd.Context())
 			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, card)
+				return outfmt.WriteJSON(io.Out, card)
 			}
 
-			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
+			tw := tabwriter.NewWriter(io.Out, 0, 4, 2, ' ', 0)
 			_, _ = fmt.Fprintf(tw, "card_id\t%s\n", card.CardID)
 			_, _ = fmt.Fprintf(tw, "status\t%s\n", card.CardStatus)
 			_, _ = fmt.Fprintf(tw, "nickname\t%s\n", card.NickName)
@@ -245,8 +247,9 @@ Program types: PREPAID, DEBIT, CREDIT, DEFERRED_DEBIT`,
 				return err
 			}
 
+			io := iocontext.GetIO(cmd.Context())
 			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, card)
+				return outfmt.WriteJSON(io.Out, card)
 			}
 
 			limitInfo := ""
@@ -276,8 +279,8 @@ Program types: PREPAID, DEBIT, CREDIT, DEFERRED_DEBIT`,
 					u.Info("Use 'airwallex issuing cards details " + card.CardID + "' to retrieve them later")
 				} else {
 					defer details.Zeroize()
-					fmt.Println()
-					tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
+					_, _ = fmt.Fprintln(io.Out)
+					tw := tabwriter.NewWriter(io.Out, 0, 4, 2, ' ', 0)
 					_, _ = fmt.Fprintln(tw, "CARD DETAILS (Company Card)")
 					_, _ = fmt.Fprintf(tw, "card_number\t%s\n", details.CardNumber)
 					_, _ = fmt.Fprintf(tw, "cvv\t%s\n", details.Cvv)
@@ -338,8 +341,9 @@ func newCardsUpdateCmd() *cobra.Command {
 				return err
 			}
 
+			io := iocontext.GetIO(cmd.Context())
 			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, card)
+				return outfmt.WriteJSON(io.Out, card)
 			}
 
 			u.Success(fmt.Sprintf("Updated card: %s", card.CardID))
@@ -369,8 +373,9 @@ func newCardsActivateCmd() *cobra.Command {
 				return err
 			}
 
+			io := iocontext.GetIO(cmd.Context())
 			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, card)
+				return outfmt.WriteJSON(io.Out, card)
 			}
 
 			u.Success(fmt.Sprintf("Activated card: %s", card.CardID))
@@ -398,11 +403,12 @@ func newCardsDetailsCmd() *cobra.Command {
 			}
 			defer details.Zeroize()
 
+			io := iocontext.GetIO(cmd.Context())
 			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, details)
+				return outfmt.WriteJSON(io.Out, details)
 			}
 
-			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
+			tw := tabwriter.NewWriter(io.Out, 0, 4, 2, ' ', 0)
 			_, _ = fmt.Fprintf(tw, "card_id\t%s\n", details.CardID)
 			if showPAN {
 				_, _ = fmt.Fprintf(tw, "card_number\t%s\n", details.CardNumber)
@@ -436,12 +442,13 @@ func newCardsLimitsCmd() *cobra.Command {
 				return err
 			}
 
+			io := iocontext.GetIO(cmd.Context())
 			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, limits)
+				return outfmt.WriteJSON(io.Out, limits)
 			}
 
 			f := outfmt.FromContext(cmd.Context())
-			fmt.Printf("currency\t%s\n\n", limits.Currency)
+			_, _ = fmt.Fprintf(io.Out, "currency\t%s\n\n", limits.Currency)
 			f.StartTable([]string{"INTERVAL", "LIMIT", "REMAINING"})
 			for _, l := range limits.Limits {
 				f.Row(l.Interval, fmt.Sprintf("%.2f", l.Amount), fmt.Sprintf("%.2f", l.Remaining))
