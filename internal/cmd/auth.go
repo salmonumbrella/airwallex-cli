@@ -28,6 +28,7 @@ func newAuthCmd() *cobra.Command {
 	cmd.AddCommand(newAuthAddCmd())
 	cmd.AddCommand(newAuthListCmd())
 	cmd.AddCommand(newAuthRemoveCmd())
+	cmd.AddCommand(newAuthRenameCmd())
 	cmd.AddCommand(newAuthTestCmd())
 	return cmd
 }
@@ -227,6 +228,66 @@ func newAuthRemoveCmd() *cobra.Command {
 			}
 
 			u.Success(fmt.Sprintf("Removed account: %s", name))
+			return nil
+		},
+	}
+}
+
+func newAuthRenameCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "rename <old-name> <new-name>",
+		Short: "Rename an account",
+		Long: `Rename an existing account to a new name.
+
+Examples:
+  airwallex auth rename production prod
+  airwallex auth rename vlad-local dm`,
+		Args: cobra.ExactArgs(2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			u := ui.FromContext(cmd.Context())
+			oldName := strings.TrimSpace(args[0])
+			newName := strings.TrimSpace(args[1])
+
+			// Validate new name
+			if err := auth.ValidateAccountName(newName); err != nil {
+				return fmt.Errorf("invalid new account name: %w", err)
+			}
+
+			store, err := openSecretsStore()
+			if err != nil {
+				return fmt.Errorf("failed to open keyring: %w", err)
+			}
+
+			// Get existing credentials
+			creds, err := store.Get(oldName)
+			if err != nil {
+				return fmt.Errorf("account not found: %s", oldName)
+			}
+
+			// Check if new name already exists
+			if _, err := store.Get(newName); err == nil {
+				return fmt.Errorf("account already exists: %s", newName)
+			}
+
+			// Set with new name (preserve CreatedAt)
+			err = store.Set(newName, secrets.Credentials{
+				ClientID:  creds.ClientID,
+				APIKey:    creds.APIKey,
+				AccountID: creds.AccountID,
+				CreatedAt: creds.CreatedAt,
+			})
+			if err != nil {
+				return fmt.Errorf("failed to create new account: %w", err)
+			}
+
+			// Delete old name
+			if err := store.Delete(oldName); err != nil {
+				// Try to rollback
+				_ = store.Delete(newName)
+				return fmt.Errorf("failed to remove old account: %w", err)
+			}
+
+			u.Success(fmt.Sprintf("Renamed account: %s → %s", oldName, newName))
 			return nil
 		},
 	}
