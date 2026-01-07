@@ -515,6 +515,9 @@ airwallex transfers list --output json --query '[.items[].id]'
 # Filter by status
 airwallex transfers list --output json --query '.items[] | select(.status=="PENDING")'
 
+# Output array only (no pagination metadata)
+airwallex transfers list --output json --items-only | jq '.[] | select(.status=="PENDING")'
+
 # Load a longer query from a file
 airwallex transfers list --output json --query-file ./query.jq
 
@@ -533,6 +536,8 @@ All commands support these flags:
 - `--debug` - Enable debug output (shows API requests/responses)
 - `--query <expr>` - JQ filter expression for JSON output
 - `--query-file <path>` - Read JQ filter expression from file (use `-` for stdin)
+- `--items-only` - Output items array only for list commands (JSON mode)
+- `--results-only` - Alias for `--items-only`
 - `--yes`, `-y` - Skip confirmation prompts (useful for scripts and automation)
 - `--force` - Alias for `--yes`
 - `--limit <n>` - Limit number of results returned (0 = no limit, fetches all)

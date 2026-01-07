@@ -49,6 +49,7 @@ type ListConfig[T any] struct {
 func NewListCommand[T any](cfg ListConfig[T], getClient func(context.Context) (*api.Client, error)) *cobra.Command {
 	var limit int
 	var after string
+	var itemsOnly bool
 
 	cmd := &cobra.Command{
 		Use:     cfg.Use,
@@ -82,6 +83,9 @@ func NewListCommand[T any](cfg ListConfig[T], getClient func(context.Context) (*
 			// Handle empty results
 			if len(result.Items) == 0 {
 				if outfmt.IsJSON(cmd.Context()) {
+					if itemsOnly {
+						return f.Output(result.Items)
+					}
 					return f.Output(map[string]interface{}{
 						"items":    result.Items,
 						"has_more": result.HasMore,
@@ -93,6 +97,9 @@ func NewListCommand[T any](cfg ListConfig[T], getClient func(context.Context) (*
 
 			// For JSON output, include pagination metadata
 			if outfmt.IsJSON(cmd.Context()) {
+				if itemsOnly {
+					return f.Output(result.Items)
+				}
 				output := map[string]interface{}{
 					"items":    result.Items,
 					"has_more": result.HasMore,
@@ -125,6 +132,8 @@ func NewListCommand[T any](cfg ListConfig[T], getClient func(context.Context) (*
 
 	cmd.Flags().IntVar(&limit, "limit", 20, "Max items to return (1-100)")
 	cmd.Flags().StringVar(&after, "after", "", "Cursor for next page (from previous result)")
+	cmd.Flags().BoolVar(&itemsOnly, "items-only", false, "Output items array only (JSON mode)")
+	cmd.Flags().BoolVar(&itemsOnly, "results-only", false, "Alias for --items-only")
 
 	// Keep deprecated flags for backwards compatibility
 	cmd.Flags().Int("page", 0, "")

@@ -287,6 +287,68 @@ func TestNewListCommand_JSONOutput(t *testing.T) {
 	}
 }
 
+func TestNewListCommand_JSONItemsOnly(t *testing.T) {
+	cfg := ListConfig[testItem]{
+		Use:          "test",
+		Short:        "Test list command",
+		Headers:      []string{"ID", "NAME"},
+		EmptyMessage: "No items",
+		RowFunc: func(item testItem) []string {
+			return []string{item.ID, item.Name}
+		},
+		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[testItem], error) {
+			return ListResult[testItem]{
+				Items: []testItem{
+					{ID: "1", Name: "Item 1"},
+				},
+				HasMore: true,
+			}, nil
+		},
+	}
+
+	cmd := NewListCommand(cfg, func(ctx context.Context) (*api.Client, error) {
+		return &api.Client{}, nil
+	})
+
+	ctx := outfmt.WithFormat(context.Background(), "json")
+	cmd.SetContext(ctx)
+	cmd.SetArgs([]string{"--items-only"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestNewListCommand_JSONItemsOnlyEmpty(t *testing.T) {
+	cfg := ListConfig[testItem]{
+		Use:          "test",
+		Short:        "Test list command",
+		Headers:      []string{"ID", "NAME"},
+		EmptyMessage: "No items",
+		RowFunc: func(item testItem) []string {
+			return []string{item.ID, item.Name}
+		},
+		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[testItem], error) {
+			return ListResult[testItem]{
+				Items:   []testItem{},
+				HasMore: false,
+			}, nil
+		},
+	}
+
+	cmd := NewListCommand(cfg, func(ctx context.Context) (*api.Client, error) {
+		return &api.Client{}, nil
+	})
+
+	ctx := outfmt.WithFormat(context.Background(), "json")
+	cmd.SetContext(ctx)
+	cmd.SetArgs([]string{"--items-only"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 func TestNewListCommand_FetchError(t *testing.T) {
 	expectedErr := errors.New("fetch failed")
 
