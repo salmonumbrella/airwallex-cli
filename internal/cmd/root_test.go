@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -258,5 +260,57 @@ func TestRootCmd_DescRequiresSortBy(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestRootCmd_QueryFile(t *testing.T) {
+	flags = rootFlags{}
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "query.jq")
+	if err := os.WriteFile(path, []byte(".items[] | .id"), 0o600); err != nil {
+		t.Fatalf("WriteFile() error = %v", err)
+	}
+
+	var capturedCtx context.Context
+
+	cmd := NewRootCmd()
+	testCmd := &cobra.Command{
+		Use: "test",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			capturedCtx = cmd.Context()
+			return nil
+		},
+	}
+	cmd.AddCommand(testCmd)
+	cmd.SetArgs([]string{"--query-file", path, "test"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("Execute() error = %v", err)
+	}
+
+	got := outfmt.GetQuery(capturedCtx)
+	if got != ".items[] | .id" {
+		t.Errorf("query = %q, want %q", got, ".items[] | .id")
+	}
+}
+
+func TestRootCmd_QueryFileConflict(t *testing.T) {
+	flags = rootFlags{}
+
+	cmd := NewRootCmd()
+	testCmd := &cobra.Command{
+		Use:  "test",
+		RunE: func(cmd *cobra.Command, args []string) error { return nil },
+	}
+	cmd.AddCommand(testCmd)
+	cmd.SetArgs([]string{"--query", ".items[]", "--query-file", "query.jq", "test"})
+
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("Execute() expected error, got nil")
+	}
+	if !strings.Contains(err.Error(), "use only one of --query or --query-file") {
+		t.Fatalf("error = %q, want to contain %q", err.Error(), "use only one of --query or --query-file")
 	}
 }

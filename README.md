@@ -515,6 +515,9 @@ airwallex transfers list --output json --query '[.items[].id]'
 # Filter by status
 airwallex transfers list --output json --query '.items[] | select(.status=="PENDING")'
 
+# Load a longer query from a file
+airwallex transfers list --output json --query-file ./query.jq
+
 # Filter beneficiaries by nickname (case-insensitive)
 airwallex beneficiaries list --output json --query \
   '.items[] | select((.nickname // "") | test("Jason|Jing Sen|Huang"; "i")) | {id: .id, nickname: .nickname, account_name: .beneficiary.bank_details.account_name}'
@@ -529,6 +532,7 @@ All commands support these flags:
 - `--color <mode>` - Color mode: `auto`, `always`, or `never` (default: auto)
 - `--debug` - Enable debug output (shows API requests/responses)
 - `--query <expr>` - JQ filter expression for JSON output
+- `--query-file <path>` - Read JQ filter expression from file (use `-` for stdin)
 - `--yes`, `-y` - Skip confirmation prompts (useful for scripts and automation)
 - `--force` - Alias for `--yes`
 - `--limit <n>` - Limit number of results returned (0 = no limit, fetches all)

@@ -232,6 +232,45 @@ func readOptionalJSONPayload(data, fromFile string) (map[string]interface{}, err
 	return readJSONPayload(data, fromFile)
 }
 
+func readTextInput(path string) (string, error) {
+	var reader io.Reader
+	switch path {
+	case "":
+		return "", fmt.Errorf("input file path is required")
+	case "-":
+		reader = os.Stdin
+	default:
+		//nolint:gosec // G304: filename comes from user input, intentional
+		f, err := os.Open(path)
+		if err != nil {
+			return "", fmt.Errorf("failed to open file: %w", err)
+		}
+		defer func() { _ = f.Close() }()
+		reader = f
+	}
+
+	limitedReader := io.LimitReader(reader, batch.MaxInputSize+1)
+	data, err := io.ReadAll(limitedReader)
+	if err != nil {
+		return "", fmt.Errorf("failed to read input: %w", err)
+	}
+	if len(data) > batch.MaxInputSize {
+		return "", fmt.Errorf("input too large: exceeds maximum size of %d bytes", batch.MaxInputSize)
+	}
+
+	return strings.TrimSpace(string(data)), nil
+}
+
+func readQueryInput(query, queryFile string) (string, error) {
+	if query != "" && queryFile != "" {
+		return "", fmt.Errorf("use only one of --query or --query-file")
+	}
+	if queryFile == "" {
+		return query, nil
+	}
+	return readTextInput(queryFile)
+}
+
 // normalizePageSize ensures page size is at least the API minimum (10)
 func normalizePageSize(pageSize int) int {
 	if pageSize < 10 {
