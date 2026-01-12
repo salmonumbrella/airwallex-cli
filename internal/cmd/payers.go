@@ -133,10 +133,7 @@ func newPayersGetCmd() *cobra.Command {
 }
 
 func newPayersCreateCmd() *cobra.Command {
-	var data string
-	var fromFile string
-
-	cmd := &cobra.Command{
+	return NewPayloadCommand(PayloadCommandConfig[*api.Payer]{
 		Use:   "create",
 		Short: "Create a payer",
 		Long: `Create a payer using a JSON payload.
@@ -144,42 +141,17 @@ func newPayersCreateCmd() *cobra.Command {
 Examples:
   airwallex payers create --data '{"entity_type":"COMPANY","name":"Acme Corp"}'
   airwallex payers create --from-file payer.json`,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			u := ui.FromContext(cmd.Context())
-			client, err := getClient(cmd.Context())
-			if err != nil {
-				return err
-			}
-
-			payload, err := readJSONPayload(data, fromFile)
-			if err != nil {
-				return err
-			}
-
-			payer, err := client.CreatePayer(cmd.Context(), payload)
-			if err != nil {
-				return err
-			}
-
-			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, payer)
-			}
-
-			u.Success(fmt.Sprintf("Created payer: %s", payerID(*payer)))
-			return nil
+		Run: func(ctx context.Context, client *api.Client, args []string, payload map[string]interface{}) (*api.Payer, error) {
+			return client.CreatePayer(ctx, payload)
 		},
-	}
-
-	cmd.Flags().StringVar(&data, "data", "", "Inline JSON payload")
-	cmd.Flags().StringVar(&fromFile, "from-file", "", "Path to JSON payload file (- for stdin)")
-	return cmd
+		SuccessMessage: func(payer *api.Payer) string {
+			return fmt.Sprintf("Created payer: %s", payerID(*payer))
+		},
+	}, getClient)
 }
 
 func newPayersUpdateCmd() *cobra.Command {
-	var data string
-	var fromFile string
-
-	cmd := &cobra.Command{
+	return NewPayloadCommand(PayloadCommandConfig[*api.Payer]{
 		Use:   "update <payerId>",
 		Short: "Update a payer",
 		Long: `Update a payer using a JSON payload.
@@ -188,35 +160,13 @@ Examples:
   airwallex payers update payer_123 --data '{"name":"Updated Name"}'
   airwallex payers update payer_123 --from-file update.json`,
 		Args: cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			u := ui.FromContext(cmd.Context())
-			client, err := getClient(cmd.Context())
-			if err != nil {
-				return err
-			}
-
-			payload, err := readJSONPayload(data, fromFile)
-			if err != nil {
-				return err
-			}
-
-			payer, err := client.UpdatePayer(cmd.Context(), args[0], payload)
-			if err != nil {
-				return err
-			}
-
-			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, payer)
-			}
-
-			u.Success(fmt.Sprintf("Updated payer: %s", payerID(*payer)))
-			return nil
+		Run: func(ctx context.Context, client *api.Client, args []string, payload map[string]interface{}) (*api.Payer, error) {
+			return client.UpdatePayer(ctx, args[0], payload)
 		},
-	}
-
-	cmd.Flags().StringVar(&data, "data", "", "Inline JSON payload")
-	cmd.Flags().StringVar(&fromFile, "from-file", "", "Path to JSON payload file (- for stdin)")
-	return cmd
+		SuccessMessage: func(payer *api.Payer) string {
+			return fmt.Sprintf("Updated payer: %s", payerID(*payer))
+		},
+	}, getClient)
 }
 
 func newPayersDeleteCmd() *cobra.Command {
