@@ -168,10 +168,7 @@ func newDisputesGetCmd() *cobra.Command {
 }
 
 func newDisputesCreateCmd() *cobra.Command {
-	var data string
-	var fromFile string
-
-	cmd := &cobra.Command{
+	return NewPayloadCommand(PayloadCommandConfig[*api.TransactionDispute]{
 		Use:   "create",
 		Short: "Create a dispute",
 		Long: `Create a dispute using a JSON payload.
@@ -179,42 +176,17 @@ func newDisputesCreateCmd() *cobra.Command {
 Examples:
   airwallex issuing disputes create --data '{"transaction_id":"txn_123","reason":"fraud"}'
   airwallex issuing disputes create --from-file dispute.json`,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			u := ui.FromContext(cmd.Context())
-			client, err := getClient(cmd.Context())
-			if err != nil {
-				return err
-			}
-
-			payload, err := readJSONPayload(data, fromFile)
-			if err != nil {
-				return err
-			}
-
-			dispute, err := client.CreateTransactionDispute(cmd.Context(), payload)
-			if err != nil {
-				return err
-			}
-
-			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, dispute)
-			}
-
-			u.Success(fmt.Sprintf("Created dispute: %s", disputeID(*dispute)))
-			return nil
+		Run: func(ctx context.Context, client *api.Client, args []string, payload map[string]interface{}) (*api.TransactionDispute, error) {
+			return client.CreateTransactionDispute(ctx, payload)
 		},
-	}
-
-	cmd.Flags().StringVar(&data, "data", "", "Inline JSON payload")
-	cmd.Flags().StringVar(&fromFile, "from-file", "", "Path to JSON payload file (- for stdin)")
-	return cmd
+		SuccessMessage: func(dispute *api.TransactionDispute) string {
+			return fmt.Sprintf("Created dispute: %s", disputeID(*dispute))
+		},
+	}, getClient)
 }
 
 func newDisputesUpdateCmd() *cobra.Command {
-	var data string
-	var fromFile string
-
-	cmd := &cobra.Command{
+	return NewPayloadCommand(PayloadCommandConfig[*api.TransactionDispute]{
 		Use:   "update <disputeId>",
 		Short: "Update a dispute",
 		Long: `Update a dispute using a JSON payload.
@@ -223,35 +195,13 @@ Examples:
   airwallex issuing disputes update dpt_123 --data '{"reason":"service_not_received"}'
   airwallex issuing disputes update dpt_123 --from-file update.json`,
 		Args: cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			u := ui.FromContext(cmd.Context())
-			client, err := getClient(cmd.Context())
-			if err != nil {
-				return err
-			}
-
-			payload, err := readJSONPayload(data, fromFile)
-			if err != nil {
-				return err
-			}
-
-			dispute, err := client.UpdateTransactionDispute(cmd.Context(), args[0], payload)
-			if err != nil {
-				return err
-			}
-
-			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, dispute)
-			}
-
-			u.Success(fmt.Sprintf("Updated dispute: %s", disputeID(*dispute)))
-			return nil
+		Run: func(ctx context.Context, client *api.Client, args []string, payload map[string]interface{}) (*api.TransactionDispute, error) {
+			return client.UpdateTransactionDispute(ctx, args[0], payload)
 		},
-	}
-
-	cmd.Flags().StringVar(&data, "data", "", "Inline JSON payload")
-	cmd.Flags().StringVar(&fromFile, "from-file", "", "Path to JSON payload file (- for stdin)")
-	return cmd
+		SuccessMessage: func(dispute *api.TransactionDispute) string {
+			return fmt.Sprintf("Updated dispute: %s", disputeID(*dispute))
+		},
+	}, getClient)
 }
 
 func newDisputesSubmitCmd() *cobra.Command {
