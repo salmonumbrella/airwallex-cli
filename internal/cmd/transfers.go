@@ -6,7 +6,6 @@ import (
 	"os"
 	"regexp"
 	"strings"
-	"text/tabwriter"
 	"time"
 
 	"github.com/google/uuid"
@@ -143,43 +142,28 @@ Examples:
 }
 
 func newTransfersGetCmd() *cobra.Command {
-	return &cobra.Command{
+	return NewGetCommand(GetConfig[*api.Transfer]{
 		Use:   "get <transferId>",
 		Short: "Get transfer details",
-		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := getClient(cmd.Context())
-			if err != nil {
-				return err
-			}
-
-			t, err := client.GetTransfer(cmd.Context(), args[0])
-			if err != nil {
-				return err
-			}
-
-			f := outfmt.FromContext(cmd.Context())
-
-			if outfmt.IsJSON(cmd.Context()) {
-				return f.Output(t)
-			}
-
-			// For "get" commands, still use manual tabwriter for key-value format
-			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-			_, _ = fmt.Fprintf(tw, "transfer_id\t%s\n", t.TransferID)
-			_, _ = fmt.Fprintf(tw, "beneficiary_id\t%s\n", t.BeneficiaryID)
-			_, _ = fmt.Fprintf(tw, "transfer_amount\t%.2f\n", t.TransferAmount)
-			_, _ = fmt.Fprintf(tw, "transfer_currency\t%s\n", t.TransferCurrency)
-			_, _ = fmt.Fprintf(tw, "source_amount\t%.2f\n", t.SourceAmount)
-			_, _ = fmt.Fprintf(tw, "source_currency\t%s\n", t.SourceCurrency)
-			_, _ = fmt.Fprintf(tw, "status\t%s\n", t.Status)
-			_, _ = fmt.Fprintf(tw, "reference\t%s\n", t.Reference)
-			_, _ = fmt.Fprintf(tw, "reason\t%s\n", t.Reason)
-			_, _ = fmt.Fprintf(tw, "created_at\t%s\n", t.CreatedAt)
-			_ = tw.Flush()
-			return nil
+		Fetch: func(ctx context.Context, client *api.Client, id string) (*api.Transfer, error) {
+			return client.GetTransfer(ctx, id)
 		},
-	}
+		TextOutput: func(cmd *cobra.Command, t *api.Transfer) error {
+			rows := []outfmt.KV{
+				{Key: "transfer_id", Value: t.TransferID},
+				{Key: "beneficiary_id", Value: t.BeneficiaryID},
+				{Key: "transfer_amount", Value: fmt.Sprintf("%.2f", t.TransferAmount)},
+				{Key: "transfer_currency", Value: t.TransferCurrency},
+				{Key: "source_amount", Value: fmt.Sprintf("%.2f", t.SourceAmount)},
+				{Key: "source_currency", Value: t.SourceCurrency},
+				{Key: "status", Value: t.Status},
+				{Key: "reference", Value: t.Reference},
+				{Key: "reason", Value: t.Reason},
+				{Key: "created_at", Value: t.CreatedAt},
+			}
+			return outfmt.WriteKV(cmd.OutOrStdout(), rows)
+		},
+	}, getClient)
 }
 
 func newTransfersCreateCmd() *cobra.Command {

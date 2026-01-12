@@ -1,9 +1,9 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
-	"text/tabwriter"
 
 	"github.com/spf13/cobra"
 
@@ -81,46 +81,34 @@ func newAccountsListCmd() *cobra.Command {
 }
 
 func newAccountsGetCmd() *cobra.Command {
-	return &cobra.Command{
+	return NewGetCommand(GetConfig[*api.GlobalAccount]{
 		Use:   "get <accountId>",
 		Short: "Get global account details",
-		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := getClient(cmd.Context())
-			if err != nil {
-				return err
+		Fetch: func(ctx context.Context, client *api.Client, id string) (*api.GlobalAccount, error) {
+			return client.GetGlobalAccount(ctx, id)
+		},
+		TextOutput: func(cmd *cobra.Command, a *api.GlobalAccount) error {
+			rows := []outfmt.KV{
+				{Key: "account_id", Value: a.AccountID},
+				{Key: "account_name", Value: a.AccountName},
+				{Key: "currency", Value: a.Currency},
+				{Key: "country_code", Value: a.CountryCode},
+				{Key: "status", Value: a.Status},
 			}
-
-			a, err := client.GetGlobalAccount(cmd.Context(), args[0])
-			if err != nil {
-				return err
-			}
-
-			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, a)
-			}
-
-			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-			_, _ = fmt.Fprintf(tw, "account_id\t%s\n", a.AccountID)
-			_, _ = fmt.Fprintf(tw, "account_name\t%s\n", a.AccountName)
-			_, _ = fmt.Fprintf(tw, "currency\t%s\n", a.Currency)
-			_, _ = fmt.Fprintf(tw, "country_code\t%s\n", a.CountryCode)
-			_, _ = fmt.Fprintf(tw, "status\t%s\n", a.Status)
 			if a.AccountNumber != "" {
-				_, _ = fmt.Fprintf(tw, "account_number\t%s\n", a.AccountNumber)
+				rows = append(rows, outfmt.KV{Key: "account_number", Value: a.AccountNumber})
 			}
 			if a.RoutingCode != "" {
-				_, _ = fmt.Fprintf(tw, "routing_code\t%s\n", a.RoutingCode)
+				rows = append(rows, outfmt.KV{Key: "routing_code", Value: a.RoutingCode})
 			}
 			if a.IBAN != "" {
-				_, _ = fmt.Fprintf(tw, "iban\t%s\n", a.IBAN)
+				rows = append(rows, outfmt.KV{Key: "iban", Value: a.IBAN})
 			}
 			if a.SwiftCode != "" {
-				_, _ = fmt.Fprintf(tw, "swift_code\t%s\n", a.SwiftCode)
+				rows = append(rows, outfmt.KV{Key: "swift_code", Value: a.SwiftCode})
 			}
-			_, _ = fmt.Fprintf(tw, "created_at\t%s\n", a.CreatedAt)
-			_ = tw.Flush()
-			return nil
+			rows = append(rows, outfmt.KV{Key: "created_at", Value: a.CreatedAt})
+			return outfmt.WriteKV(cmd.OutOrStdout(), rows)
 		},
-	}
+	}, getClient)
 }
