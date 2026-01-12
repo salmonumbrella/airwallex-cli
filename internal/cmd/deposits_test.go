@@ -152,9 +152,8 @@ func TestDepositsListCommand_PageSizeValidation(t *testing.T) {
 				t.Fatal("page-size flag not found")
 			}
 
-			// Verify the help text mentions minimum
-			if !strings.Contains(pageSizeFlag.Usage, "min 10") {
-				t.Errorf("page-size flag help text should mention minimum of 10")
+			if pageSizeFlag.Deprecated == "" {
+				t.Errorf("expected page-size flag to be deprecated")
 			}
 		})
 	}

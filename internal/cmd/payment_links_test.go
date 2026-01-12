@@ -82,14 +82,14 @@ func TestPaymentLinksListCommand_PageSizeMinimum(t *testing.T) {
 		t.Fatal("page-size flag not found")
 	}
 
-	if !strings.Contains(pageSizeFlag.Usage, "min 10") {
-		t.Errorf("page-size flag help text should mention minimum of 10, got: %s", pageSizeFlag.Usage)
+	if pageSizeFlag.Deprecated == "" {
+		t.Errorf("expected page-size flag to be deprecated")
 	}
 
 	// Verify default value
 	defaultVal := pageSizeFlag.DefValue
-	if defaultVal != "20" {
-		t.Errorf("expected default limit of 20, got: %s", defaultVal)
+	if defaultVal != "0" {
+		t.Errorf("expected default value of 0 for deprecated page-size, got: %s", defaultVal)
 	}
 }
 
