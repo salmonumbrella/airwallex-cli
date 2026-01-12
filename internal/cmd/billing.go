@@ -825,6 +825,7 @@ func newBillingInvoiceItemsListCmd() *cobra.Command {
 		Short:        "List invoice items",
 		Headers:      []string{"ITEM_ID", "INVOICE_ID", "AMOUNT", "CURRENCY", "QTY"},
 		EmptyMessage: "No invoice items found",
+		Args:         cobra.ExactArgs(1),
 		RowFunc: func(i api.BillingInvoiceItem) []string {
 			amount := ""
 			if i.Amount != 0 {
@@ -835,55 +836,18 @@ func newBillingInvoiceItemsListCmd() *cobra.Command {
 		IDFunc: func(i api.BillingInvoiceItem) string {
 			return i.ID
 		},
-		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[api.BillingInvoiceItem], error) {
-			return ListResult[api.BillingInvoiceItem]{}, fmt.Errorf("invoice ID is required")
+		MoreHint: "# More results available",
+		FetchWithArgs: func(ctx context.Context, client *api.Client, opts ListOptions, args []string) (ListResult[api.BillingInvoiceItem], error) {
+			result, err := client.ListBillingInvoiceItems(ctx, args[0], 0, opts.Limit)
+			if err != nil {
+				return ListResult[api.BillingInvoiceItem]{}, err
+			}
+			return ListResult[api.BillingInvoiceItem]{
+				Items:   result.Items,
+				HasMore: result.HasMore,
+			}, nil
 		},
 	}, getClient)
-
-	cmd.Args = cobra.ExactArgs(1)
-	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		client, err := getClient(cmd.Context())
-		if err != nil {
-			return err
-		}
-
-		limit, _ := cmd.Flags().GetInt("limit")
-		if limit <= 0 {
-			limit = 20
-		}
-
-		result, err := client.ListBillingInvoiceItems(cmd.Context(), args[0], 0, limit)
-		if err != nil {
-			return err
-		}
-
-		f := outfmt.FromContext(cmd.Context())
-		if len(result.Items) == 0 {
-			if outfmt.IsJSON(cmd.Context()) {
-				return f.Output(result)
-			}
-			f.Empty("No invoice items found")
-			return nil
-		}
-
-		headers := []string{"ITEM_ID", "INVOICE_ID", "AMOUNT", "CURRENCY", "QTY"}
-		rowFn := func(item any) []string {
-			it := item.(api.BillingInvoiceItem)
-			amount := ""
-			if it.Amount != 0 {
-				amount = fmt.Sprintf("%.2f", it.Amount)
-			}
-			return []string{it.ID, it.InvoiceID, amount, it.Currency, fmt.Sprintf("%.2f", it.Quantity)}
-		}
-
-		if err := f.OutputList(result.Items, headers, rowFn); err != nil {
-			return err
-		}
-		if !outfmt.IsJSON(cmd.Context()) && result.HasMore {
-			_, _ = fmt.Fprintln(os.Stderr, "# More results available")
-		}
-		return nil
-	}
 
 	return cmd
 }
@@ -1181,6 +1145,7 @@ func newBillingSubscriptionItemsListCmd() *cobra.Command {
 		Short:        "List subscription items",
 		Headers:      []string{"ITEM_ID", "SUBSCRIPTION_ID", "PRICE_ID", "QTY"},
 		EmptyMessage: "No subscription items found",
+		Args:         cobra.ExactArgs(1),
 		RowFunc: func(i api.BillingSubscriptionItem) []string {
 			priceID := ""
 			if i.Price != nil {
@@ -1191,55 +1156,18 @@ func newBillingSubscriptionItemsListCmd() *cobra.Command {
 		IDFunc: func(i api.BillingSubscriptionItem) string {
 			return i.ID
 		},
-		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[api.BillingSubscriptionItem], error) {
-			return ListResult[api.BillingSubscriptionItem]{}, fmt.Errorf("subscription ID is required")
+		MoreHint: "# More results available",
+		FetchWithArgs: func(ctx context.Context, client *api.Client, opts ListOptions, args []string) (ListResult[api.BillingSubscriptionItem], error) {
+			result, err := client.ListBillingSubscriptionItems(ctx, args[0], 0, opts.Limit)
+			if err != nil {
+				return ListResult[api.BillingSubscriptionItem]{}, err
+			}
+			return ListResult[api.BillingSubscriptionItem]{
+				Items:   result.Items,
+				HasMore: result.HasMore,
+			}, nil
 		},
 	}, getClient)
-
-	cmd.Args = cobra.ExactArgs(1)
-	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		client, err := getClient(cmd.Context())
-		if err != nil {
-			return err
-		}
-
-		limit, _ := cmd.Flags().GetInt("limit")
-		if limit <= 0 {
-			limit = 20
-		}
-
-		result, err := client.ListBillingSubscriptionItems(cmd.Context(), args[0], 0, limit)
-		if err != nil {
-			return err
-		}
-
-		f := outfmt.FromContext(cmd.Context())
-		if len(result.Items) == 0 {
-			if outfmt.IsJSON(cmd.Context()) {
-				return f.Output(result)
-			}
-			f.Empty("No subscription items found")
-			return nil
-		}
-
-		headers := []string{"ITEM_ID", "SUBSCRIPTION_ID", "PRICE_ID", "QTY"}
-		rowFn := func(item any) []string {
-			it := item.(api.BillingSubscriptionItem)
-			priceID := ""
-			if it.Price != nil {
-				priceID = it.Price.ID
-			}
-			return []string{it.ID, it.SubscriptionID, priceID, fmt.Sprintf("%.2f", it.Quantity)}
-		}
-
-		if err := f.OutputList(result.Items, headers, rowFn); err != nil {
-			return err
-		}
-		if !outfmt.IsJSON(cmd.Context()) && result.HasMore {
-			_, _ = fmt.Fprintln(os.Stderr, "# More results available")
-		}
-		return nil
-	}
 
 	return cmd
 }
