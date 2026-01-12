@@ -46,13 +46,7 @@ func newPayersListCmd() *cobra.Command {
 		Use:   "list",
 		Short: "List payers",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := validateDate(from); err != nil {
-				return fmt.Errorf("invalid --from date: %w", err)
-			}
-			if err := validateDate(to); err != nil {
-				return fmt.Errorf("invalid --to date: %w", err)
-			}
-			if err := validateDateRange(from, to); err != nil {
+			if err := validateDateRangeFlags(from, to, "--from", "--to", true); err != nil {
 				return err
 			}
 

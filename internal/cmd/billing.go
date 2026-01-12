@@ -95,31 +95,9 @@ func newBillingCustomersListCmd() *cobra.Command {
 			return billingCustomerID(c)
 		},
 		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[api.BillingCustomer], error) {
-			if err := validateDate(from); err != nil {
-				return ListResult[api.BillingCustomer]{}, fmt.Errorf("invalid --from date: %w", err)
-			}
-			if err := validateDate(to); err != nil {
-				return ListResult[api.BillingCustomer]{}, fmt.Errorf("invalid --to date: %w", err)
-			}
-			if err := validateDateRange(from, to); err != nil {
+			fromRFC3339, toRFC3339, err := parseDateRangeRFC3339(from, to, "--from", "--to", true)
+			if err != nil {
 				return ListResult[api.BillingCustomer]{}, err
-			}
-
-			fromRFC3339 := ""
-			if from != "" {
-				var err error
-				fromRFC3339, err = convertDateToRFC3339(from)
-				if err != nil {
-					return ListResult[api.BillingCustomer]{}, fmt.Errorf("invalid --from date: %w", err)
-				}
-			}
-			toRFC3339 := ""
-			if to != "" {
-				var err error
-				toRFC3339, err = convertDateToRFC3339End(to)
-				if err != nil {
-					return ListResult[api.BillingCustomer]{}, fmt.Errorf("invalid --to date: %w", err)
-				}
 			}
 
 			result, err := client.ListBillingCustomers(ctx, api.BillingCustomerListParams{
@@ -636,31 +614,9 @@ func newBillingInvoicesListCmd() *cobra.Command {
 			return billingInvoiceID(i)
 		},
 		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[api.BillingInvoice], error) {
-			if err := validateDate(from); err != nil {
-				return ListResult[api.BillingInvoice]{}, fmt.Errorf("invalid --from date: %w", err)
-			}
-			if err := validateDate(to); err != nil {
-				return ListResult[api.BillingInvoice]{}, fmt.Errorf("invalid --to date: %w", err)
-			}
-			if err := validateDateRange(from, to); err != nil {
+			fromRFC3339, toRFC3339, err := parseDateRangeRFC3339(from, to, "--from", "--to", true)
+			if err != nil {
 				return ListResult[api.BillingInvoice]{}, err
-			}
-
-			fromRFC3339 := ""
-			if from != "" {
-				var err error
-				fromRFC3339, err = convertDateToRFC3339(from)
-				if err != nil {
-					return ListResult[api.BillingInvoice]{}, fmt.Errorf("invalid --from date: %w", err)
-				}
-			}
-			toRFC3339 := ""
-			if to != "" {
-				var err error
-				toRFC3339, err = convertDateToRFC3339End(to)
-				if err != nil {
-					return ListResult[api.BillingInvoice]{}, fmt.Errorf("invalid --to date: %w", err)
-				}
 			}
 
 			result, err := client.ListBillingInvoices(ctx, api.BillingInvoiceListParams{
@@ -919,31 +875,9 @@ func newBillingSubscriptionsListCmd() *cobra.Command {
 			return billingSubscriptionID(s)
 		},
 		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[api.BillingSubscription], error) {
-			if err := validateDate(from); err != nil {
-				return ListResult[api.BillingSubscription]{}, fmt.Errorf("invalid --from date: %w", err)
-			}
-			if err := validateDate(to); err != nil {
-				return ListResult[api.BillingSubscription]{}, fmt.Errorf("invalid --to date: %w", err)
-			}
-			if err := validateDateRange(from, to); err != nil {
+			fromRFC3339, toRFC3339, err := parseDateRangeRFC3339(from, to, "--from", "--to", true)
+			if err != nil {
 				return ListResult[api.BillingSubscription]{}, err
-			}
-
-			fromRFC3339 := ""
-			if from != "" {
-				var err error
-				fromRFC3339, err = convertDateToRFC3339(from)
-				if err != nil {
-					return ListResult[api.BillingSubscription]{}, fmt.Errorf("invalid --from date: %w", err)
-				}
-			}
-			toRFC3339 := ""
-			if to != "" {
-				var err error
-				toRFC3339, err = convertDateToRFC3339End(to)
-				if err != nil {
-					return ListResult[api.BillingSubscription]{}, fmt.Errorf("invalid --to date: %w", err)
-				}
 			}
 
 			result, err := client.ListBillingSubscriptions(ctx, api.BillingSubscriptionListParams{

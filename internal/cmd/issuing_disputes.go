@@ -61,50 +61,13 @@ func newDisputesListCmd() *cobra.Command {
 			return disputeID(d)
 		},
 		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[api.TransactionDispute], error) {
-			if err := validateDate(from); err != nil {
-				return ListResult[api.TransactionDispute]{}, fmt.Errorf("invalid --from date: %w", err)
+			fromRFC3339, toRFC3339, err := parseDateRangeRFC3339(from, to, "--from", "--to", false)
+			if err != nil {
+				return ListResult[api.TransactionDispute]{}, err
 			}
-			if err := validateDate(to); err != nil {
-				return ListResult[api.TransactionDispute]{}, fmt.Errorf("invalid --to date: %w", err)
-			}
-			if err := validateDate(fromUpdated); err != nil {
-				return ListResult[api.TransactionDispute]{}, fmt.Errorf("invalid --from-updated date: %w", err)
-			}
-			if err := validateDate(toUpdated); err != nil {
-				return ListResult[api.TransactionDispute]{}, fmt.Errorf("invalid --to-updated date: %w", err)
-			}
-
-			fromRFC3339 := ""
-			if from != "" {
-				var err error
-				fromRFC3339, err = convertDateToRFC3339(from)
-				if err != nil {
-					return ListResult[api.TransactionDispute]{}, fmt.Errorf("invalid --from date: %w", err)
-				}
-			}
-			toRFC3339 := ""
-			if to != "" {
-				var err error
-				toRFC3339, err = convertDateToRFC3339End(to)
-				if err != nil {
-					return ListResult[api.TransactionDispute]{}, fmt.Errorf("invalid --to date: %w", err)
-				}
-			}
-			fromUpdatedRFC3339 := ""
-			if fromUpdated != "" {
-				var err error
-				fromUpdatedRFC3339, err = convertDateToRFC3339(fromUpdated)
-				if err != nil {
-					return ListResult[api.TransactionDispute]{}, fmt.Errorf("invalid --from-updated date: %w", err)
-				}
-			}
-			toUpdatedRFC3339 := ""
-			if toUpdated != "" {
-				var err error
-				toUpdatedRFC3339, err = convertDateToRFC3339End(toUpdated)
-				if err != nil {
-					return ListResult[api.TransactionDispute]{}, fmt.Errorf("invalid --to-updated date: %w", err)
-				}
+			fromUpdatedRFC3339, toUpdatedRFC3339, err := parseDateRangeRFC3339(fromUpdated, toUpdated, "--from-updated", "--to-updated", false)
+			if err != nil {
+				return ListResult[api.TransactionDispute]{}, err
 			}
 
 			result, err := client.ListTransactionDisputes(ctx, api.TransactionDisputeListParams{
