@@ -6,13 +6,13 @@ import (
 	"os"
 	"regexp"
 	"strings"
-	"text/tabwriter"
 
 	"github.com/spf13/cobra"
 
 	"github.com/salmonumbrella/airwallex-cli/internal/api"
 	"github.com/salmonumbrella/airwallex-cli/internal/flagmap"
 	"github.com/salmonumbrella/airwallex-cli/internal/outfmt"
+	"github.com/salmonumbrella/airwallex-cli/internal/reqbuilder"
 	"github.com/salmonumbrella/airwallex-cli/internal/schemavalidator"
 	"github.com/salmonumbrella/airwallex-cli/internal/ui"
 )
@@ -84,46 +84,35 @@ Examples:
 }
 
 func newBeneficiariesGetCmd() *cobra.Command {
-	return &cobra.Command{
+	return NewGetCommand(GetConfig[*api.Beneficiary]{
 		Use:   "get <beneficiaryId>",
 		Short: "Get beneficiary details",
-		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := getClient(cmd.Context())
-			if err != nil {
-				return err
+		Fetch: func(ctx context.Context, client *api.Client, id string) (*api.Beneficiary, error) {
+			return client.GetBeneficiary(ctx, id)
+		},
+		TextOutput: func(cmd *cobra.Command, b *api.Beneficiary) error {
+			rows := []outfmt.KV{
+				{Key: "beneficiary_id", Value: b.BeneficiaryID},
+				{Key: "nickname", Value: b.Nickname},
+				{Key: "entity_type", Value: b.Beneficiary.EntityType},
 			}
-
-			b, err := client.GetBeneficiary(cmd.Context(), args[0])
-			if err != nil {
-				return err
-			}
-
-			f := outfmt.FromContext(cmd.Context())
-
-			if outfmt.IsJSON(cmd.Context()) {
-				return f.Output(b)
-			}
-
-			// For "get" commands, still use manual tabwriter for key-value format
-			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-			_, _ = fmt.Fprintf(tw, "beneficiary_id\t%s\n", b.BeneficiaryID)
-			_, _ = fmt.Fprintf(tw, "nickname\t%s\n", b.Nickname)
-			_, _ = fmt.Fprintf(tw, "entity_type\t%s\n", b.Beneficiary.EntityType)
 			if b.Beneficiary.CompanyName != "" {
-				_, _ = fmt.Fprintf(tw, "company_name\t%s\n", b.Beneficiary.CompanyName)
+				rows = append(rows, outfmt.KV{Key: "company_name", Value: b.Beneficiary.CompanyName})
 			}
 			if b.Beneficiary.FirstName != "" {
-				_, _ = fmt.Fprintf(tw, "first_name\t%s\n", b.Beneficiary.FirstName)
-				_, _ = fmt.Fprintf(tw, "last_name\t%s\n", b.Beneficiary.LastName)
+				rows = append(rows,
+					outfmt.KV{Key: "first_name", Value: b.Beneficiary.FirstName},
+					outfmt.KV{Key: "last_name", Value: b.Beneficiary.LastName},
+				)
 			}
-			_, _ = fmt.Fprintf(tw, "bank_country\t%s\n", b.Beneficiary.BankDetails.BankCountryCode)
-			_, _ = fmt.Fprintf(tw, "bank_name\t%s\n", b.Beneficiary.BankDetails.BankName)
-			_, _ = fmt.Fprintf(tw, "account_name\t%s\n", b.Beneficiary.BankDetails.AccountName)
-			_ = tw.Flush()
-			return nil
+			rows = append(rows,
+				outfmt.KV{Key: "bank_country", Value: b.Beneficiary.BankDetails.BankCountryCode},
+				outfmt.KV{Key: "bank_name", Value: b.Beneficiary.BankDetails.BankName},
+				outfmt.KV{Key: "account_name", Value: b.Beneficiary.BankDetails.AccountName},
+			)
+			return outfmt.WriteKV(cmd.OutOrStdout(), rows)
 		},
-	}
+	}, getClient)
 }
 
 func newBeneficiariesCreateCmd() *cobra.Command {
@@ -196,6 +185,8 @@ func newBeneficiariesCreateCmd() *cobra.Command {
 	var addressPostcode string
 	// Validation mode
 	var validateOnly bool
+	// Raw field overrides
+	var fieldOverrides []string
 
 	cmd := &cobra.Command{
 		Use:   "create",
@@ -323,24 +314,35 @@ Examples:
 				return err
 			}
 
+			overrideFields, err := parseFieldOverrides(fieldOverrides)
+			if err != nil {
+				return err
+			}
+
 			// Validation: Required fields based on entity type
-			if accountName == "" {
+			accountNameValue := valueOrOverride(overrideFields, "beneficiary.bank_details.account_name", accountName)
+			accountCurrencyValue := valueOrOverride(overrideFields, "beneficiary.bank_details.account_currency", accountCurrency)
+			firstNameValue := valueOrOverride(overrideFields, "beneficiary.first_name", firstName)
+			lastNameValue := valueOrOverride(overrideFields, "beneficiary.last_name", lastName)
+			companyNameValue := valueOrOverride(overrideFields, "beneficiary.company_name", companyName)
+
+			if accountNameValue == "" {
 				return fmt.Errorf("--account-name is required")
 			}
-			if accountCurrency == "" {
+			if accountCurrencyValue == "" {
 				return fmt.Errorf("--account-currency is required")
 			}
 
 			switch entityType {
 			case "COMPANY":
-				if companyName == "" {
+				if companyNameValue == "" {
 					return fmt.Errorf("--company-name is required when entity-type is COMPANY")
 				}
 			case "PERSONAL":
-				if firstName == "" {
+				if firstNameValue == "" {
 					return fmt.Errorf("--first-name is required when entity-type is PERSONAL")
 				}
-				if lastName == "" {
+				if lastNameValue == "" {
 					return fmt.Errorf("--last-name is required when entity-type is PERSONAL")
 				}
 			}
@@ -365,8 +367,9 @@ Examples:
 			hasFPS := hkBankCode != "" || fpsID != "" || hkid != ""
 			hasPayID := payidPhone != "" || payidEmail != "" || payidABN != ""
 
+			hasRoutingOverride := hasRoutingOverrideField(overrideFields)
 			hasAnyRouting := hasEmail || hasPhone || hasEFT || hasSWIFT || hasRouting ||
-				hasIBAN || hasSortCode || hasBSB || hasIFSC || hasCLABE || hasBankCode || hasZengin || hasCNAPS || hasKorea || hasPayNow || hasClearing || hasFPS || hasPayID
+				hasIBAN || hasSortCode || hasBSB || hasIFSC || hasCLABE || hasBankCode || hasZengin || hasCNAPS || hasKorea || hasPayNow || hasClearing || hasFPS || hasPayID || hasRoutingOverride
 
 			if !hasAnyRouting {
 				return fmt.Errorf("must provide at least one routing method (e.g., --swift-code, --iban, --routing-number, --sort-code, --bsb)")
@@ -413,24 +416,28 @@ Examples:
 			}
 
 			// Validation: Interac e-Transfer (Canada)
-			isInterac := strings.EqualFold(localClearingSystem, "INTERAC")
+			localClearingValue := valueOrOverride(overrideFields, "beneficiary.bank_details.local_clearing_system", localClearingSystem)
+			isInterac := strings.EqualFold(localClearingValue, "INTERAC")
 			if (hasEmail || hasPhone) && strings.EqualFold(bankCountry, "CA") {
-				if localClearingSystem == "" {
-					localClearingSystem = "INTERAC"
+				if localClearingValue == "" {
+					localClearingValue = "INTERAC"
 					isInterac = true
 				} else if !isInterac {
 					return fmt.Errorf("--clearing-system must be INTERAC when using --email or --phone for CA")
 				}
 			}
 			if isInterac {
-				localClearingSystem = "INTERAC"
+				localClearingSystem = localClearingValue
 				if !strings.EqualFold(bankCountry, "CA") {
 					return fmt.Errorf("--clearing-system INTERAC is only valid with --bank-country CA")
 				}
 				if !hasEmail && !hasPhone {
 					return fmt.Errorf("--email or --phone is required for Interac e-Transfer")
 				}
-				if addressCountry == "" || addressStreet == "" || addressCity == "" {
+				addressCountryValue := valueOrOverride(overrideFields, "beneficiary.address.country_code", addressCountry)
+				addressStreetValue := valueOrOverride(overrideFields, "beneficiary.address.street_address", addressStreet)
+				addressCityValue := valueOrOverride(overrideFields, "beneficiary.address.city", addressCity)
+				if addressCountryValue == "" || addressStreetValue == "" || addressCityValue == "" {
 					return fmt.Errorf("--address-country, --address-street, and --address-city are required for Interac e-Transfer")
 				}
 			}
@@ -611,202 +618,177 @@ Examples:
 				}
 			}
 
-			// Build beneficiary object
-			beneficiary := map[string]interface{}{
-				"entity_type": entityType,
+			// Resolve routing unless overridden via --field.
+			routingType := ""
+			routingValue1 := ""
+			routingType2 := ""
+			routingValue2 := ""
+			hasRoutingOverride1 := overrideFields["beneficiary.bank_details.account_routing_value1"] != "" ||
+				overrideFields["beneficiary.bank_details.account_routing_type1"] != ""
+			hasRoutingOverride2 := overrideFields["beneficiary.bank_details.account_routing_value2"] != "" ||
+				overrideFields["beneficiary.bank_details.account_routing_type2"] != ""
+
+			if !hasRoutingOverride1 {
+				switch {
+				case routingNumber != "":
+					routingType = "aba"
+					routingValue1 = routingNumber
+				case sortCode != "":
+					routingType = "sort_code"
+					routingValue1 = sortCode
+				case bsb != "":
+					routingType = "bsb"
+					routingValue1 = bsb
+				case ifsc != "":
+					routingType = "ifsc"
+					routingValue1 = ifsc
+				case bankCode != "":
+					routingType = "bank_code"
+					routingValue1 = bankCode
+				case email != "":
+					routingType = "email_address"
+					routingValue1 = email
+				case phone != "":
+					routingType = "phone_number"
+					routingValue1 = phone
+				case institutionNumber != "":
+					routingType = "institution_number"
+					routingValue1 = institutionNumber
+					if transitNumber != "" {
+						routingType2 = "transit_number"
+						routingValue2 = transitNumber
+					}
+				case zenginBankCode != "":
+					routingType = "bank_code"
+					routingValue1 = zenginBankCode
+					if zenginBranchCode != "" {
+						routingType2 = "branch_code"
+						routingValue2 = zenginBranchCode
+					}
+				case cnaps != "":
+					routingType = "cnaps"
+					routingValue1 = cnaps
+				case koreaBankCode != "":
+					routingType = "bank_code"
+					routingValue1 = koreaBankCode
+				case nric != "":
+					routingType = "personal_id_number"
+					routingValue1 = strings.ToUpper(nric)
+				case uen != "":
+					routingType = "business_registration_number"
+					routingValue1 = uen
+				case paynowVPA != "":
+					routingType = "virtual_payment_address"
+					routingValue1 = paynowVPA
+				case sgBankCode != "":
+					routingType = "bank_code"
+					routingValue1 = sgBankCode
+				case clearingNumber != "":
+					routingType = "bank_code"
+					routingValue1 = clearingNumber
+				case hkBankCode != "":
+					routingType = "bank_code"
+					routingValue1 = hkBankCode
+				case fpsID != "":
+					routingType = "fps_identifier"
+					routingValue1 = fpsID
+				case hkid != "":
+					routingType = "personal_id_number"
+					routingValue1 = hkid
+				case payidPhone != "":
+					routingType = "phone_number"
+					routingValue1 = payidPhone
+				case payidEmail != "":
+					routingType = "email_address"
+					routingValue1 = payidEmail
+				case payidABN != "":
+					routingType = "australian_business_number"
+					routingValue1 = payidABN
+				}
 			}
-			if companyName != "" {
-				beneficiary["company_name"] = companyName
+
+			fields := map[string]string{
+				"beneficiary.entity_type":                    entityType,
+				"beneficiary.bank_details.bank_country_code": bankCountry,
 			}
-			if firstName != "" {
-				beneficiary["first_name"] = firstName
+			addMapped := func(flagName, value string) {
+				if value == "" {
+					return
+				}
+				if mapping, ok := flagmap.GetMapping(flagName); ok {
+					fields[mapping.SchemaPath] = value
+				}
 			}
-			if lastName != "" {
-				beneficiary["last_name"] = lastName
-			}
+
+			// Basic details
+			addMapped("nickname", nickname)
+			addMapped("company-name", companyName)
+			addMapped("first-name", firstName)
+			addMapped("last-name", lastName)
+
+			// Brazil convenience fields
 			if cpf != "" {
-				beneficiary["personal_id_type"] = "INDIVIDUAL_TAX_ID"
-				beneficiary["personal_id_number"] = cpf
+				fields["beneficiary.personal_id_number"] = cpf
+				if personalIDType == "" {
+					fields["beneficiary.personal_id_type"] = "INDIVIDUAL_TAX_ID"
+				}
 			}
 			if cnpj != "" {
-				beneficiary["business_registration_number"] = cnpj
+				fields["beneficiary.business_registration_number"] = cnpj
 			}
 
-			// China legal representative additional_info
-			if legalRepFirstName != "" || legalRepLastName != "" || legalRepID != "" {
-				additionalInfo := map[string]interface{}{}
-				if legalRepFirstName != "" {
-					additionalInfo["legal_rep_first_name"] = legalRepFirstName
+			// General ID fields (override convenience fields if provided)
+			addMapped("personal-id-type", personalIDType)
+			addMapped("personal-id-number", personalIDNumber)
+			addMapped("business-registration-number", businessRegNumber)
+
+			// China legal representative
+			addMapped("legal-rep-first-name", legalRepFirstName)
+			addMapped("legal-rep-last-name", legalRepLastName)
+			addMapped("legal-rep-id", legalRepID)
+
+			// Account/bank details
+			addMapped("account-name", accountName)
+			addMapped("account-number", accountNumber)
+			addMapped("account-currency", accountCurrency)
+			addMapped("account-category", bankAccountCategory)
+			addMapped("bank-name", bankName)
+			addMapped("bank-branch", bankBranch)
+			addMapped("bank-code", bankCode)
+			addMapped("branch-code", branchCode)
+			addMapped("swift-code", swiftCode)
+			addMapped("iban", iban)
+			addMapped("clabe", clabe)
+			addMapped("clearing-system", localClearingSystem)
+
+			// Address
+			addMapped("address-country", addressCountry)
+			addMapped("address-street", addressStreet)
+			addMapped("address-city", addressCity)
+			addMapped("address-state", addressState)
+			addMapped("address-postcode", addressPostcode)
+
+			// Routing values
+			if routingValue1 != "" && !hasRoutingOverride1 {
+				fields["beneficiary.bank_details.account_routing_value1"] = routingValue1
+				if routingType != "" {
+					fields["beneficiary.bank_details.account_routing_type1"] = routingType
 				}
-				if legalRepLastName != "" {
-					additionalInfo["legal_rep_last_name"] = legalRepLastName
+			}
+			if routingValue2 != "" && !hasRoutingOverride2 {
+				fields["beneficiary.bank_details.account_routing_value2"] = routingValue2
+				if routingType2 != "" {
+					fields["beneficiary.bank_details.account_routing_type2"] = routingType2
 				}
-				if legalRepID != "" {
-					additionalInfo["legal_rep_id_number"] = legalRepID
-				}
-				beneficiary["additional_info"] = additionalInfo
 			}
 
-			// General ID fields (China and others)
-			if personalIDType != "" {
-				beneficiary["personal_id_type"] = personalIDType
-			}
-			if personalIDNumber != "" {
-				beneficiary["personal_id_number"] = personalIDNumber
-			}
-			if businessRegNumber != "" {
-				beneficiary["business_registration_number"] = businessRegNumber
-			}
-
-			// Build address (required for Interac)
-			if addressCountry != "" || addressStreet != "" || addressCity != "" {
-				address := map[string]interface{}{}
-				if addressCountry != "" {
-					address["country_code"] = addressCountry
-				}
-				if addressStreet != "" {
-					address["street_address"] = addressStreet
-				}
-				if addressCity != "" {
-					address["city"] = addressCity
-				}
-				if addressState != "" {
-					address["state"] = addressState
-				}
-				if addressPostcode != "" {
-					address["postcode"] = addressPostcode
-				}
-				beneficiary["address"] = address
-			}
-
-			// Build bank_details
-			bankDetails := map[string]interface{}{
-				"bank_country_code": bankCountry,
-			}
-			if accountCurrency != "" {
-				bankDetails["account_currency"] = accountCurrency
-			}
-			if accountName != "" {
-				bankDetails["account_name"] = accountName
-			}
-			if accountNumber != "" {
-				bankDetails["account_number"] = accountNumber
-			}
-			if bankAccountCategory != "" {
-				bankDetails["bank_account_category"] = bankAccountCategory
-			}
-			if localClearingSystem != "" {
-				bankDetails["local_clearing_system"] = localClearingSystem
-			}
-			if bankName != "" {
-				bankDetails["bank_name"] = bankName
-			}
-
-			// Handle routing - SWIFT/international first
-			if swiftCode != "" {
-				bankDetails["swift_code"] = swiftCode
-			}
-			if iban != "" {
-				bankDetails["iban"] = iban
-			}
-			if clabe != "" {
-				bankDetails["clabe"] = clabe
-			}
-
-			// Set account_routing_type1/value1 based on provided flag
-			if routingNumber != "" {
-				bankDetails["account_routing_type1"] = "aba"
-				bankDetails["account_routing_value1"] = routingNumber
-			} else if sortCode != "" {
-				bankDetails["account_routing_type1"] = "sort_code"
-				bankDetails["account_routing_value1"] = sortCode
-			} else if bsb != "" {
-				bankDetails["account_routing_type1"] = "bsb"
-				bankDetails["account_routing_value1"] = bsb
-			} else if ifsc != "" {
-				bankDetails["account_routing_type1"] = "ifsc"
-				bankDetails["account_routing_value1"] = ifsc
-			} else if bankCode != "" {
-				bankDetails["account_routing_type1"] = "bank_code"
-				bankDetails["account_routing_value1"] = bankCode
-			} else if email != "" {
-				bankDetails["account_routing_type1"] = "email_address"
-				bankDetails["account_routing_value1"] = email
-			} else if phone != "" {
-				bankDetails["account_routing_type1"] = "phone_number"
-				bankDetails["account_routing_value1"] = phone
-			} else if institutionNumber != "" {
-				bankDetails["account_routing_type1"] = "institution_number"
-				bankDetails["account_routing_value1"] = institutionNumber
-				if transitNumber != "" {
-					bankDetails["account_routing_type2"] = "transit_number"
-					bankDetails["account_routing_value2"] = transitNumber
-				}
-			} else if zenginBankCode != "" {
-				bankDetails["account_routing_type1"] = "bank_code"
-				bankDetails["account_routing_value1"] = zenginBankCode
-				if zenginBranchCode != "" {
-					bankDetails["account_routing_type2"] = "branch_code"
-					bankDetails["account_routing_value2"] = zenginBranchCode
-				}
-			} else if cnaps != "" {
-				bankDetails["account_routing_type1"] = "cnaps"
-				bankDetails["account_routing_value1"] = cnaps
-			} else if koreaBankCode != "" {
-				bankDetails["account_routing_type1"] = "bank_code"
-				bankDetails["account_routing_value1"] = koreaBankCode
-			} else if nric != "" {
-				bankDetails["account_routing_type1"] = "personal_id_number"
-				bankDetails["account_routing_value1"] = strings.ToUpper(nric)
-			} else if uen != "" {
-				bankDetails["account_routing_type1"] = "business_registration_number"
-				bankDetails["account_routing_value1"] = uen
-			} else if paynowVPA != "" {
-				bankDetails["account_routing_type1"] = "virtual_payment_address"
-				bankDetails["account_routing_value1"] = paynowVPA
-			} else if sgBankCode != "" {
-				bankDetails["account_routing_type1"] = "bank_code"
-				bankDetails["account_routing_value1"] = sgBankCode
-			} else if clearingNumber != "" {
-				bankDetails["account_routing_type1"] = "bank_code"
-				bankDetails["account_routing_value1"] = clearingNumber
-			} else if hkBankCode != "" {
-				bankDetails["account_routing_type1"] = "bank_code"
-				bankDetails["account_routing_value1"] = hkBankCode
-			} else if fpsID != "" {
-				bankDetails["account_routing_type1"] = "fps_identifier"
-				bankDetails["account_routing_value1"] = fpsID
-			} else if hkid != "" {
-				bankDetails["account_routing_type1"] = "personal_id_number"
-				bankDetails["account_routing_value1"] = hkid
-			} else if payidPhone != "" {
-				bankDetails["account_routing_type1"] = "phone_number"
-				bankDetails["account_routing_value1"] = payidPhone
-			} else if payidEmail != "" {
-				bankDetails["account_routing_type1"] = "email_address"
-				bankDetails["account_routing_value1"] = payidEmail
-			} else if payidABN != "" {
-				bankDetails["account_routing_type1"] = "australian_business_number"
-				bankDetails["account_routing_value1"] = payidABN
-			}
-
-			if branchCode != "" {
-				bankDetails["branch_code"] = branchCode
-			}
-			if bankBranch != "" {
-				bankDetails["bank_branch"] = bankBranch
-			}
-
-			beneficiary["bank_details"] = bankDetails
-
-			// Build request
-			req := map[string]interface{}{
-				"beneficiary":      beneficiary,
+			req := reqbuilder.BuildNestedMap(fields)
+			req = reqbuilder.MergeRequest(req, map[string]interface{}{
 				"transfer_methods": []string{paymentMethod},
 				"payment_methods":  []string{paymentMethod},
-			}
-			if nickname != "" {
-				req["nickname"] = nickname
+			})
+			if len(overrideFields) > 0 {
+				req = reqbuilder.MergeRequest(req, reqbuilder.BuildNestedMap(overrideFields))
 			}
 
 			// Optional: Fetch schema and validate
@@ -816,103 +798,34 @@ Examples:
 					return fmt.Errorf("failed to fetch schema: %w", err)
 				}
 
-				// Build provided fields map for validation using flagmap
+				// Build provided fields map for validation using flagmap + overrides
 				provided := make(map[string]string)
-
-				// Helper to add a field using flagmap
-				addField := func(flagName, value string) {
-					if value != "" {
-						if m, ok := flagmap.GetMapping(flagName); ok {
-							provided[m.SchemaPath] = value
-						}
+				addProvided := func(flagName, value string) {
+					if value == "" {
+						return
+					}
+					if m, ok := flagmap.GetMapping(flagName); ok {
+						provided[m.SchemaPath] = value
 					}
 				}
 
-				// Top-level request fields
-				addField("entity-type", entityType)
-				addField("bank-country", bankCountry)
-				addField("payment-method", paymentMethod)
+				addProvided("entity-type", entityType)
+				addProvided("bank-country", bankCountry)
+				addProvided("payment-method", paymentMethod)
 
-				// Account details
-				addField("account-name", accountName)
-				addField("account-number", accountNumber)
-				addField("account-currency", accountCurrency)
-				addField("account-category", bankAccountCategory)
-
-				// SWIFT/International routing
-				addField("swift-code", swiftCode)
-				addField("iban", iban)
-				addField("clabe", clabe)
-
-				// Country-specific routing
-				addField("routing-number", routingNumber)
-				addField("sort-code", sortCode)
-				addField("bsb", bsb)
-				addField("ifsc", ifsc)
-				addField("bank-code", bankCode)
-				addField("branch-code", branchCode)
-
-				// Japan Zengin
-				addField("zengin-bank-code", zenginBankCode)
-				addField("zengin-branch-code", zenginBranchCode)
-
-				// China CNAPS
-				addField("cnaps", cnaps)
-
-				// South Korea
-				addField("korea-bank-code", koreaBankCode)
-
-				// Brazil
-				addField("cpf", cpf)
-				addField("cnpj", cnpj)
-				addField("bank-branch", bankBranch)
-
-				// Singapore PayNow
-				addField("paynow-vpa", paynowVPA)
-				addField("uen", uen)
-				addField("nric", nric)
-				addField("sg-bank-code", sgBankCode)
-
-				// Canada EFT
-				addField("institution-number", institutionNumber)
-				addField("transit-number", transitNumber)
-
-				// Sweden
-				addField("clearing-number", clearingNumber)
-
-				// Hong Kong FPS
-				addField("hk-bank-code", hkBankCode)
-				addField("fps-id", fpsID)
-				addField("hkid", hkid)
-
-				// China legal representative and general ID fields
-				addField("legal-rep-first-name", legalRepFirstName)
-				addField("legal-rep-last-name", legalRepLastName)
-				addField("legal-rep-id", legalRepID)
-				addField("bank-name", bankName)
-				addField("personal-id-type", personalIDType)
-				addField("personal-id-number", personalIDNumber)
-				addField("business-registration-number", businessRegNumber)
-
-				// Email/phone routing (not in flagmap, use direct paths)
-				if email != "" {
-					provided["beneficiary.bank_details.account_routing_value1"] = email
-				}
-				if phone != "" {
-					provided["beneficiary.bank_details.account_routing_value1"] = phone
+				for path, value := range fields {
+					if value == "" {
+						continue
+					}
+					provided[path] = value
 				}
 
-				// Entity details
-				addField("company-name", companyName)
-				addField("first-name", firstName)
-				addField("last-name", lastName)
-
-				// Address fields
-				addField("address-country", addressCountry)
-				addField("address-street", addressStreet)
-				addField("address-city", addressCity)
-				addField("address-state", addressState)
-				addField("address-postcode", addressPostcode)
+				for path, value := range overrideFields {
+					if value == "" {
+						continue
+					}
+					provided[path] = value
+				}
 
 				// Validate using schemavalidator package
 				missing, err := schemavalidator.Validate(schema, provided)
@@ -922,6 +835,21 @@ Examples:
 
 				if len(missing) > 0 {
 					return fmt.Errorf("%s", schemavalidator.FormatMissingFields(missing))
+				}
+
+				for _, field := range schema.Fields {
+					if field.Rule.Pattern == "" {
+						continue
+					}
+					path := field.Path
+					if path == "" {
+						path = field.Key
+					}
+					if value, ok := provided[path]; ok && value != "" {
+						if err := schemavalidator.ValidatePattern(value, field.Rule.Pattern); err != nil {
+							return fmt.Errorf("field %s: %w", field.Key, err)
+						}
+					}
 				}
 
 				// Show what would be sent
@@ -1041,6 +969,7 @@ Examples:
 
 	// Validation mode flag
 	cmd.Flags().BoolVar(&validateOnly, "validate", false, "Validate against schema without creating")
+	cmd.Flags().StringArrayVar(&fieldOverrides, "field", nil, "Set raw field (path=value)")
 
 	mustMarkRequired(cmd, "entity-type")
 	mustMarkRequired(cmd, "bank-country")
@@ -1058,6 +987,7 @@ func newBeneficiariesUpdateCmd() *cobra.Command {
 	var addressCity string
 	var addressState string
 	var addressPostcode string
+	var fieldOverrides []string
 
 	cmd := &cobra.Command{
 		Use:   "update <beneficiaryId>",
@@ -1079,10 +1009,16 @@ func newBeneficiariesUpdateCmd() *cobra.Command {
 				cmd.Flags().Changed("address-street") ||
 				cmd.Flags().Changed("address-city") ||
 				cmd.Flags().Changed("address-state") ||
-				cmd.Flags().Changed("address-postcode")
+				cmd.Flags().Changed("address-postcode") ||
+				len(fieldOverrides) > 0
 
 			if !hasUpdates {
 				return fmt.Errorf("no updates specified")
+			}
+
+			overrideFields, err := parseFieldOverrides(fieldOverrides)
+			if err != nil {
+				return err
 			}
 
 			// Fetch existing beneficiary data
@@ -1094,50 +1030,49 @@ func newBeneficiariesUpdateCmd() *cobra.Command {
 			// Remove id field - API doesn't want it in update request
 			delete(existing, "id")
 
-			// Apply updates to top-level fields
+			updateFields := make(map[string]string)
+			addMapped := func(flagName, value string) {
+				if value == "" {
+					return
+				}
+				if mapping, ok := flagmap.GetMapping(flagName); ok {
+					updateFields[mapping.SchemaPath] = value
+				}
+			}
+
 			if cmd.Flags().Changed("nickname") {
-				existing["nickname"] = nickname
+				addMapped("nickname", nickname)
 			}
-
-			// Get or create beneficiary object
-			beneficiaryObj, ok := existing["beneficiary"].(map[string]interface{})
-			if !ok {
-				beneficiaryObj = make(map[string]interface{})
-			}
-
-			// Apply name updates
 			if cmd.Flags().Changed("company-name") {
-				beneficiaryObj["company_name"] = companyName
+				addMapped("company-name", companyName)
 			}
 			if cmd.Flags().Changed("first-name") {
-				beneficiaryObj["first_name"] = firstName
+				addMapped("first-name", firstName)
 			}
 			if cmd.Flags().Changed("last-name") {
-				beneficiaryObj["last_name"] = lastName
-			}
-
-			// Apply address updates
-			addressObj, ok := beneficiaryObj["address"].(map[string]interface{})
-			if !ok {
-				addressObj = make(map[string]interface{})
+				addMapped("last-name", lastName)
 			}
 			if cmd.Flags().Changed("address-country") {
-				addressObj["country_code"] = addressCountry
+				addMapped("address-country", addressCountry)
 			}
 			if cmd.Flags().Changed("address-street") {
-				addressObj["street_address"] = addressStreet
+				addMapped("address-street", addressStreet)
 			}
 			if cmd.Flags().Changed("address-city") {
-				addressObj["city"] = addressCity
+				addMapped("address-city", addressCity)
 			}
 			if cmd.Flags().Changed("address-state") {
-				addressObj["state"] = addressState
+				addMapped("address-state", addressState)
 			}
 			if cmd.Flags().Changed("address-postcode") {
-				addressObj["postcode"] = addressPostcode
+				addMapped("address-postcode", addressPostcode)
 			}
-			beneficiaryObj["address"] = addressObj
-			existing["beneficiary"] = beneficiaryObj
+
+			updateReq := reqbuilder.BuildNestedMap(updateFields)
+			if len(overrideFields) > 0 {
+				updateReq = reqbuilder.MergeRequest(updateReq, reqbuilder.BuildNestedMap(overrideFields))
+			}
+			existing = reqbuilder.MergeRequest(existing, updateReq)
 
 			b, err := client.UpdateBeneficiary(cmd.Context(), args[0], existing)
 			if err != nil {
@@ -1163,6 +1098,7 @@ func newBeneficiariesUpdateCmd() *cobra.Command {
 	cmd.Flags().StringVar(&addressCity, "address-city", "", "Beneficiary city")
 	cmd.Flags().StringVar(&addressState, "address-state", "", "Beneficiary state/province")
 	cmd.Flags().StringVar(&addressPostcode, "address-postcode", "", "Beneficiary postal code")
+	cmd.Flags().StringArrayVar(&fieldOverrides, "field", nil, "Set raw field (path=value)")
 	return cmd
 }
 
@@ -1236,4 +1172,47 @@ func newBeneficiariesValidateCmd() *cobra.Command {
 	mustMarkRequired(cmd, "entity-type")
 	mustMarkRequired(cmd, "bank-country")
 	return cmd
+}
+
+func parseFieldOverrides(entries []string) (map[string]string, error) {
+	overrides := make(map[string]string)
+	for _, entry := range entries {
+		if entry == "" {
+			continue
+		}
+		parts := strings.SplitN(entry, "=", 2)
+		if len(parts) != 2 || parts[0] == "" {
+			return nil, fmt.Errorf("--field must be in path=value format: %q", entry)
+		}
+		overrides[parts[0]] = parts[1]
+	}
+	return overrides, nil
+}
+
+func valueOrOverride(overrides map[string]string, path, fallback string) string {
+	if value, ok := overrides[path]; ok && value != "" {
+		return value
+	}
+	return fallback
+}
+
+func hasRoutingOverrideField(overrides map[string]string) bool {
+	for path, value := range overrides {
+		if value == "" {
+			continue
+		}
+		if strings.HasPrefix(path, "beneficiary.bank_details.account_routing_") {
+			return true
+		}
+		switch path {
+		case "beneficiary.bank_details.swift_code",
+			"beneficiary.bank_details.iban",
+			"beneficiary.bank_details.clabe",
+			"beneficiary.bank_details.bank_code",
+			"beneficiary.bank_details.branch_code",
+			"beneficiary.bank_details.bank_branch":
+			return true
+		}
+	}
+	return false
 }
