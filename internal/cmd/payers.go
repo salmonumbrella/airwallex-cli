@@ -195,10 +195,7 @@ func newPayersDeleteCmd() *cobra.Command {
 }
 
 func newPayersValidateCmd() *cobra.Command {
-	var data string
-	var fromFile string
-
-	cmd := &cobra.Command{
+	return NewPayloadCommand(PayloadCommandConfig[map[string]any]{
 		Use:   "validate",
 		Short: "Validate payer details",
 		Long: `Validate payer details using a JSON payload.
@@ -206,32 +203,14 @@ func newPayersValidateCmd() *cobra.Command {
 Examples:
   airwallex payers validate --data '{"entity_type":"COMPANY","name":"Acme Corp"}'
   airwallex payers validate --from-file payer.json`,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			u := ui.FromContext(cmd.Context())
-			client, err := getClient(cmd.Context())
-			if err != nil {
-				return err
+		Run: func(ctx context.Context, client *api.Client, args []string, payload map[string]interface{}) (map[string]any, error) {
+			if err := client.ValidatePayer(ctx, payload); err != nil {
+				return nil, err
 			}
-
-			payload, err := readJSONPayload(data, fromFile)
-			if err != nil {
-				return err
-			}
-
-			if err := client.ValidatePayer(cmd.Context(), payload); err != nil {
-				return err
-			}
-
-			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, map[string]any{"valid": true})
-			}
-
-			u.Success("Payer details are valid")
-			return nil
+			return map[string]any{"valid": true}, nil
 		},
-	}
-
-	cmd.Flags().StringVar(&data, "data", "", "Inline JSON payload")
-	cmd.Flags().StringVar(&fromFile, "from-file", "", "Path to JSON payload file (- for stdin)")
-	return cmd
+		SuccessMessage: func(_ map[string]any) string {
+			return "Payer details are valid"
+		},
+	}, getClient)
 }
