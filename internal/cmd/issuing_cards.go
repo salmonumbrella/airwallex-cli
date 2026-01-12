@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -30,60 +31,33 @@ func newCardsCmd() *cobra.Command {
 func newCardsListCmd() *cobra.Command {
 	var status string
 	var cardholderID string
-	var page int
-	var pageSize int
-
-	cmd := &cobra.Command{
-		Use:   "list",
-		Short: "List cards",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := getClient(cmd.Context())
-			if err != nil {
-				return err
+	cmd := NewListCommand(ListConfig[api.Card]{
+		Use:          "list",
+		Short:        "List cards",
+		Headers:      []string{"CARD_ID", "STATUS", "NICKNAME", "LAST4", "FORM_FACTOR", "CARDHOLDER"},
+		EmptyMessage: "No cards found",
+		RowFunc: func(c api.Card) []string {
+			last4 := ""
+			if len(c.CardNumber) >= 4 {
+				last4 = c.CardNumber[len(c.CardNumber)-4:]
 			}
-
-			pageSize = normalizePageSize(pageSize)
-
-			cards, err := client.ListCards(cmd.Context(), status, cardholderID, page, pageSize)
-			if err != nil {
-				return err
-			}
-
-			f := outfmt.FromContext(cmd.Context())
-
-			if len(cards.Items) == 0 {
-				if outfmt.IsJSON(cmd.Context()) {
-					return f.Output(cards)
-				}
-				f.Empty("No cards found")
-				return nil
-			}
-
-			headers := []string{"CARD_ID", "STATUS", "NICKNAME", "LAST4", "FORM_FACTOR", "CARDHOLDER"}
-			rowFn := func(item any) []string {
-				c := item.(api.Card)
-				last4 := ""
-				if len(c.CardNumber) >= 4 {
-					last4 = c.CardNumber[len(c.CardNumber)-4:]
-				}
-				return []string{c.CardID, c.CardStatus, c.NickName, last4, c.FormFactor, c.CardholderID}
-			}
-
-			if err := f.OutputList(cards.Items, headers, rowFn); err != nil {
-				return err
-			}
-
-			if !outfmt.IsJSON(cmd.Context()) && cards.HasMore {
-				_, _ = fmt.Fprintln(os.Stderr, "# More results available")
-			}
-			return nil
+			return []string{c.CardID, c.CardStatus, c.NickName, last4, c.FormFactor, c.CardholderID}
 		},
-	}
+		MoreHint: "# More results available",
+		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[api.Card], error) {
+			cards, err := client.ListCards(ctx, status, cardholderID, opts.Page, normalizePageSize(opts.Limit))
+			if err != nil {
+				return ListResult[api.Card]{}, err
+			}
+			return ListResult[api.Card]{
+				Items:   cards.Items,
+				HasMore: cards.HasMore,
+			}, nil
+		},
+	}, getClient)
 
 	cmd.Flags().StringVar(&status, "status", "", "Filter by status (ACTIVE, INACTIVE, CLOSED)")
 	cmd.Flags().StringVar(&cardholderID, "cardholder-id", "", "Filter by cardholder")
-	cmd.Flags().IntVar(&page, "page", 0, "Page number (0 = first page)")
-	cmd.Flags().IntVar(&pageSize, "page-size", 20, "API page size (min 10)")
 	return cmd
 }
 

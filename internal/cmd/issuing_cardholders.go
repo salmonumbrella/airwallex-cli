@@ -25,55 +25,27 @@ func newCardholdersCmd() *cobra.Command {
 }
 
 func newCardholdersListCmd() *cobra.Command {
-	var page int
-	var pageSize int
-
-	cmd := &cobra.Command{
-		Use:   "list",
-		Short: "List cardholders",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := getClient(cmd.Context())
-			if err != nil {
-				return err
-			}
-
-			pageSize = normalizePageSize(pageSize)
-
-			result, err := client.ListCardholders(cmd.Context(), page, pageSize)
-			if err != nil {
-				return err
-			}
-
-			f := outfmt.FromContext(cmd.Context())
-
-			if len(result.Items) == 0 {
-				if outfmt.IsJSON(cmd.Context()) {
-					return f.Output(result)
-				}
-				f.Empty("No cardholders found")
-				return nil
-			}
-
-			headers := []string{"CARDHOLDER_ID", "TYPE", "NAME", "EMAIL", "STATUS"}
-			rowFn := func(item any) []string {
-				ch := item.(api.Cardholder)
-				name := fmt.Sprintf("%s %s", ch.FirstName, ch.LastName)
-				return []string{ch.CardholderID, ch.Type, name, ch.Email, ch.Status}
-			}
-
-			if err := f.OutputList(result.Items, headers, rowFn); err != nil {
-				return err
-			}
-
-			if !outfmt.IsJSON(cmd.Context()) && result.HasMore {
-				fmt.Fprintln(os.Stderr, "# More results available")
-			}
-			return nil
+	cmd := NewListCommand(ListConfig[api.Cardholder]{
+		Use:          "list",
+		Short:        "List cardholders",
+		Headers:      []string{"CARDHOLDER_ID", "TYPE", "NAME", "EMAIL", "STATUS"},
+		EmptyMessage: "No cardholders found",
+		RowFunc: func(ch api.Cardholder) []string {
+			name := fmt.Sprintf("%s %s", ch.FirstName, ch.LastName)
+			return []string{ch.CardholderID, ch.Type, name, ch.Email, ch.Status}
 		},
-	}
-
-	cmd.Flags().IntVar(&page, "page", 0, "Page number (0 = first page)")
-	cmd.Flags().IntVar(&pageSize, "page-size", 20, "API page size (min 10)")
+		MoreHint: "# More results available",
+		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[api.Cardholder], error) {
+			result, err := client.ListCardholders(ctx, opts.Page, normalizePageSize(opts.Limit))
+			if err != nil {
+				return ListResult[api.Cardholder]{}, err
+			}
+			return ListResult[api.Cardholder]{
+				Items:   result.Items,
+				HasMore: result.HasMore,
+			}, nil
+		},
+	}, getClient)
 	return cmd
 }
 

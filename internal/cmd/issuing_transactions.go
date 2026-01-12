@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"github.com/spf13/cobra"
 
@@ -25,10 +24,7 @@ func newTransactionsListCmd() *cobra.Command {
 	var cardID string
 	var from string
 	var to string
-	var page int
-	var pageSize int
-
-	cmd := &cobra.Command{
+	cmd := NewListCommand(ListConfig[api.Transaction]{
 		Use:   "list",
 		Short: "List transactions",
 		Long: `List card transactions with optional filters.
@@ -70,68 +66,33 @@ Examples:
   # Compact view with selected fields
   airwallex issuing transactions list --output json --query \
     '.[] | {date: .transaction_date[0:10], merchant: .merchant.name, amount: .transaction_amount}'`,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := getClient(cmd.Context())
-			if err != nil {
-				return err
-			}
-
-			// Convert YYYY-MM-DD dates to RFC3339 format
-			var fromRFC3339, toRFC3339 string
-
-			if from != "" {
-				fromRFC3339, err = convertDateToRFC3339(from)
-				if err != nil {
-					return fmt.Errorf("invalid --from date: %w", err)
-				}
-			}
-
-			if to != "" {
-				toRFC3339, err = convertDateToRFC3339End(to)
-				if err != nil {
-					return fmt.Errorf("invalid --to date: %w", err)
-				}
-			}
-
-			pageSize = normalizePageSize(pageSize)
-
-			result, err := client.ListTransactions(cmd.Context(), cardID, fromRFC3339, toRFC3339, page, pageSize)
-			if err != nil {
-				return err
-			}
-
-			f := outfmt.FromContext(cmd.Context())
-
-			if len(result.Items) == 0 {
-				if outfmt.IsJSON(cmd.Context()) {
-					return f.Output(result)
-				}
-				f.Empty("No transactions found")
-				return nil
-			}
-
-			headers := []string{"TRANSACTION_ID", "TYPE", "AMOUNT", "CURRENCY", "MERCHANT", "STATUS"}
-			rowFn := func(item any) []string {
-				txn := item.(api.Transaction)
-				return []string{txn.TransactionID, txn.TransactionType, fmt.Sprintf("%.2f", txn.Amount), txn.Currency, txn.Merchant.Name, txn.Status}
-			}
-
-			if err := f.OutputList(result.Items, headers, rowFn); err != nil {
-				return err
-			}
-
-			if !outfmt.IsJSON(cmd.Context()) && result.HasMore {
-				_, _ = fmt.Fprintln(os.Stderr, "# More results available")
-			}
-			return nil
+		Headers:      []string{"TRANSACTION_ID", "TYPE", "AMOUNT", "CURRENCY", "MERCHANT", "STATUS"},
+		EmptyMessage: "No transactions found",
+		RowFunc: func(txn api.Transaction) []string {
+			return []string{txn.TransactionID, txn.TransactionType, fmt.Sprintf("%.2f", txn.Amount), txn.Currency, txn.Merchant.Name, txn.Status}
 		},
-	}
+		MoreHint: "# More results available",
+		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[api.Transaction], error) {
+			fromRFC3339, toRFC3339, err := parseDateRangeRFC3339(from, to, "--from", "--to", false)
+			if err != nil {
+				return ListResult[api.Transaction]{}, err
+			}
+
+			result, err := client.ListTransactions(ctx, cardID, fromRFC3339, toRFC3339, opts.Page, normalizePageSize(opts.Limit))
+			if err != nil {
+				return ListResult[api.Transaction]{}, err
+			}
+
+			return ListResult[api.Transaction]{
+				Items:   result.Items,
+				HasMore: result.HasMore,
+			}, nil
+		},
+	}, getClient)
 
 	cmd.Flags().StringVar(&cardID, "card-id", "", "Filter by card ID")
 	cmd.Flags().StringVar(&from, "from", "", "From date (YYYY-MM-DD)")
 	cmd.Flags().StringVar(&to, "to", "", "To date (YYYY-MM-DD)")
-	cmd.Flags().IntVar(&page, "page", 0, "Page number (0 = first page)")
-	cmd.Flags().IntVar(&pageSize, "page-size", 20, "API page size (min 10)")
 	return cmd
 }
 
