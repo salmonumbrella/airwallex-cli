@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"text/tabwriter"
 
 	"github.com/google/uuid"
 	"github.com/spf13/cobra"
@@ -198,14 +197,14 @@ Examples:
 			}
 
 			u.Success(fmt.Sprintf("Conversion executed: %s", conv.ID))
-			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-			_, _ = fmt.Fprintf(tw, "conversion_id\t%s\n", conv.ID)
-			_, _ = fmt.Fprintf(tw, "sold\t%.2f %s\n", conv.SellAmount, conv.SellCurrency)
-			_, _ = fmt.Fprintf(tw, "bought\t%.2f %s\n", conv.BuyAmount, conv.BuyCurrency)
-			_, _ = fmt.Fprintf(tw, "rate\t%.6f\n", conv.Rate)
-			_, _ = fmt.Fprintf(tw, "status\t%s\n", conv.Status)
-			_ = tw.Flush()
-			return nil
+			rows := []outfmt.KV{
+				{Key: "conversion_id", Value: conv.ID},
+				{Key: "sold", Value: fmt.Sprintf("%.2f %s", conv.SellAmount, conv.SellCurrency)},
+				{Key: "bought", Value: fmt.Sprintf("%.2f %s", conv.BuyAmount, conv.BuyCurrency)},
+				{Key: "rate", Value: fmt.Sprintf("%.6f", conv.Rate)},
+				{Key: "status", Value: conv.Status},
+			}
+			return outfmt.WriteKV(cmd.OutOrStdout(), rows)
 		},
 	}
 
