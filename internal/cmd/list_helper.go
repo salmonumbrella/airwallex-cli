@@ -34,6 +34,11 @@ type ListConfig[T any] struct {
 
 	// Fetch function - called with pagination options
 	Fetch func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[T], error)
+	// FetchWithArgs is an optional variant that also receives positional args.
+	FetchWithArgs func(ctx context.Context, client *api.Client, opts ListOptions, args []string) (ListResult[T], error)
+
+	// Args configures cobra positional args validation.
+	Args cobra.PositionalArgs
 
 	// Output configuration
 	Headers      []string
@@ -44,6 +49,9 @@ type ListConfig[T any] struct {
 	// IDFunc extracts ID from item for cursor-based pagination
 	// If nil, next cursor hint won't be shown
 	IDFunc func(T) string
+
+	// MoreHint overrides the default "next page" hint when HasMore is true.
+	MoreHint string
 }
 
 // NewListCommand creates a cobra command from ListConfig
@@ -71,12 +79,21 @@ func NewListCommand[T any](cfg ListConfig[T], getClient func(context.Context) (*
 				return err
 			}
 
-			result, err := cfg.Fetch(cmd.Context(), client, ListOptions{
+			opts := ListOptions{
 				Options: pagination.Options{
 					Limit:  limit,
 					Cursor: after,
 				},
-			})
+			}
+			var result ListResult[T]
+			switch {
+			case cfg.FetchWithArgs != nil:
+				result, err = cfg.FetchWithArgs(cmd.Context(), client, opts, args)
+			case cfg.Fetch != nil:
+				result, err = cfg.Fetch(cmd.Context(), client, opts)
+			default:
+				return fmt.Errorf("list command missing Fetch")
+			}
 			if err != nil {
 				return err
 			}
@@ -125,12 +142,19 @@ func NewListCommand[T any](cfg ListConfig[T], getClient func(context.Context) (*
 			}
 
 			// Show pagination hint for text output
-			if result.HasMore && cfg.IDFunc != nil {
-				lastID := cfg.IDFunc(result.Items[len(result.Items)-1])
-				fmt.Fprintf(os.Stderr, "# More results available. Next page: --after %s\n", lastID)
+			if result.HasMore {
+				if cfg.MoreHint != "" {
+					fmt.Fprintln(os.Stderr, cfg.MoreHint)
+				} else if cfg.IDFunc != nil {
+					lastID := cfg.IDFunc(result.Items[len(result.Items)-1])
+					fmt.Fprintf(os.Stderr, "# More results available. Next page: --after %s\n", lastID)
+				}
 			}
 			return nil
 		},
+	}
+	if cfg.Args != nil {
+		cmd.Args = cfg.Args
 	}
 
 	cmd.Flags().IntVar(&limit, "limit", 20, "Max items to return (1-100)")

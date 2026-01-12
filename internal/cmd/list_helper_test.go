@@ -5,6 +5,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/spf13/cobra"
+
 	"github.com/salmonumbrella/airwallex-cli/internal/api"
 	"github.com/salmonumbrella/airwallex-cli/internal/outfmt"
 )
@@ -187,6 +189,43 @@ func TestNewListCommand_EmptyResults(t *testing.T) {
 
 	if !emptyCalled {
 		t.Error("expected Fetch to be called for empty results")
+	}
+}
+
+func TestNewListCommand_FetchWithArgs(t *testing.T) {
+	var capturedArg string
+
+	cfg := ListConfig[testItem]{
+		Use:          "test <id>",
+		Short:        "Test list command",
+		Headers:      []string{"ID", "NAME"},
+		EmptyMessage: "No items",
+		Args:         cobra.ExactArgs(1),
+		RowFunc: func(item testItem) []string {
+			return []string{item.ID, item.Name}
+		},
+		FetchWithArgs: func(ctx context.Context, client *api.Client, opts ListOptions, args []string) (ListResult[testItem], error) {
+			capturedArg = args[0]
+			return ListResult[testItem]{
+				Items:   []testItem{{ID: "1", Name: "Test"}},
+				HasMore: false,
+			}, nil
+		},
+	}
+
+	cmd := NewListCommand(cfg, func(ctx context.Context) (*api.Client, error) {
+		return &api.Client{}, nil
+	})
+
+	ctx := outfmt.WithFormat(context.Background(), "text")
+	cmd.SetContext(ctx)
+	cmd.SetArgs([]string{"cust_123"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if capturedArg != "cust_123" {
+		t.Fatalf("expected arg cust_123, got %q", capturedArg)
 	}
 }
 
