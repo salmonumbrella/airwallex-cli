@@ -6,7 +6,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"text/tabwriter"
 
 	"github.com/spf13/cobra"
 
@@ -147,36 +146,24 @@ func newBillingCustomersListCmd() *cobra.Command {
 }
 
 func newBillingCustomersGetCmd() *cobra.Command {
-	return &cobra.Command{
+	return NewGetCommand(GetConfig[*api.BillingCustomer]{
 		Use:   "get <customerId>",
 		Short: "Get billing customer",
-		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := getClient(cmd.Context())
-			if err != nil {
-				return err
-			}
-
-			customer, err := client.GetBillingCustomer(cmd.Context(), args[0])
-			if err != nil {
-				return err
-			}
-
-			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, customer)
-			}
-
-			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-			_, _ = fmt.Fprintf(tw, "customer_id\t%s\n", billingCustomerID(*customer))
-			_, _ = fmt.Fprintf(tw, "name\t%s\n", billingCustomerName(*customer))
-			_, _ = fmt.Fprintf(tw, "email\t%s\n", customer.Email)
-			_, _ = fmt.Fprintf(tw, "merchant_customer_id\t%s\n", customer.MerchantCustomerID)
-			_, _ = fmt.Fprintf(tw, "created_at\t%s\n", customer.CreatedAt)
-			_, _ = fmt.Fprintf(tw, "updated_at\t%s\n", customer.UpdatedAt)
-			_ = tw.Flush()
-			return nil
+		Fetch: func(ctx context.Context, client *api.Client, id string) (*api.BillingCustomer, error) {
+			return client.GetBillingCustomer(ctx, id)
 		},
-	}
+		TextOutput: func(cmd *cobra.Command, customer *api.BillingCustomer) error {
+			rows := []outfmt.KV{
+				{Key: "customer_id", Value: billingCustomerID(*customer)},
+				{Key: "name", Value: billingCustomerName(*customer)},
+				{Key: "email", Value: customer.Email},
+				{Key: "merchant_customer_id", Value: customer.MerchantCustomerID},
+				{Key: "created_at", Value: customer.CreatedAt},
+				{Key: "updated_at", Value: customer.UpdatedAt},
+			}
+			return outfmt.WriteKV(cmd.OutOrStdout(), rows)
+		},
+	}, getClient)
 }
 
 func newBillingCustomersCreateCmd() *cobra.Command {
@@ -318,35 +305,23 @@ func newBillingProductsListCmd() *cobra.Command {
 }
 
 func newBillingProductsGetCmd() *cobra.Command {
-	return &cobra.Command{
+	return NewGetCommand(GetConfig[*api.BillingProduct]{
 		Use:   "get <productId>",
 		Short: "Get billing product",
-		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := getClient(cmd.Context())
-			if err != nil {
-				return err
-			}
-
-			product, err := client.GetBillingProduct(cmd.Context(), args[0])
-			if err != nil {
-				return err
-			}
-
-			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, product)
-			}
-
-			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-			_, _ = fmt.Fprintf(tw, "product_id\t%s\n", billingProductID(*product))
-			_, _ = fmt.Fprintf(tw, "name\t%s\n", product.Name)
-			_, _ = fmt.Fprintf(tw, "description\t%s\n", product.Description)
-			_, _ = fmt.Fprintf(tw, "unit\t%s\n", product.Unit)
-			_, _ = fmt.Fprintf(tw, "active\t%t\n", product.Active)
-			_ = tw.Flush()
-			return nil
+		Fetch: func(ctx context.Context, client *api.Client, id string) (*api.BillingProduct, error) {
+			return client.GetBillingProduct(ctx, id)
 		},
-	}
+		TextOutput: func(cmd *cobra.Command, product *api.BillingProduct) error {
+			rows := []outfmt.KV{
+				{Key: "product_id", Value: billingProductID(*product)},
+				{Key: "name", Value: product.Name},
+				{Key: "description", Value: product.Description},
+				{Key: "unit", Value: product.Unit},
+				{Key: "active", Value: fmt.Sprintf("%t", product.Active)},
+			}
+			return outfmt.WriteKV(cmd.OutOrStdout(), rows)
+		},
+	}, getClient)
 }
 
 func newBillingProductsCreateCmd() *cobra.Command {
@@ -511,43 +486,31 @@ func newBillingPricesListCmd() *cobra.Command {
 }
 
 func newBillingPricesGetCmd() *cobra.Command {
-	return &cobra.Command{
+	return NewGetCommand(GetConfig[*api.BillingPrice]{
 		Use:   "get <priceId>",
 		Short: "Get billing price",
-		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := getClient(cmd.Context())
-			if err != nil {
-				return err
+		Fetch: func(ctx context.Context, client *api.Client, id string) (*api.BillingPrice, error) {
+			return client.GetBillingPrice(ctx, id)
+		},
+		TextOutput: func(cmd *cobra.Command, price *api.BillingPrice) error {
+			rows := []outfmt.KV{
+				{Key: "price_id", Value: billingPriceID(*price)},
+				{Key: "product_id", Value: price.ProductID},
+				{Key: "active", Value: fmt.Sprintf("%t", price.Active)},
 			}
-
-			price, err := client.GetBillingPrice(cmd.Context(), args[0])
-			if err != nil {
-				return err
-			}
-
-			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, price)
-			}
-
-			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-			_, _ = fmt.Fprintf(tw, "price_id\t%s\n", billingPriceID(*price))
-			_, _ = fmt.Fprintf(tw, "product_id\t%s\n", price.ProductID)
 			if price.UnitAmount != 0 || price.FlatAmount != 0 || price.Currency != "" {
 				amount := price.UnitAmount
 				if amount == 0 {
 					amount = price.FlatAmount
 				}
-				_, _ = fmt.Fprintf(tw, "amount\t%.2f %s\n", amount, price.Currency)
+				rows = append(rows, outfmt.KV{Key: "amount", Value: fmt.Sprintf("%.2f %s", amount, price.Currency)})
 			}
 			if price.Recurring != nil {
-				_, _ = fmt.Fprintf(tw, "recurring\t%d %s\n", price.Recurring.Period, price.Recurring.PeriodUnit)
+				rows = append(rows, outfmt.KV{Key: "recurring", Value: fmt.Sprintf("%d %s", price.Recurring.Period, price.Recurring.PeriodUnit)})
 			}
-			_, _ = fmt.Fprintf(tw, "active\t%t\n", price.Active)
-			_ = tw.Flush()
-			return nil
+			return outfmt.WriteKV(cmd.OutOrStdout(), rows)
 		},
-	}
+	}, getClient)
 }
 
 func newBillingPricesCreateCmd() *cobra.Command {
@@ -728,42 +691,30 @@ func newBillingInvoicesListCmd() *cobra.Command {
 }
 
 func newBillingInvoicesGetCmd() *cobra.Command {
-	return &cobra.Command{
+	return NewGetCommand(GetConfig[*api.BillingInvoice]{
 		Use:   "get <invoiceId>",
 		Short: "Get billing invoice",
-		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := getClient(cmd.Context())
-			if err != nil {
-				return err
-			}
-
-			invoice, err := client.GetBillingInvoice(cmd.Context(), args[0])
-			if err != nil {
-				return err
-			}
-
-			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, invoice)
-			}
-
-			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-			_, _ = fmt.Fprintf(tw, "invoice_id\t%s\n", billingInvoiceID(*invoice))
-			_, _ = fmt.Fprintf(tw, "customer_id\t%s\n", invoice.CustomerID)
-			_, _ = fmt.Fprintf(tw, "subscription_id\t%s\n", invoice.SubscriptionID)
-			_, _ = fmt.Fprintf(tw, "status\t%s\n", invoice.Status)
-			if invoice.TotalAmount != 0 || invoice.Currency != "" {
-				_, _ = fmt.Fprintf(tw, "total\t%.2f %s\n", invoice.TotalAmount, invoice.Currency)
-			}
-			_, _ = fmt.Fprintf(tw, "period_start_at\t%s\n", invoice.PeriodStartAt)
-			_, _ = fmt.Fprintf(tw, "period_end_at\t%s\n", invoice.PeriodEndAt)
-			_, _ = fmt.Fprintf(tw, "created_at\t%s\n", invoice.CreatedAt)
-			_, _ = fmt.Fprintf(tw, "updated_at\t%s\n", invoice.UpdatedAt)
-			_, _ = fmt.Fprintf(tw, "paid_at\t%s\n", invoice.PaidAt)
-			_ = tw.Flush()
-			return nil
+		Fetch: func(ctx context.Context, client *api.Client, id string) (*api.BillingInvoice, error) {
+			return client.GetBillingInvoice(ctx, id)
 		},
-	}
+		TextOutput: func(cmd *cobra.Command, invoice *api.BillingInvoice) error {
+			rows := []outfmt.KV{
+				{Key: "invoice_id", Value: billingInvoiceID(*invoice)},
+				{Key: "customer_id", Value: invoice.CustomerID},
+				{Key: "subscription_id", Value: invoice.SubscriptionID},
+				{Key: "status", Value: invoice.Status},
+				{Key: "period_start_at", Value: invoice.PeriodStartAt},
+				{Key: "period_end_at", Value: invoice.PeriodEndAt},
+				{Key: "created_at", Value: invoice.CreatedAt},
+				{Key: "updated_at", Value: invoice.UpdatedAt},
+				{Key: "paid_at", Value: invoice.PaidAt},
+			}
+			if invoice.TotalAmount != 0 || invoice.Currency != "" {
+				rows = append(rows, outfmt.KV{Key: "total", Value: fmt.Sprintf("%.2f %s", invoice.TotalAmount, invoice.Currency)})
+			}
+			return outfmt.WriteKV(cmd.OutOrStdout(), rows)
+		},
+	}, getClient)
 }
 
 func newBillingInvoicesCreateCmd() *cobra.Command {
@@ -841,15 +792,15 @@ Examples:
 				return outfmt.WriteJSON(os.Stdout, preview)
 			}
 
-			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-			_, _ = fmt.Fprintf(tw, "customer_id\t%s\n", preview.CustomerID)
-			_, _ = fmt.Fprintf(tw, "subscription_id\t%s\n", preview.SubscriptionID)
-			if preview.TotalAmount != 0 || preview.Currency != "" {
-				_, _ = fmt.Fprintf(tw, "total\t%.2f %s\n", preview.TotalAmount, preview.Currency)
+			rows := []outfmt.KV{
+				{Key: "customer_id", Value: preview.CustomerID},
+				{Key: "subscription_id", Value: preview.SubscriptionID},
+				{Key: "created_at", Value: preview.CreatedAt},
 			}
-			_, _ = fmt.Fprintf(tw, "created_at\t%s\n", preview.CreatedAt)
-			_ = tw.Flush()
-			return nil
+			if preview.TotalAmount != 0 || preview.Currency != "" {
+				rows = append(rows, outfmt.KV{Key: "total", Value: fmt.Sprintf("%.2f %s", preview.TotalAmount, preview.Currency)})
+			}
+			return outfmt.WriteKV(cmd.OutOrStdout(), rows)
 		},
 	}
 
@@ -957,15 +908,15 @@ func newBillingInvoiceItemsGetCmd() *cobra.Command {
 				return outfmt.WriteJSON(os.Stdout, item)
 			}
 
-			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-			_, _ = fmt.Fprintf(tw, "item_id\t%s\n", item.ID)
-			_, _ = fmt.Fprintf(tw, "invoice_id\t%s\n", item.InvoiceID)
-			if item.Amount != 0 || item.Currency != "" {
-				_, _ = fmt.Fprintf(tw, "amount\t%.2f %s\n", item.Amount, item.Currency)
+			rows := []outfmt.KV{
+				{Key: "item_id", Value: item.ID},
+				{Key: "invoice_id", Value: item.InvoiceID},
+				{Key: "quantity", Value: fmt.Sprintf("%.2f", item.Quantity)},
 			}
-			_, _ = fmt.Fprintf(tw, "quantity\t%.2f\n", item.Quantity)
-			_ = tw.Flush()
-			return nil
+			if item.Amount != 0 || item.Currency != "" {
+				rows = append(rows, outfmt.KV{Key: "amount", Value: fmt.Sprintf("%.2f %s", item.Amount, item.Currency)})
+			}
+			return outfmt.WriteKV(cmd.OutOrStdout(), rows)
 		},
 	}
 }
@@ -1061,38 +1012,26 @@ func newBillingSubscriptionsListCmd() *cobra.Command {
 }
 
 func newBillingSubscriptionsGetCmd() *cobra.Command {
-	return &cobra.Command{
+	return NewGetCommand(GetConfig[*api.BillingSubscription]{
 		Use:   "get <subscriptionId>",
 		Short: "Get billing subscription",
-		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := getClient(cmd.Context())
-			if err != nil {
-				return err
-			}
-
-			sub, err := client.GetBillingSubscription(cmd.Context(), args[0])
-			if err != nil {
-				return err
-			}
-
-			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, sub)
-			}
-
-			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-			_, _ = fmt.Fprintf(tw, "subscription_id\t%s\n", billingSubscriptionID(*sub))
-			_, _ = fmt.Fprintf(tw, "customer_id\t%s\n", sub.CustomerID)
-			_, _ = fmt.Fprintf(tw, "status\t%s\n", sub.Status)
-			_, _ = fmt.Fprintf(tw, "current_period_start_at\t%s\n", sub.CurrentPeriodStartAt)
-			_, _ = fmt.Fprintf(tw, "current_period_end_at\t%s\n", sub.CurrentPeriodEndAt)
-			_, _ = fmt.Fprintf(tw, "next_billing_at\t%s\n", sub.NextBillingAt)
-			_, _ = fmt.Fprintf(tw, "created_at\t%s\n", sub.CreatedAt)
-			_, _ = fmt.Fprintf(tw, "updated_at\t%s\n", sub.UpdatedAt)
-			_ = tw.Flush()
-			return nil
+		Fetch: func(ctx context.Context, client *api.Client, id string) (*api.BillingSubscription, error) {
+			return client.GetBillingSubscription(ctx, id)
 		},
-	}
+		TextOutput: func(cmd *cobra.Command, sub *api.BillingSubscription) error {
+			rows := []outfmt.KV{
+				{Key: "subscription_id", Value: billingSubscriptionID(*sub)},
+				{Key: "customer_id", Value: sub.CustomerID},
+				{Key: "status", Value: sub.Status},
+				{Key: "current_period_start_at", Value: sub.CurrentPeriodStartAt},
+				{Key: "current_period_end_at", Value: sub.CurrentPeriodEndAt},
+				{Key: "next_billing_at", Value: sub.NextBillingAt},
+				{Key: "created_at", Value: sub.CreatedAt},
+				{Key: "updated_at", Value: sub.UpdatedAt},
+			}
+			return outfmt.WriteKV(cmd.OutOrStdout(), rows)
+		},
+	}, getClient)
 }
 
 func newBillingSubscriptionsCreateCmd() *cobra.Command {
@@ -1325,15 +1264,15 @@ func newBillingSubscriptionItemsGetCmd() *cobra.Command {
 				return outfmt.WriteJSON(os.Stdout, item)
 			}
 
-			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-			_, _ = fmt.Fprintf(tw, "item_id\t%s\n", item.ID)
-			_, _ = fmt.Fprintf(tw, "subscription_id\t%s\n", item.SubscriptionID)
-			if item.Price != nil {
-				_, _ = fmt.Fprintf(tw, "price_id\t%s\n", item.Price.ID)
+			rows := []outfmt.KV{
+				{Key: "item_id", Value: item.ID},
+				{Key: "subscription_id", Value: item.SubscriptionID},
+				{Key: "quantity", Value: fmt.Sprintf("%.2f", item.Quantity)},
 			}
-			_, _ = fmt.Fprintf(tw, "quantity\t%.2f\n", item.Quantity)
-			_ = tw.Flush()
-			return nil
+			if item.Price != nil {
+				rows = append(rows, outfmt.KV{Key: "price_id", Value: item.Price.ID})
+			}
+			return outfmt.WriteKV(cmd.OutOrStdout(), rows)
 		},
 	}
 }
