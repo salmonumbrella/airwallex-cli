@@ -34,7 +34,7 @@ func newCardholdersListCmd() *cobra.Command {
 			name := fmt.Sprintf("%s %s", ch.FirstName, ch.LastName)
 			return []string{ch.CardholderID, ch.Type, name, ch.Email, ch.Status}
 		},
-		MoreHint: "# More results available",
+		IDFunc: func(ch api.Cardholder) string { return ch.CardholderID },
 		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[api.Cardholder], error) {
 			result, err := client.ListCardholders(ctx, opts.Page, normalizePageSize(opts.Limit))
 			if err != nil {

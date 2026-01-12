@@ -45,7 +45,7 @@ Examples:
 		RowFunc: func(d api.Deposit) []string {
 			return []string{d.ID, fmt.Sprintf("%.2f", d.Amount), d.Currency, d.Status, d.Source, d.CreatedAt}
 		},
-		MoreHint: "# More results available",
+		IDFunc: func(d api.Deposit) string { return d.ID },
 		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[api.Deposit], error) {
 			if err := validateDateRangeFlags(fromDate, toDate, "--from", "--to", true); err != nil {
 				return ListResult[api.Deposit]{}, err

@@ -43,7 +43,7 @@ func newCardsListCmd() *cobra.Command {
 			}
 			return []string{c.CardID, c.CardStatus, c.NickName, last4, c.FormFactor, c.CardholderID}
 		},
-		MoreHint: "# More results available",
+		IDFunc: func(c api.Card) string { return c.CardID },
 		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[api.Card], error) {
 			cards, err := client.ListCards(ctx, status, cardholderID, opts.Page, normalizePageSize(opts.Limit))
 			if err != nil {
@@ -62,26 +62,13 @@ func newCardsListCmd() *cobra.Command {
 }
 
 func newCardsGetCmd() *cobra.Command {
-	return &cobra.Command{
+	return NewGetCommand(GetConfig[*api.Card]{
 		Use:   "get <cardId>",
 		Short: "Get card details",
-		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := getClient(cmd.Context())
-			if err != nil {
-				return err
-			}
-
-			card, err := client.GetCard(cmd.Context(), args[0])
-			if err != nil {
-				return err
-			}
-
-			io := iocontext.GetIO(cmd.Context())
-			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(io.Out, card)
-			}
-
+		Fetch: func(ctx context.Context, client *api.Client, id string) (*api.Card, error) {
+			return client.GetCard(ctx, id)
+		},
+		TextOutput: func(cmd *cobra.Command, card *api.Card) error {
 			rows := []outfmt.KV{
 				{Key: "card_id", Value: card.CardID},
 				{Key: "status", Value: card.CardStatus},
@@ -92,9 +79,9 @@ func newCardsGetCmd() *cobra.Command {
 				{Key: "cardholder_id", Value: card.CardholderID},
 				{Key: "created_at", Value: card.CreatedAt},
 			}
-			return outfmt.WriteKV(io.Out, rows)
+			return outfmt.WriteKV(cmd.OutOrStdout(), rows)
 		},
-	}
+	}, getClient)
 }
 
 func newCardsCreateCmd() *cobra.Command {

@@ -47,7 +47,7 @@ func newPayersListCmd() *cobra.Command {
 		RowFunc: func(p api.Payer) []string {
 			return []string{payerID(p), p.EntityType, p.Name, p.Status}
 		},
-		MoreHint: "# More results available",
+		IDFunc: func(p api.Payer) string { return payerID(p) },
 		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[api.Payer], error) {
 			if err := validateDateRangeFlags(from, to, "--from", "--to", true); err != nil {
 				return ListResult[api.Payer]{}, err

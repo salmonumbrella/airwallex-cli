@@ -35,7 +35,7 @@ func newAccountsListCmd() *cobra.Command {
 		RowFunc: func(a api.GlobalAccount) []string {
 			return []string{a.AccountID, a.AccountName, a.Currency, a.CountryCode, a.Status}
 		},
-		MoreHint: "# More results available",
+		IDFunc: func(a api.GlobalAccount) string { return a.AccountID },
 		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[api.GlobalAccount], error) {
 			result, err := client.ListGlobalAccounts(ctx, opts.Page, normalizePageSize(opts.Limit))
 			if err != nil {
