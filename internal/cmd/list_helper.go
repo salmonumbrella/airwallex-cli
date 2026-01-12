@@ -9,6 +9,7 @@ import (
 
 	"github.com/salmonumbrella/airwallex-cli/internal/api"
 	"github.com/salmonumbrella/airwallex-cli/internal/outfmt"
+	"github.com/salmonumbrella/airwallex-cli/internal/pagination"
 )
 
 // ListResult represents the result of a paginated list operation
@@ -17,10 +18,10 @@ type ListResult[T any] struct {
 	HasMore bool
 }
 
-// ListOptions provides cursor-based pagination parameters
+// ListOptions provides cursor-based pagination parameters.
+// Cursor uses the same value as the --after flag in the CLI.
 type ListOptions struct {
-	Limit int    // Max items to return (1-100)
-	After string // Cursor for next page
+	pagination.Options
 }
 
 // ListConfig defines how a list command behaves
@@ -71,8 +72,10 @@ func NewListCommand[T any](cfg ListConfig[T], getClient func(context.Context) (*
 			}
 
 			result, err := cfg.Fetch(cmd.Context(), client, ListOptions{
-				Limit: limit,
-				After: after,
+				Options: pagination.Options{
+					Limit:  limit,
+					Cursor: after,
+				},
 			})
 			if err != nil {
 				return err

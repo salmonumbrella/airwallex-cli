@@ -54,8 +54,8 @@ func TestNewListCommand_PaginationDefaults(t *testing.T) {
 	if capturedOpts.Limit != 20 {
 		t.Errorf("expected limit 20, got %d", capturedOpts.Limit)
 	}
-	if capturedOpts.After != "" {
-		t.Errorf("expected empty after, got %q", capturedOpts.After)
+	if capturedOpts.Cursor != "" {
+		t.Errorf("expected empty cursor, got %q", capturedOpts.Cursor)
 	}
 }
 
@@ -147,8 +147,8 @@ func TestNewListCommand_AfterCursor(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if capturedOpts.After != "cursor_abc123" {
-		t.Errorf("expected after 'cursor_abc123', got %q", capturedOpts.After)
+	if capturedOpts.Cursor != "cursor_abc123" {
+		t.Errorf("expected cursor 'cursor_abc123', got %q", capturedOpts.Cursor)
 	}
 }
 
