@@ -39,6 +39,7 @@ func newBeneficiariesListCmd() *cobra.Command {
 		Long: `List beneficiaries for payouts.
 
 Use --output json with --query for advanced filtering using jq syntax.
+Tip: add --items-only to output just the array for jq piping.
 
 Examples:
   # List recent beneficiaries
@@ -252,7 +253,8 @@ Examples:
   # Canada Interac e-Transfer (email)
   airwallex beneficiaries create --entity-type PERSONAL --bank-country CA \
     --first-name John --last-name Doe --account-name "John Doe" \
-    --account-currency CAD --email john@example.com --clearing-system INTERAC
+    --account-currency CAD --email john@example.com --clearing-system INTERAC \
+    --address-country CA --address-street "123 Main St" --address-city Toronto
 
   # Japan with Zengin routing
   airwallex beneficiaries create --entity-type PERSONAL --bank-country JP \
@@ -407,6 +409,29 @@ Examples:
 				parts := strings.Split(email, "@")
 				if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
 					return fmt.Errorf("--email must be a valid email address")
+				}
+			}
+
+			// Validation: Interac e-Transfer (Canada)
+			isInterac := strings.EqualFold(localClearingSystem, "INTERAC")
+			if (hasEmail || hasPhone) && strings.EqualFold(bankCountry, "CA") {
+				if localClearingSystem == "" {
+					localClearingSystem = "INTERAC"
+					isInterac = true
+				} else if !isInterac {
+					return fmt.Errorf("--clearing-system must be INTERAC when using --email or --phone for CA")
+				}
+			}
+			if isInterac {
+				localClearingSystem = "INTERAC"
+				if !strings.EqualFold(bankCountry, "CA") {
+					return fmt.Errorf("--clearing-system INTERAC is only valid with --bank-country CA")
+				}
+				if !hasEmail && !hasPhone {
+					return fmt.Errorf("--email or --phone is required for Interac e-Transfer")
+				}
+				if addressCountry == "" || addressStreet == "" || addressCity == "" {
+					return fmt.Errorf("--address-country, --address-street, and --address-city are required for Interac e-Transfer")
 				}
 			}
 
