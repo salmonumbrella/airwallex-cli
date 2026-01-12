@@ -295,7 +295,13 @@ Interac e-Transfer notes:
 
 				beneficiaryName := beneficiary.Beneficiary.CompanyName
 				if beneficiaryName == "" {
-					beneficiaryName = beneficiary.Beneficiary.FirstName + " " + beneficiary.Beneficiary.LastName
+					beneficiaryName = strings.TrimSpace(beneficiary.Beneficiary.FirstName + " " + beneficiary.Beneficiary.LastName)
+				}
+				if beneficiaryName == "" {
+					beneficiaryName = beneficiary.Beneficiary.BankDetails.AccountName
+				}
+				if beneficiaryName == "" {
+					beneficiaryName = beneficiary.Nickname
 				}
 
 				// Determine which amount to show in preview
