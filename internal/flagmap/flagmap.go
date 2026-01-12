@@ -24,8 +24,12 @@ var mappings = map[string]Mapping{
 	},
 	"payment-method": {
 		Flag:        "payment-method",
-		SchemaPath:  "transfer_method",
+		SchemaPath:  "payment_method",
 		Description: "Payment method: LOCAL or SWIFT",
+	},
+	"nickname": {
+		Flag:       "nickname",
+		SchemaPath: "nickname",
 	},
 
 	// SWIFT/International
@@ -58,6 +62,19 @@ var mappings = map[string]Mapping{
 		SchemaPath:  "beneficiary.bank_details.account_routing_value1",
 		RoutingType: "bsb",
 		Description: "Australian BSB number (6 digits)",
+	},
+	// Canada Interac / email + phone
+	"email": {
+		Flag:        "email",
+		SchemaPath:  "beneficiary.bank_details.account_routing_value1",
+		RoutingType: "email_address",
+		Description: "Email for Interac e-Transfer",
+	},
+	"phone": {
+		Flag:        "phone",
+		SchemaPath:  "beneficiary.bank_details.account_routing_value1",
+		RoutingType: "phone_number",
+		Description: "Phone for Interac e-Transfer",
 	},
 	// Australia PayID/NPP
 	"payid-phone": {
@@ -235,6 +252,11 @@ var mappings = map[string]Mapping{
 		Flag:       "account-currency",
 		SchemaPath: "beneficiary.bank_details.account_currency",
 	},
+	"clearing-system": {
+		Flag:        "clearing-system",
+		SchemaPath:  "beneficiary.bank_details.local_clearing_system",
+		Description: "Clearing system: EFT, REGULAR_EFT, INTERAC, etc.",
+	},
 	"account-category": {
 		Flag:        "account-category",
 		SchemaPath:  "beneficiary.bank_details.bank_account_category",
@@ -324,6 +346,7 @@ func AllMappings() map[string]Mapping {
 func RoutingFlags() []string {
 	return []string{
 		"routing-number", "sort-code", "bsb", "ifsc", "clabe",
+		"email", "phone",
 		"institution-number", "transit-number", "bank-code", "branch-code",
 		"swift-code", "iban",
 		"zengin-bank-code", "zengin-branch-code",

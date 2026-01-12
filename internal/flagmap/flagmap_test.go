@@ -12,13 +12,16 @@ func TestFlagToSchemaPath(t *testing.T) {
 		// Top-level request fields
 		{"entity-type", "entity_type", ""},
 		{"bank-country", "bank_country_code", ""},
-		{"payment-method", "transfer_method", ""},
+		{"payment-method", "payment_method", ""},
+		{"nickname", "nickname", ""},
 		// Routing fields
 		{"swift-code", "beneficiary.bank_details.swift_code", ""},
 		{"iban", "beneficiary.bank_details.iban", ""},
 		{"routing-number", "beneficiary.bank_details.account_routing_value1", "aba"},
 		{"sort-code", "beneficiary.bank_details.account_routing_value1", "sort_code"},
 		{"bsb", "beneficiary.bank_details.account_routing_value1", "bsb"},
+		{"email", "beneficiary.bank_details.account_routing_value1", "email_address"},
+		{"phone", "beneficiary.bank_details.account_routing_value1", "phone_number"},
 		{"ifsc", "beneficiary.bank_details.account_routing_value1", "ifsc"},
 		{"account-number", "beneficiary.bank_details.account_number", ""},
 		{"account-name", "beneficiary.bank_details.account_name", ""},
@@ -48,6 +51,7 @@ func TestFlagToSchemaPath(t *testing.T) {
 		{"cpf", "beneficiary.personal_id_number", ""},
 		{"cnpj", "beneficiary.business_registration_number", ""},
 		{"bank-branch", "beneficiary.bank_details.bank_branch", ""},
+		{"clearing-system", "beneficiary.bank_details.local_clearing_system", ""},
 		{"company-name", "beneficiary.company_name", ""},
 		{"first-name", "beneficiary.first_name", ""},
 		{"last-name", "beneficiary.last_name", ""},
@@ -87,15 +91,15 @@ func TestGetMappingNotFound(t *testing.T) {
 
 func TestAllMappings(t *testing.T) {
 	all := AllMappings()
-	if len(all) != 52 {
-		t.Errorf("expected 52 mappings, got %d", len(all))
+	if len(all) != 56 {
+		t.Errorf("expected 56 mappings, got %d", len(all))
 	}
 }
 
 func TestRoutingFlags(t *testing.T) {
 	flags := RoutingFlags()
-	if len(flags) != 26 {
-		t.Errorf("expected 26 routing flags, got %d", len(flags))
+	if len(flags) != 28 {
+		t.Errorf("expected 28 routing flags, got %d", len(flags))
 	}
 }
 
