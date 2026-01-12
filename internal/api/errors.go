@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 )
@@ -215,4 +216,15 @@ func WrapError(method, url string, statusCode int, err error) error {
 		StatusCode: statusCode,
 		Err:        err,
 	}
+}
+
+// NormalizeAPIError maps API errors to typed errors when possible.
+func NormalizeAPIError(statusCode int, apiErr *APIError) error {
+	if apiErr == nil {
+		return apiErr
+	}
+	if statusCode == http.StatusUnauthorized || statusCode == http.StatusForbidden {
+		return &AuthError{Reason: apiErr.Message}
+	}
+	return apiErr
 }

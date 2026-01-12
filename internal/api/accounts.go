@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"net/http"
 	"net/url"
 	"strconv"
 )
@@ -68,19 +69,8 @@ func (c *Client) GetGlobalAccount(ctx context.Context, accountID string) (*Globa
 		return nil, err
 	}
 	path := "/api/v1/global_accounts/" + url.PathEscape(accountID)
-	resp, err := c.Get(ctx, path)
-	if err != nil {
-		return nil, err
-	}
-	defer closeBody(resp)
-
-	if resp.StatusCode != 200 {
-		body, _ := io.ReadAll(resp.Body)
-		return nil, WrapError("GET", path, resp.StatusCode, ParseAPIError(body))
-	}
-
 	var a GlobalAccount
-	if err := json.NewDecoder(resp.Body).Decode(&a); err != nil {
+	if err := c.doJSON(ctx, http.MethodGet, path, nil, &a); err != nil {
 		return nil, err
 	}
 	return &a, nil

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
 	"net/url"
 	"time"
 
@@ -108,19 +109,8 @@ func (c *Client) GetTransfer(ctx context.Context, transferID string) (*Transfer,
 		return nil, err
 	}
 	path := "/api/v1/transfers/" + url.PathEscape(transferID)
-	resp, err := c.Get(ctx, path)
-	if err != nil {
-		return nil, err
-	}
-	defer closeBody(resp)
-
-	if resp.StatusCode != 200 {
-		body, _ := io.ReadAll(resp.Body)
-		return nil, WrapError("GET", path, resp.StatusCode, ParseAPIError(body))
-	}
-
 	var t Transfer
-	if err := json.NewDecoder(resp.Body).Decode(&t); err != nil {
+	if err := c.doJSON(ctx, http.MethodGet, path, nil, &t); err != nil {
 		return nil, err
 	}
 	return &t, nil
@@ -241,19 +231,8 @@ func (c *Client) GetBeneficiary(ctx context.Context, beneficiaryID string) (*Ben
 		return nil, err
 	}
 	path := "/api/v1/beneficiaries/" + url.PathEscape(beneficiaryID)
-	resp, err := c.Get(ctx, path)
-	if err != nil {
-		return nil, err
-	}
-	defer closeBody(resp)
-
-	if resp.StatusCode != 200 {
-		body, _ := io.ReadAll(resp.Body)
-		return nil, WrapError("GET", path, resp.StatusCode, ParseAPIError(body))
-	}
-
 	var b Beneficiary
-	if err := json.NewDecoder(resp.Body).Decode(&b); err != nil {
+	if err := c.doJSON(ctx, http.MethodGet, path, nil, &b); err != nil {
 		return nil, err
 	}
 	return &b, nil

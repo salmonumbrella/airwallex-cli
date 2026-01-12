@@ -551,3 +551,42 @@ func (c *Client) Post(ctx context.Context, path string, body interface{}) (*http
 	req.GetBody = getBody
 	return c.Do(ctx, req)
 }
+
+func (c *Client) doJSON(ctx context.Context, method, path string, body interface{}, out interface{}, okStatuses ...int) error {
+	var resp *http.Response
+	var err error
+
+	switch method {
+	case http.MethodGet:
+		resp, err = c.Get(ctx, path)
+	case http.MethodPost:
+		resp, err = c.Post(ctx, path, body)
+	default:
+		return fmt.Errorf("unsupported method %q", method)
+	}
+	if err != nil {
+		return err
+	}
+	defer closeBody(resp)
+
+	if len(okStatuses) == 0 {
+		okStatuses = []int{http.StatusOK}
+	}
+	statusOK := false
+	for _, code := range okStatuses {
+		if resp.StatusCode == code {
+			statusOK = true
+			break
+		}
+	}
+	if !statusOK {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		apiErr := ParseAPIError(bodyBytes)
+		return WrapError(method, path, resp.StatusCode, NormalizeAPIError(resp.StatusCode, apiErr))
+	}
+
+	if out == nil {
+		return nil
+	}
+	return json.NewDecoder(resp.Body).Decode(out)
+}
