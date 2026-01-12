@@ -1,9 +1,9 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
-	"text/tabwriter"
 
 	"github.com/spf13/cobra"
 
@@ -136,37 +136,25 @@ Examples:
 }
 
 func newTransactionsGetCmd() *cobra.Command {
-	return &cobra.Command{
+	return NewGetCommand(GetConfig[*api.Transaction]{
 		Use:   "get <transactionId>",
 		Short: "Get transaction details",
-		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := getClient(cmd.Context())
-			if err != nil {
-				return err
-			}
-
-			txn, err := client.GetTransaction(cmd.Context(), args[0])
-			if err != nil {
-				return err
-			}
-
-			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, txn)
-			}
-
-			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-			_, _ = fmt.Fprintf(tw, "transaction_id\t%s\n", txn.TransactionID)
-			_, _ = fmt.Fprintf(tw, "card_id\t%s\n", txn.CardID)
-			_, _ = fmt.Fprintf(tw, "card_nickname\t%s\n", txn.CardNickname)
-			_, _ = fmt.Fprintf(tw, "type\t%s\n", txn.TransactionType)
-			_, _ = fmt.Fprintf(tw, "amount\t%.2f %s\n", txn.Amount, txn.Currency)
-			_, _ = fmt.Fprintf(tw, "billing\t%.2f %s\n", txn.BillingAmount, txn.BillingCurrency)
-			_, _ = fmt.Fprintf(tw, "merchant\t%s\n", txn.Merchant.Name)
-			_, _ = fmt.Fprintf(tw, "status\t%s\n", txn.Status)
-			_, _ = fmt.Fprintf(tw, "date\t%s\n", txn.TransactionDate)
-			_ = tw.Flush()
-			return nil
+		Fetch: func(ctx context.Context, client *api.Client, id string) (*api.Transaction, error) {
+			return client.GetTransaction(ctx, id)
 		},
-	}
+		TextOutput: func(cmd *cobra.Command, txn *api.Transaction) error {
+			rows := []outfmt.KV{
+				{Key: "transaction_id", Value: txn.TransactionID},
+				{Key: "card_id", Value: txn.CardID},
+				{Key: "card_nickname", Value: txn.CardNickname},
+				{Key: "type", Value: txn.TransactionType},
+				{Key: "amount", Value: fmt.Sprintf("%.2f %s", txn.Amount, txn.Currency)},
+				{Key: "billing", Value: fmt.Sprintf("%.2f %s", txn.BillingAmount, txn.BillingCurrency)},
+				{Key: "merchant", Value: txn.Merchant.Name},
+				{Key: "status", Value: txn.Status},
+				{Key: "date", Value: txn.TransactionDate},
+			}
+			return outfmt.WriteKV(cmd.OutOrStdout(), rows)
+		},
+	}, getClient)
 }

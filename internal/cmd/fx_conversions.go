@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"text/tabwriter"
@@ -92,41 +93,29 @@ func newFXConversionsListCmd() *cobra.Command {
 }
 
 func newFXConversionsGetCmd() *cobra.Command {
-	return &cobra.Command{
+	return NewGetCommand(GetConfig[*api.Conversion]{
 		Use:   "get <conversionId>",
 		Short: "Get conversion details",
-		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := getClient(cmd.Context())
-			if err != nil {
-				return err
-			}
-
-			conv, err := client.GetConversion(cmd.Context(), args[0])
-			if err != nil {
-				return err
-			}
-
-			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, conv)
-			}
-
-			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-			_, _ = fmt.Fprintf(tw, "conversion_id\t%s\n", conv.ID)
-			if conv.QuoteID != "" {
-				_, _ = fmt.Fprintf(tw, "quote_id\t%s\n", conv.QuoteID)
-			}
-			_, _ = fmt.Fprintf(tw, "sell_currency\t%s\n", conv.SellCurrency)
-			_, _ = fmt.Fprintf(tw, "buy_currency\t%s\n", conv.BuyCurrency)
-			_, _ = fmt.Fprintf(tw, "sell_amount\t%.2f\n", conv.SellAmount)
-			_, _ = fmt.Fprintf(tw, "buy_amount\t%.2f\n", conv.BuyAmount)
-			_, _ = fmt.Fprintf(tw, "rate\t%.6f\n", conv.Rate)
-			_, _ = fmt.Fprintf(tw, "status\t%s\n", conv.Status)
-			_, _ = fmt.Fprintf(tw, "created_at\t%s\n", conv.CreatedAt)
-			_ = tw.Flush()
-			return nil
+		Fetch: func(ctx context.Context, client *api.Client, id string) (*api.Conversion, error) {
+			return client.GetConversion(ctx, id)
 		},
-	}
+		TextOutput: func(cmd *cobra.Command, conv *api.Conversion) error {
+			rows := []outfmt.KV{
+				{Key: "conversion_id", Value: conv.ID},
+				{Key: "sell_currency", Value: conv.SellCurrency},
+				{Key: "buy_currency", Value: conv.BuyCurrency},
+				{Key: "sell_amount", Value: fmt.Sprintf("%.2f", conv.SellAmount)},
+				{Key: "buy_amount", Value: fmt.Sprintf("%.2f", conv.BuyAmount)},
+				{Key: "rate", Value: fmt.Sprintf("%.6f", conv.Rate)},
+				{Key: "status", Value: conv.Status},
+				{Key: "created_at", Value: conv.CreatedAt},
+			}
+			if conv.QuoteID != "" {
+				rows = append(rows, outfmt.KV{Key: "quote_id", Value: conv.QuoteID})
+			}
+			return outfmt.WriteKV(cmd.OutOrStdout(), rows)
+		},
+	}, getClient)
 }
 
 func newFXConversionsCreateCmd() *cobra.Command {

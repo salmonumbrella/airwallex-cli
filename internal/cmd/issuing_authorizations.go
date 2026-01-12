@@ -1,9 +1,9 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
-	"text/tabwriter"
 
 	"github.com/spf13/cobra"
 
@@ -128,40 +128,28 @@ func newAuthorizationsListCmd() *cobra.Command {
 }
 
 func newAuthorizationsGetCmd() *cobra.Command {
-	return &cobra.Command{
+	return NewGetCommand(GetConfig[*api.Authorization]{
 		Use:   "get <transactionId>",
 		Short: "Get authorization details",
-		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := getClient(cmd.Context())
-			if err != nil {
-				return err
+		Fetch: func(ctx context.Context, client *api.Client, id string) (*api.Authorization, error) {
+			return client.GetAuthorization(ctx, id)
+		},
+		TextOutput: func(cmd *cobra.Command, auth *api.Authorization) error {
+			rows := []outfmt.KV{
+				{Key: "authorization_id", Value: authorizationID(*auth)},
+				{Key: "transaction_id", Value: auth.TransactionID},
+				{Key: "card_id", Value: auth.CardID},
+				{Key: "cardholder_id", Value: auth.CardholderID},
+				{Key: "status", Value: auth.Status},
+				{Key: "created_at", Value: auth.CreatedAt},
 			}
-
-			auth, err := client.GetAuthorization(cmd.Context(), args[0])
-			if err != nil {
-				return err
-			}
-
-			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, auth)
-			}
-
-			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-			_, _ = fmt.Fprintf(tw, "authorization_id\t%s\n", authorizationID(*auth))
-			_, _ = fmt.Fprintf(tw, "transaction_id\t%s\n", auth.TransactionID)
-			_, _ = fmt.Fprintf(tw, "card_id\t%s\n", auth.CardID)
-			_, _ = fmt.Fprintf(tw, "cardholder_id\t%s\n", auth.CardholderID)
-			_, _ = fmt.Fprintf(tw, "status\t%s\n", auth.Status)
 			if auth.Amount != 0 || auth.Currency != "" {
-				_, _ = fmt.Fprintf(tw, "amount\t%.2f %s\n", auth.Amount, auth.Currency)
+				rows = append(rows, outfmt.KV{Key: "amount", Value: fmt.Sprintf("%.2f %s", auth.Amount, auth.Currency)})
 			}
 			if auth.Merchant.Name != "" {
-				_, _ = fmt.Fprintf(tw, "merchant\t%s\n", auth.Merchant.Name)
+				rows = append(rows, outfmt.KV{Key: "merchant", Value: auth.Merchant.Name})
 			}
-			_, _ = fmt.Fprintf(tw, "created_at\t%s\n", auth.CreatedAt)
-			_ = tw.Flush()
-			return nil
+			return outfmt.WriteKV(cmd.OutOrStdout(), rows)
 		},
-	}
+	}, getClient)
 }

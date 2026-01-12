@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"text/tabwriter"
 
 	"github.com/spf13/cobra"
 
@@ -146,38 +145,26 @@ func newDisputesListCmd() *cobra.Command {
 }
 
 func newDisputesGetCmd() *cobra.Command {
-	return &cobra.Command{
+	return NewGetCommand(GetConfig[*api.TransactionDispute]{
 		Use:   "get <disputeId>",
 		Short: "Get dispute details",
-		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := getClient(cmd.Context())
-			if err != nil {
-				return err
-			}
-
-			dispute, err := client.GetTransactionDispute(cmd.Context(), args[0])
-			if err != nil {
-				return err
-			}
-
-			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, dispute)
-			}
-
-			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-			_, _ = fmt.Fprintf(tw, "dispute_id\t%s\n", disputeID(*dispute))
-			_, _ = fmt.Fprintf(tw, "transaction_id\t%s\n", dispute.TransactionID)
-			_, _ = fmt.Fprintf(tw, "status\t%s\n", dispute.Status)
-			if dispute.Amount != 0 || dispute.Currency != "" {
-				_, _ = fmt.Fprintf(tw, "amount\t%.2f %s\n", dispute.Amount, dispute.Currency)
-			}
-			_, _ = fmt.Fprintf(tw, "reason\t%s\n", dispute.Reason)
-			_, _ = fmt.Fprintf(tw, "created_at\t%s\n", dispute.CreatedAt)
-			_ = tw.Flush()
-			return nil
+		Fetch: func(ctx context.Context, client *api.Client, id string) (*api.TransactionDispute, error) {
+			return client.GetTransactionDispute(ctx, id)
 		},
-	}
+		TextOutput: func(cmd *cobra.Command, dispute *api.TransactionDispute) error {
+			rows := []outfmt.KV{
+				{Key: "dispute_id", Value: disputeID(*dispute)},
+				{Key: "transaction_id", Value: dispute.TransactionID},
+				{Key: "status", Value: dispute.Status},
+				{Key: "reason", Value: dispute.Reason},
+				{Key: "created_at", Value: dispute.CreatedAt},
+			}
+			if dispute.Amount != 0 || dispute.Currency != "" {
+				rows = append(rows, outfmt.KV{Key: "amount", Value: fmt.Sprintf("%.2f %s", dispute.Amount, dispute.Currency)})
+			}
+			return outfmt.WriteKV(cmd.OutOrStdout(), rows)
+		},
+	}, getClient)
 }
 
 func newDisputesCreateCmd() *cobra.Command {

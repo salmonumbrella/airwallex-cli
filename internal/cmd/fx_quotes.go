@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"text/tabwriter"
@@ -8,6 +9,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 
+	"github.com/salmonumbrella/airwallex-cli/internal/api"
 	"github.com/salmonumbrella/airwallex-cli/internal/outfmt"
 	"github.com/salmonumbrella/airwallex-cli/internal/ui"
 )
@@ -154,36 +156,24 @@ Validity periods: 1m, 5m, 15m, 30m, 1h, 2h, 4h, 12h, 24h`,
 }
 
 func newFXQuotesGetCmd() *cobra.Command {
-	return &cobra.Command{
+	return NewGetCommand(GetConfig[*api.Quote]{
 		Use:   "get <quoteId>",
 		Short: "Get quote details",
-		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := getClient(cmd.Context())
-			if err != nil {
-				return err
-			}
-
-			quote, err := client.GetQuote(cmd.Context(), args[0])
-			if err != nil {
-				return err
-			}
-
-			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, quote)
-			}
-
-			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-			_, _ = fmt.Fprintf(tw, "quote_id\t%s\n", quote.ID)
-			_, _ = fmt.Fprintf(tw, "sell_currency\t%s\n", quote.SellCurrency)
-			_, _ = fmt.Fprintf(tw, "buy_currency\t%s\n", quote.BuyCurrency)
-			_, _ = fmt.Fprintf(tw, "sell_amount\t%.2f\n", quote.SellAmount)
-			_, _ = fmt.Fprintf(tw, "buy_amount\t%.2f\n", quote.BuyAmount)
-			_, _ = fmt.Fprintf(tw, "rate\t%.6f\n", quote.Rate)
-			_, _ = fmt.Fprintf(tw, "status\t%s\n", quote.Status)
-			_, _ = fmt.Fprintf(tw, "expires\t%s\n", quote.RateExpiry)
-			_ = tw.Flush()
-			return nil
+		Fetch: func(ctx context.Context, client *api.Client, id string) (*api.Quote, error) {
+			return client.GetQuote(ctx, id)
 		},
-	}
+		TextOutput: func(cmd *cobra.Command, quote *api.Quote) error {
+			rows := []outfmt.KV{
+				{Key: "quote_id", Value: quote.ID},
+				{Key: "sell_currency", Value: quote.SellCurrency},
+				{Key: "buy_currency", Value: quote.BuyCurrency},
+				{Key: "sell_amount", Value: fmt.Sprintf("%.2f", quote.SellAmount)},
+				{Key: "buy_amount", Value: fmt.Sprintf("%.2f", quote.BuyAmount)},
+				{Key: "rate", Value: fmt.Sprintf("%.6f", quote.Rate)},
+				{Key: "status", Value: quote.Status},
+				{Key: "expires", Value: quote.RateExpiry},
+			}
+			return outfmt.WriteKV(cmd.OutOrStdout(), rows)
+		},
+	}, getClient)
 }
