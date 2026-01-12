@@ -1,9 +1,9 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
-	"text/tabwriter"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -92,52 +92,40 @@ func newReportsListCmd() *cobra.Command {
 }
 
 func newReportsGetCmd() *cobra.Command {
-	return &cobra.Command{
+	return NewGetCommand(GetConfig[*api.FinancialReport]{
 		Use:   "get <reportId>",
 		Short: "Get report details",
-		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := getClient(cmd.Context())
-			if err != nil {
-				return err
+		Fetch: func(ctx context.Context, client *api.Client, id string) (*api.FinancialReport, error) {
+			return client.GetFinancialReport(ctx, id)
+		},
+		TextOutput: func(cmd *cobra.Command, r *api.FinancialReport) error {
+			rows := []outfmt.KV{
+				{Key: "id", Value: r.ID},
+				{Key: "type", Value: r.Type},
+				{Key: "status", Value: r.Status},
+				{Key: "file_format", Value: r.FileFormat},
+				{Key: "from_date", Value: r.FromDate},
+				{Key: "to_date", Value: r.ToDate},
+				{Key: "created_at", Value: r.CreatedAt},
 			}
-
-			r, err := client.GetFinancialReport(cmd.Context(), args[0])
-			if err != nil {
-				return err
-			}
-
-			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, r)
-			}
-
-			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-			_, _ = fmt.Fprintf(tw, "id\t%s\n", r.ID)
-			_, _ = fmt.Fprintf(tw, "type\t%s\n", r.Type)
-			_, _ = fmt.Fprintf(tw, "status\t%s\n", r.Status)
-			_, _ = fmt.Fprintf(tw, "file_format\t%s\n", r.FileFormat)
-			_, _ = fmt.Fprintf(tw, "from_date\t%s\n", r.FromDate)
-			_, _ = fmt.Fprintf(tw, "to_date\t%s\n", r.ToDate)
 			if len(r.Currencies) > 0 {
-				_, _ = fmt.Fprintf(tw, "currencies\t%v\n", r.Currencies)
+				rows = append(rows, outfmt.KV{Key: "currencies", Value: fmt.Sprintf("%v", r.Currencies)})
 			}
 			if len(r.TransactionTypes) > 0 {
-				_, _ = fmt.Fprintf(tw, "transaction_types\t%v\n", r.TransactionTypes)
+				rows = append(rows, outfmt.KV{Key: "transaction_types", Value: fmt.Sprintf("%v", r.TransactionTypes)})
 			}
 			if r.ReportVersion != "" {
-				_, _ = fmt.Fprintf(tw, "report_version\t%s\n", r.ReportVersion)
+				rows = append(rows, outfmt.KV{Key: "report_version", Value: r.ReportVersion})
 			}
-			_, _ = fmt.Fprintf(tw, "created_at\t%s\n", r.CreatedAt)
 			if r.ReportExpiresAt != "" {
-				_, _ = fmt.Fprintf(tw, "report_expires_at\t%s\n", r.ReportExpiresAt)
+				rows = append(rows, outfmt.KV{Key: "report_expires_at", Value: r.ReportExpiresAt})
 			}
 			if r.ErrorMessage != "" {
-				_, _ = fmt.Fprintf(tw, "error_message\t%s\n", r.ErrorMessage)
+				rows = append(rows, outfmt.KV{Key: "error_message", Value: r.ErrorMessage})
 			}
-			_ = tw.Flush()
-			return nil
+			return outfmt.WriteKV(cmd.OutOrStdout(), rows)
 		},
-	}
+	}, getClient)
 }
 
 func newReportsSettlementCmd() *cobra.Command {

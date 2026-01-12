@@ -1,9 +1,9 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
-	"text/tabwriter"
 
 	"github.com/spf13/cobra"
 
@@ -113,35 +113,23 @@ func newPayersListCmd() *cobra.Command {
 }
 
 func newPayersGetCmd() *cobra.Command {
-	return &cobra.Command{
+	return NewGetCommand(GetConfig[*api.Payer]{
 		Use:   "get <payerId>",
 		Short: "Get payer details",
-		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := getClient(cmd.Context())
-			if err != nil {
-				return err
-			}
-
-			payer, err := client.GetPayer(cmd.Context(), args[0])
-			if err != nil {
-				return err
-			}
-
-			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, payer)
-			}
-
-			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-			_, _ = fmt.Fprintf(tw, "payer_id\t%s\n", payerID(*payer))
-			_, _ = fmt.Fprintf(tw, "entity_type\t%s\n", payer.EntityType)
-			_, _ = fmt.Fprintf(tw, "name\t%s\n", payer.Name)
-			_, _ = fmt.Fprintf(tw, "status\t%s\n", payer.Status)
-			_, _ = fmt.Fprintf(tw, "created_at\t%s\n", payer.CreatedAt)
-			_ = tw.Flush()
-			return nil
+		Fetch: func(ctx context.Context, client *api.Client, id string) (*api.Payer, error) {
+			return client.GetPayer(ctx, id)
 		},
-	}
+		TextOutput: func(cmd *cobra.Command, payer *api.Payer) error {
+			rows := []outfmt.KV{
+				{Key: "payer_id", Value: payerID(*payer)},
+				{Key: "entity_type", Value: payer.EntityType},
+				{Key: "name", Value: payer.Name},
+				{Key: "status", Value: payer.Status},
+				{Key: "created_at", Value: payer.CreatedAt},
+			}
+			return outfmt.WriteKV(cmd.OutOrStdout(), rows)
+		},
+	}, getClient)
 }
 
 func newPayersCreateCmd() *cobra.Command {

@@ -1,10 +1,10 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
-	"text/tabwriter"
 
 	"github.com/spf13/cobra"
 
@@ -158,35 +158,23 @@ func newWebhooksListCmd() *cobra.Command {
 }
 
 func newWebhooksGetCmd() *cobra.Command {
-	return &cobra.Command{
+	return NewGetCommand(GetConfig[*api.Webhook]{
 		Use:   "get <webhookId>",
 		Short: "Get webhook details",
-		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := getClient(cmd.Context())
-			if err != nil {
-				return err
-			}
-
-			wh, err := client.GetWebhook(cmd.Context(), args[0])
-			if err != nil {
-				return err
-			}
-
-			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, wh)
-			}
-
-			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-			_, _ = fmt.Fprintf(tw, "id\t%s\n", wh.ID)
-			_, _ = fmt.Fprintf(tw, "url\t%s\n", wh.URL)
-			_, _ = fmt.Fprintf(tw, "events\t%s\n", strings.Join(wh.Events, ", "))
-			_, _ = fmt.Fprintf(tw, "status\t%s\n", wh.Status)
-			_, _ = fmt.Fprintf(tw, "created_at\t%s\n", wh.CreatedAt)
-			_ = tw.Flush()
-			return nil
+		Fetch: func(ctx context.Context, client *api.Client, id string) (*api.Webhook, error) {
+			return client.GetWebhook(ctx, id)
 		},
-	}
+		TextOutput: func(cmd *cobra.Command, wh *api.Webhook) error {
+			rows := []outfmt.KV{
+				{Key: "id", Value: wh.ID},
+				{Key: "url", Value: wh.URL},
+				{Key: "events", Value: strings.Join(wh.Events, ", ")},
+				{Key: "status", Value: wh.Status},
+				{Key: "created_at", Value: wh.CreatedAt},
+			}
+			return outfmt.WriteKV(cmd.OutOrStdout(), rows)
+		},
+	}, getClient)
 }
 
 func newWebhooksCreateCmd() *cobra.Command {

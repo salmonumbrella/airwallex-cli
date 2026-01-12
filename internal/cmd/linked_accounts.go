@@ -1,9 +1,9 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
-	"text/tabwriter"
 
 	"github.com/spf13/cobra"
 
@@ -79,42 +79,30 @@ func newLinkedAccountsListCmd() *cobra.Command {
 }
 
 func newLinkedAccountsGetCmd() *cobra.Command {
-	return &cobra.Command{
+	return NewGetCommand(GetConfig[*api.LinkedAccount]{
 		Use:   "get <accountId>",
 		Short: "Get linked account details",
-		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := getClient(cmd.Context())
-			if err != nil {
-				return err
+		Fetch: func(ctx context.Context, client *api.Client, id string) (*api.LinkedAccount, error) {
+			return client.GetLinkedAccount(ctx, id)
+		},
+		TextOutput: func(cmd *cobra.Command, la *api.LinkedAccount) error {
+			rows := []outfmt.KV{
+				{Key: "id", Value: la.ID},
+				{Key: "type", Value: la.Type},
+				{Key: "status", Value: la.Status},
+				{Key: "account_name", Value: la.AccountName},
+				{Key: "currency", Value: la.Currency},
+				{Key: "created_at", Value: la.CreatedAt},
 			}
-
-			la, err := client.GetLinkedAccount(cmd.Context(), args[0])
-			if err != nil {
-				return err
-			}
-
-			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, la)
-			}
-
-			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-			_, _ = fmt.Fprintf(tw, "id\t%s\n", la.ID)
-			_, _ = fmt.Fprintf(tw, "type\t%s\n", la.Type)
-			_, _ = fmt.Fprintf(tw, "status\t%s\n", la.Status)
-			_, _ = fmt.Fprintf(tw, "account_name\t%s\n", la.AccountName)
 			if la.BankName != "" {
-				_, _ = fmt.Fprintf(tw, "bank_name\t%s\n", la.BankName)
+				rows = append(rows, outfmt.KV{Key: "bank_name", Value: la.BankName})
 			}
 			if la.AccountNumber != "" {
-				_, _ = fmt.Fprintf(tw, "account_number\t****%s\n", la.AccountNumber)
+				rows = append(rows, outfmt.KV{Key: "account_number", Value: "****" + la.AccountNumber})
 			}
-			_, _ = fmt.Fprintf(tw, "currency\t%s\n", la.Currency)
-			_, _ = fmt.Fprintf(tw, "created_at\t%s\n", la.CreatedAt)
-			_ = tw.Flush()
-			return nil
+			return outfmt.WriteKV(cmd.OutOrStdout(), rows)
 		},
-	}
+	}, getClient)
 }
 
 func newLinkedAccountsCreateCmd() *cobra.Command {

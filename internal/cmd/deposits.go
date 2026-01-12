@@ -1,9 +1,9 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
-	"text/tabwriter"
 
 	"github.com/spf13/cobra"
 
@@ -104,46 +104,34 @@ Examples:
 }
 
 func newDepositsGetCmd() *cobra.Command {
-	return &cobra.Command{
+	return NewGetCommand(GetConfig[*api.Deposit]{
 		Use:   "get <depositId>",
 		Short: "Get deposit details",
-		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := getClient(cmd.Context())
-			if err != nil {
-				return err
+		Fetch: func(ctx context.Context, client *api.Client, id string) (*api.Deposit, error) {
+			return client.GetDeposit(ctx, id)
+		},
+		TextOutput: func(cmd *cobra.Command, d *api.Deposit) error {
+			rows := []outfmt.KV{
+				{Key: "deposit_id", Value: d.ID},
+				{Key: "amount", Value: fmt.Sprintf("%.2f", d.Amount)},
+				{Key: "currency", Value: d.Currency},
+				{Key: "status", Value: d.Status},
+				{Key: "source", Value: d.Source},
+				{Key: "created_at", Value: d.CreatedAt},
 			}
-
-			d, err := client.GetDeposit(cmd.Context(), args[0])
-			if err != nil {
-				return err
-			}
-
-			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, d)
-			}
-
-			tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-			_, _ = fmt.Fprintf(tw, "deposit_id\t%s\n", d.ID)
-			_, _ = fmt.Fprintf(tw, "amount\t%.2f\n", d.Amount)
-			_, _ = fmt.Fprintf(tw, "currency\t%s\n", d.Currency)
-			_, _ = fmt.Fprintf(tw, "status\t%s\n", d.Status)
-			_, _ = fmt.Fprintf(tw, "source\t%s\n", d.Source)
 			if d.LinkedAccountID != "" {
-				_, _ = fmt.Fprintf(tw, "linked_account_id\t%s\n", d.LinkedAccountID)
+				rows = append(rows, outfmt.KV{Key: "linked_account_id", Value: d.LinkedAccountID})
 			}
 			if d.GlobalAccountID != "" {
-				_, _ = fmt.Fprintf(tw, "global_account_id\t%s\n", d.GlobalAccountID)
+				rows = append(rows, outfmt.KV{Key: "global_account_id", Value: d.GlobalAccountID})
 			}
 			if d.Reference != "" {
-				_, _ = fmt.Fprintf(tw, "reference\t%s\n", d.Reference)
+				rows = append(rows, outfmt.KV{Key: "reference", Value: d.Reference})
 			}
-			_, _ = fmt.Fprintf(tw, "created_at\t%s\n", d.CreatedAt)
 			if d.SettledAt != "" {
-				_, _ = fmt.Fprintf(tw, "settled_at\t%s\n", d.SettledAt)
+				rows = append(rows, outfmt.KV{Key: "settled_at", Value: d.SettledAt})
 			}
-			_ = tw.Flush()
-			return nil
+			return outfmt.WriteKV(cmd.OutOrStdout(), rows)
 		},
-	}
+	}, getClient)
 }
