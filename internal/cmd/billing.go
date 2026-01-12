@@ -11,7 +11,6 @@ import (
 
 	"github.com/salmonumbrella/airwallex-cli/internal/api"
 	"github.com/salmonumbrella/airwallex-cli/internal/outfmt"
-	"github.com/salmonumbrella/airwallex-cli/internal/ui"
 )
 
 func newBillingCmd() *cobra.Command {
@@ -145,10 +144,7 @@ func newBillingCustomersGetCmd() *cobra.Command {
 }
 
 func newBillingCustomersCreateCmd() *cobra.Command {
-	var data string
-	var fromFile string
-
-	cmd := &cobra.Command{
+	return NewPayloadCommand(PayloadCommandConfig[*api.BillingCustomer]{
 		Use:   "create",
 		Short: "Create a billing customer",
 		Long: `Create a billing customer using a JSON payload.
@@ -156,42 +152,17 @@ func newBillingCustomersCreateCmd() *cobra.Command {
 Examples:
   airwallex billing customers create --data '{"business_name":"Acme Corp","email":"billing@example.com"}'
   airwallex billing customers create --from-file customer.json`,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			u := ui.FromContext(cmd.Context())
-			client, err := getClient(cmd.Context())
-			if err != nil {
-				return err
-			}
-
-			payload, err := readJSONPayload(data, fromFile)
-			if err != nil {
-				return err
-			}
-
-			customer, err := client.CreateBillingCustomer(cmd.Context(), payload)
-			if err != nil {
-				return err
-			}
-
-			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, customer)
-			}
-
-			u.Success(fmt.Sprintf("Created billing customer: %s", billingCustomerID(*customer)))
-			return nil
+		Run: func(ctx context.Context, client *api.Client, args []string, payload map[string]interface{}) (*api.BillingCustomer, error) {
+			return client.CreateBillingCustomer(ctx, payload)
 		},
-	}
-
-	cmd.Flags().StringVar(&data, "data", "", "Inline JSON payload")
-	cmd.Flags().StringVar(&fromFile, "from-file", "", "Path to JSON payload file (- for stdin)")
-	return cmd
+		SuccessMessage: func(customer *api.BillingCustomer) string {
+			return fmt.Sprintf("Created billing customer: %s", billingCustomerID(*customer))
+		},
+	}, getClient)
 }
 
 func newBillingCustomersUpdateCmd() *cobra.Command {
-	var data string
-	var fromFile string
-
-	cmd := &cobra.Command{
+	return NewPayloadCommand(PayloadCommandConfig[*api.BillingCustomer]{
 		Use:   "update <customerId>",
 		Short: "Update a billing customer",
 		Long: `Update a billing customer using a JSON payload.
@@ -200,35 +171,13 @@ Examples:
   airwallex billing customers update cus_123 --data '{"business_name":"Updated"}'
   airwallex billing customers update cus_123 --from-file update.json`,
 		Args: cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			u := ui.FromContext(cmd.Context())
-			client, err := getClient(cmd.Context())
-			if err != nil {
-				return err
-			}
-
-			payload, err := readJSONPayload(data, fromFile)
-			if err != nil {
-				return err
-			}
-
-			customer, err := client.UpdateBillingCustomer(cmd.Context(), args[0], payload)
-			if err != nil {
-				return err
-			}
-
-			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, customer)
-			}
-
-			u.Success(fmt.Sprintf("Updated billing customer: %s", billingCustomerID(*customer)))
-			return nil
+		Run: func(ctx context.Context, client *api.Client, args []string, payload map[string]interface{}) (*api.BillingCustomer, error) {
+			return client.UpdateBillingCustomer(ctx, args[0], payload)
 		},
-	}
-
-	cmd.Flags().StringVar(&data, "data", "", "Inline JSON payload")
-	cmd.Flags().StringVar(&fromFile, "from-file", "", "Path to JSON payload file (- for stdin)")
-	return cmd
+		SuccessMessage: func(customer *api.BillingCustomer) string {
+			return fmt.Sprintf("Updated billing customer: %s", billingCustomerID(*customer))
+		},
+	}, getClient)
 }
 
 func newBillingProductsCmd() *cobra.Command {
@@ -303,10 +252,7 @@ func newBillingProductsGetCmd() *cobra.Command {
 }
 
 func newBillingProductsCreateCmd() *cobra.Command {
-	var data string
-	var fromFile string
-
-	cmd := &cobra.Command{
+	return NewPayloadCommand(PayloadCommandConfig[*api.BillingProduct]{
 		Use:   "create",
 		Short: "Create a billing product",
 		Long: `Create a billing product using a JSON payload.
@@ -314,42 +260,17 @@ func newBillingProductsCreateCmd() *cobra.Command {
 Examples:
   airwallex billing products create --data '{"name":"Starter"}'
   airwallex billing products create --from-file product.json`,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			u := ui.FromContext(cmd.Context())
-			client, err := getClient(cmd.Context())
-			if err != nil {
-				return err
-			}
-
-			payload, err := readJSONPayload(data, fromFile)
-			if err != nil {
-				return err
-			}
-
-			product, err := client.CreateBillingProduct(cmd.Context(), payload)
-			if err != nil {
-				return err
-			}
-
-			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, product)
-			}
-
-			u.Success(fmt.Sprintf("Created billing product: %s", billingProductID(*product)))
-			return nil
+		Run: func(ctx context.Context, client *api.Client, args []string, payload map[string]interface{}) (*api.BillingProduct, error) {
+			return client.CreateBillingProduct(ctx, payload)
 		},
-	}
-
-	cmd.Flags().StringVar(&data, "data", "", "Inline JSON payload")
-	cmd.Flags().StringVar(&fromFile, "from-file", "", "Path to JSON payload file (- for stdin)")
-	return cmd
+		SuccessMessage: func(product *api.BillingProduct) string {
+			return fmt.Sprintf("Created billing product: %s", billingProductID(*product))
+		},
+	}, getClient)
 }
 
 func newBillingProductsUpdateCmd() *cobra.Command {
-	var data string
-	var fromFile string
-
-	cmd := &cobra.Command{
+	return NewPayloadCommand(PayloadCommandConfig[*api.BillingProduct]{
 		Use:   "update <productId>",
 		Short: "Update a billing product",
 		Long: `Update a billing product using a JSON payload.
@@ -358,35 +279,13 @@ Examples:
   airwallex billing products update prod_123 --data '{"name":"Updated"}'
   airwallex billing products update prod_123 --from-file update.json`,
 		Args: cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			u := ui.FromContext(cmd.Context())
-			client, err := getClient(cmd.Context())
-			if err != nil {
-				return err
-			}
-
-			payload, err := readJSONPayload(data, fromFile)
-			if err != nil {
-				return err
-			}
-
-			product, err := client.UpdateBillingProduct(cmd.Context(), args[0], payload)
-			if err != nil {
-				return err
-			}
-
-			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, product)
-			}
-
-			u.Success(fmt.Sprintf("Updated billing product: %s", billingProductID(*product)))
-			return nil
+		Run: func(ctx context.Context, client *api.Client, args []string, payload map[string]interface{}) (*api.BillingProduct, error) {
+			return client.UpdateBillingProduct(ctx, args[0], payload)
 		},
-	}
-
-	cmd.Flags().StringVar(&data, "data", "", "Inline JSON payload")
-	cmd.Flags().StringVar(&fromFile, "from-file", "", "Path to JSON payload file (- for stdin)")
-	return cmd
+		SuccessMessage: func(product *api.BillingProduct) string {
+			return fmt.Sprintf("Updated billing product: %s", billingProductID(*product))
+		},
+	}, getClient)
 }
 
 func newBillingPricesCmd() *cobra.Command {
@@ -492,10 +391,7 @@ func newBillingPricesGetCmd() *cobra.Command {
 }
 
 func newBillingPricesCreateCmd() *cobra.Command {
-	var data string
-	var fromFile string
-
-	cmd := &cobra.Command{
+	return NewPayloadCommand(PayloadCommandConfig[*api.BillingPrice]{
 		Use:   "create",
 		Short: "Create a billing price",
 		Long: `Create a billing price using a JSON payload.
@@ -503,42 +399,17 @@ func newBillingPricesCreateCmd() *cobra.Command {
 Examples:
   airwallex billing prices create --data '{"product_id":"prod_123","currency":"USD","unit_amount":100}'
   airwallex billing prices create --from-file price.json`,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			u := ui.FromContext(cmd.Context())
-			client, err := getClient(cmd.Context())
-			if err != nil {
-				return err
-			}
-
-			payload, err := readJSONPayload(data, fromFile)
-			if err != nil {
-				return err
-			}
-
-			price, err := client.CreateBillingPrice(cmd.Context(), payload)
-			if err != nil {
-				return err
-			}
-
-			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, price)
-			}
-
-			u.Success(fmt.Sprintf("Created billing price: %s", billingPriceID(*price)))
-			return nil
+		Run: func(ctx context.Context, client *api.Client, args []string, payload map[string]interface{}) (*api.BillingPrice, error) {
+			return client.CreateBillingPrice(ctx, payload)
 		},
-	}
-
-	cmd.Flags().StringVar(&data, "data", "", "Inline JSON payload")
-	cmd.Flags().StringVar(&fromFile, "from-file", "", "Path to JSON payload file (- for stdin)")
-	return cmd
+		SuccessMessage: func(price *api.BillingPrice) string {
+			return fmt.Sprintf("Created billing price: %s", billingPriceID(*price))
+		},
+	}, getClient)
 }
 
 func newBillingPricesUpdateCmd() *cobra.Command {
-	var data string
-	var fromFile string
-
-	cmd := &cobra.Command{
+	return NewPayloadCommand(PayloadCommandConfig[*api.BillingPrice]{
 		Use:   "update <priceId>",
 		Short: "Update a billing price",
 		Long: `Update a billing price using a JSON payload.
@@ -547,35 +418,13 @@ Examples:
   airwallex billing prices update price_123 --data '{"unit_amount":120}'
   airwallex billing prices update price_123 --from-file update.json`,
 		Args: cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			u := ui.FromContext(cmd.Context())
-			client, err := getClient(cmd.Context())
-			if err != nil {
-				return err
-			}
-
-			payload, err := readJSONPayload(data, fromFile)
-			if err != nil {
-				return err
-			}
-
-			price, err := client.UpdateBillingPrice(cmd.Context(), args[0], payload)
-			if err != nil {
-				return err
-			}
-
-			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, price)
-			}
-
-			u.Success(fmt.Sprintf("Updated billing price: %s", billingPriceID(*price)))
-			return nil
+		Run: func(ctx context.Context, client *api.Client, args []string, payload map[string]interface{}) (*api.BillingPrice, error) {
+			return client.UpdateBillingPrice(ctx, args[0], payload)
 		},
-	}
-
-	cmd.Flags().StringVar(&data, "data", "", "Inline JSON payload")
-	cmd.Flags().StringVar(&fromFile, "from-file", "", "Path to JSON payload file (- for stdin)")
-	return cmd
+		SuccessMessage: func(price *api.BillingPrice) string {
+			return fmt.Sprintf("Updated billing price: %s", billingPriceID(*price))
+		},
+	}, getClient)
 }
 
 func newBillingInvoicesCmd() *cobra.Command {
@@ -674,10 +523,7 @@ func newBillingInvoicesGetCmd() *cobra.Command {
 }
 
 func newBillingInvoicesCreateCmd() *cobra.Command {
-	var data string
-	var fromFile string
-
-	cmd := &cobra.Command{
+	return NewPayloadCommand(PayloadCommandConfig[*api.BillingInvoice]{
 		Use:   "create",
 		Short: "Create a billing invoice",
 		Long: `Create a billing invoice using a JSON payload.
@@ -685,35 +531,13 @@ func newBillingInvoicesCreateCmd() *cobra.Command {
 Examples:
   airwallex billing invoices create --data '{"customer_id":"cus_123","currency":"USD"}'
   airwallex billing invoices create --from-file invoice.json`,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			u := ui.FromContext(cmd.Context())
-			client, err := getClient(cmd.Context())
-			if err != nil {
-				return err
-			}
-
-			payload, err := readJSONPayload(data, fromFile)
-			if err != nil {
-				return err
-			}
-
-			invoice, err := client.CreateBillingInvoice(cmd.Context(), payload)
-			if err != nil {
-				return err
-			}
-
-			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, invoice)
-			}
-
-			u.Success(fmt.Sprintf("Created billing invoice: %s", billingInvoiceID(*invoice)))
-			return nil
+		Run: func(ctx context.Context, client *api.Client, args []string, payload map[string]interface{}) (*api.BillingInvoice, error) {
+			return client.CreateBillingInvoice(ctx, payload)
 		},
-	}
-
-	cmd.Flags().StringVar(&data, "data", "", "Inline JSON payload")
-	cmd.Flags().StringVar(&fromFile, "from-file", "", "Path to JSON payload file (- for stdin)")
-	return cmd
+		SuccessMessage: func(invoice *api.BillingInvoice) string {
+			return fmt.Sprintf("Created billing invoice: %s", billingInvoiceID(*invoice))
+		},
+	}, getClient)
 }
 
 func newBillingInvoicesPreviewCmd() *cobra.Command {
@@ -933,10 +757,7 @@ func newBillingSubscriptionsGetCmd() *cobra.Command {
 }
 
 func newBillingSubscriptionsCreateCmd() *cobra.Command {
-	var data string
-	var fromFile string
-
-	cmd := &cobra.Command{
+	return NewPayloadCommand(PayloadCommandConfig[*api.BillingSubscription]{
 		Use:   "create",
 		Short: "Create a billing subscription",
 		Long: `Create a billing subscription using a JSON payload.
@@ -944,42 +765,17 @@ func newBillingSubscriptionsCreateCmd() *cobra.Command {
 Examples:
   airwallex billing subscriptions create --data '{"customer_id":"cus_123","price_id":"price_123"}'
   airwallex billing subscriptions create --from-file subscription.json`,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			u := ui.FromContext(cmd.Context())
-			client, err := getClient(cmd.Context())
-			if err != nil {
-				return err
-			}
-
-			payload, err := readJSONPayload(data, fromFile)
-			if err != nil {
-				return err
-			}
-
-			sub, err := client.CreateBillingSubscription(cmd.Context(), payload)
-			if err != nil {
-				return err
-			}
-
-			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, sub)
-			}
-
-			u.Success(fmt.Sprintf("Created billing subscription: %s", billingSubscriptionID(*sub)))
-			return nil
+		Run: func(ctx context.Context, client *api.Client, args []string, payload map[string]interface{}) (*api.BillingSubscription, error) {
+			return client.CreateBillingSubscription(ctx, payload)
 		},
-	}
-
-	cmd.Flags().StringVar(&data, "data", "", "Inline JSON payload")
-	cmd.Flags().StringVar(&fromFile, "from-file", "", "Path to JSON payload file (- for stdin)")
-	return cmd
+		SuccessMessage: func(sub *api.BillingSubscription) string {
+			return fmt.Sprintf("Created billing subscription: %s", billingSubscriptionID(*sub))
+		},
+	}, getClient)
 }
 
 func newBillingSubscriptionsUpdateCmd() *cobra.Command {
-	var data string
-	var fromFile string
-
-	cmd := &cobra.Command{
+	return NewPayloadCommand(PayloadCommandConfig[*api.BillingSubscription]{
 		Use:   "update <subscriptionId>",
 		Short: "Update a billing subscription",
 		Long: `Update a billing subscription using a JSON payload.
@@ -988,42 +784,17 @@ Examples:
   airwallex billing subscriptions update sub_123 --data '{"cancel_at_period_end":true}'
   airwallex billing subscriptions update sub_123 --from-file update.json`,
 		Args: cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			u := ui.FromContext(cmd.Context())
-			client, err := getClient(cmd.Context())
-			if err != nil {
-				return err
-			}
-
-			payload, err := readJSONPayload(data, fromFile)
-			if err != nil {
-				return err
-			}
-
-			sub, err := client.UpdateBillingSubscription(cmd.Context(), args[0], payload)
-			if err != nil {
-				return err
-			}
-
-			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, sub)
-			}
-
-			u.Success(fmt.Sprintf("Updated billing subscription: %s", billingSubscriptionID(*sub)))
-			return nil
+		Run: func(ctx context.Context, client *api.Client, args []string, payload map[string]interface{}) (*api.BillingSubscription, error) {
+			return client.UpdateBillingSubscription(ctx, args[0], payload)
 		},
-	}
-
-	cmd.Flags().StringVar(&data, "data", "", "Inline JSON payload")
-	cmd.Flags().StringVar(&fromFile, "from-file", "", "Path to JSON payload file (- for stdin)")
-	return cmd
+		SuccessMessage: func(sub *api.BillingSubscription) string {
+			return fmt.Sprintf("Updated billing subscription: %s", billingSubscriptionID(*sub))
+		},
+	}, getClient)
 }
 
 func newBillingSubscriptionsCancelCmd() *cobra.Command {
-	var data string
-	var fromFile string
-
-	cmd := &cobra.Command{
+	return NewPayloadCommand(PayloadCommandConfig[*api.BillingSubscription]{
 		Use:   "cancel <subscriptionId>",
 		Short: "Cancel a billing subscription",
 		Long: `Cancel a billing subscription.
@@ -1031,36 +802,15 @@ func newBillingSubscriptionsCancelCmd() *cobra.Command {
 Examples:
   airwallex billing subscriptions cancel sub_123
   airwallex billing subscriptions cancel sub_123 --data '{"cancel_at_period_end":true}'`,
-		Args: cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			u := ui.FromContext(cmd.Context())
-			client, err := getClient(cmd.Context())
-			if err != nil {
-				return err
-			}
-
-			payload, err := readOptionalJSONPayload(data, fromFile)
-			if err != nil {
-				return err
-			}
-
-			sub, err := client.CancelBillingSubscription(cmd.Context(), args[0], payload)
-			if err != nil {
-				return err
-			}
-
-			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, sub)
-			}
-
-			u.Success(fmt.Sprintf("Cancelled billing subscription: %s", billingSubscriptionID(*sub)))
-			return nil
+		Args:        cobra.ExactArgs(1),
+		ReadPayload: readOptionalJSONPayload,
+		Run: func(ctx context.Context, client *api.Client, args []string, payload map[string]interface{}) (*api.BillingSubscription, error) {
+			return client.CancelBillingSubscription(ctx, args[0], payload)
 		},
-	}
-
-	cmd.Flags().StringVar(&data, "data", "", "Inline JSON payload")
-	cmd.Flags().StringVar(&fromFile, "from-file", "", "Path to JSON payload file (- for stdin)")
-	return cmd
+		SuccessMessage: func(sub *api.BillingSubscription) string {
+			return fmt.Sprintf("Cancelled billing subscription: %s", billingSubscriptionID(*sub))
+		},
+	}, getClient)
 }
 
 func newBillingSubscriptionItemsCmd() *cobra.Command {
