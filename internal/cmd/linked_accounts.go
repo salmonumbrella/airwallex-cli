@@ -27,55 +27,26 @@ func newLinkedAccountsCmd() *cobra.Command {
 }
 
 func newLinkedAccountsListCmd() *cobra.Command {
-	var page int
-	var pageSize int
-
-	cmd := &cobra.Command{
-		Use:   "list",
-		Short: "List linked accounts",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			pageSize = normalizePageSize(pageSize)
-
-			client, err := getClient(cmd.Context())
-			if err != nil {
-				return err
-			}
-
-			result, err := client.ListLinkedAccounts(cmd.Context(), page, pageSize)
-			if err != nil {
-				return err
-			}
-
-			f := outfmt.FromContext(cmd.Context())
-
-			if len(result.Items) == 0 {
-				if outfmt.IsJSON(cmd.Context()) {
-					return f.Output(result)
-				}
-				f.Empty("No linked accounts found")
-				return nil
-			}
-
-			headers := []string{"ID", "TYPE", "ACCOUNT_NAME", "BANK", "CURRENCY", "STATUS"}
-			rowFn := func(item any) []string {
-				la := item.(api.LinkedAccount)
-				return []string{la.ID, la.Type, la.AccountName, la.BankName, la.Currency, la.Status}
-			}
-
-			if err := f.OutputList(result.Items, headers, rowFn); err != nil {
-				return err
-			}
-
-			if !outfmt.IsJSON(cmd.Context()) && result.HasMore {
-				fmt.Fprintln(os.Stderr, "# More results available")
-			}
-			return nil
+	return NewListCommand(ListConfig[api.LinkedAccount]{
+		Use:          "list",
+		Short:        "List linked accounts",
+		Headers:      []string{"ID", "TYPE", "ACCOUNT_NAME", "BANK", "CURRENCY", "STATUS"},
+		EmptyMessage: "No linked accounts found",
+		RowFunc: func(la api.LinkedAccount) []string {
+			return []string{la.ID, la.Type, la.AccountName, la.BankName, la.Currency, la.Status}
 		},
-	}
-
-	cmd.Flags().IntVar(&page, "page", 0, "Page number (0 = first page)")
-	cmd.Flags().IntVar(&pageSize, "page-size", 20, "API page size (min 10)")
-	return cmd
+		MoreHint: "# More results available",
+		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[api.LinkedAccount], error) {
+			result, err := client.ListLinkedAccounts(ctx, opts.Page, normalizePageSize(opts.Limit))
+			if err != nil {
+				return ListResult[api.LinkedAccount]{}, err
+			}
+			return ListResult[api.LinkedAccount]{
+				Items:   result.Items,
+				HasMore: result.HasMore,
+			}, nil
+		},
+	}, getClient)
 }
 
 func newLinkedAccountsGetCmd() *cobra.Command {

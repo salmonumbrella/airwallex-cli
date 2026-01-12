@@ -2,8 +2,6 @@ package cmd
 
 import (
 	"context"
-	"fmt"
-	"os"
 
 	"github.com/spf13/cobra"
 
@@ -22,62 +20,33 @@ func newAccountsCmd() *cobra.Command {
 }
 
 func newAccountsListCmd() *cobra.Command {
-	var page int
-	var pageSize int
-
-	cmd := &cobra.Command{
-		Use:   "list",
-		Short: "List global accounts",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := getClient(cmd.Context())
-			if err != nil {
-				return err
-			}
-
-			pageSize = normalizePageSize(pageSize)
-
-			result, err := client.ListGlobalAccounts(cmd.Context(), page, pageSize)
-			if err != nil {
-				return err
-			}
-
-			f := outfmt.FromContext(cmd.Context())
-
-			if len(result.Items) == 0 {
-				if outfmt.IsJSON(cmd.Context()) {
-					return f.Output(result)
-				}
-				f.Empty("No global accounts found")
-				return nil
-			}
-
-			headers := []string{"ACCOUNT_ID", "NAME", "CURRENCY", "COUNTRY", "STATUS"}
-			colTypes := []outfmt.ColumnType{
-				outfmt.ColumnPlain,    // ACCOUNT_ID
-				outfmt.ColumnPlain,    // NAME
-				outfmt.ColumnCurrency, // CURRENCY
-				outfmt.ColumnPlain,    // COUNTRY
-				outfmt.ColumnStatus,   // STATUS
-			}
-			rowFn := func(item any) []string {
-				a := item.(api.GlobalAccount)
-				return []string{a.AccountID, a.AccountName, a.Currency, a.CountryCode, a.Status}
-			}
-
-			if err := f.OutputListWithColors(result.Items, headers, colTypes, rowFn); err != nil {
-				return err
-			}
-
-			if !outfmt.IsJSON(cmd.Context()) && result.HasMore {
-				fmt.Fprintln(os.Stderr, "# More results available")
-			}
-			return nil
+	return NewListCommand(ListConfig[api.GlobalAccount]{
+		Use:          "list",
+		Short:        "List global accounts",
+		Headers:      []string{"ACCOUNT_ID", "NAME", "CURRENCY", "COUNTRY", "STATUS"},
+		EmptyMessage: "No global accounts found",
+		ColumnTypes: []outfmt.ColumnType{
+			outfmt.ColumnPlain,    // ACCOUNT_ID
+			outfmt.ColumnPlain,    // NAME
+			outfmt.ColumnCurrency, // CURRENCY
+			outfmt.ColumnPlain,    // COUNTRY
+			outfmt.ColumnStatus,   // STATUS
 		},
-	}
-
-	cmd.Flags().IntVar(&page, "page", 0, "Page number (0 = first page)")
-	cmd.Flags().IntVar(&pageSize, "page-size", 20, "API page size (min 10)")
-	return cmd
+		RowFunc: func(a api.GlobalAccount) []string {
+			return []string{a.AccountID, a.AccountName, a.Currency, a.CountryCode, a.Status}
+		},
+		MoreHint: "# More results available",
+		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[api.GlobalAccount], error) {
+			result, err := client.ListGlobalAccounts(ctx, opts.Page, normalizePageSize(opts.Limit))
+			if err != nil {
+				return ListResult[api.GlobalAccount]{}, err
+			}
+			return ListResult[api.GlobalAccount]{
+				Items:   result.Items,
+				HasMore: result.HasMore,
+			}, nil
+		},
+	}, getClient)
 }
 
 func newAccountsGetCmd() *cobra.Command {

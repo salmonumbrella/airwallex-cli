@@ -102,59 +102,30 @@ Common events:
 }
 
 func newWebhooksListCmd() *cobra.Command {
-	var page int
-	var pageSize int
-
-	cmd := &cobra.Command{
-		Use:   "list",
-		Short: "List webhook subscriptions",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			pageSize = normalizePageSize(pageSize)
-
-			client, err := getClient(cmd.Context())
-			if err != nil {
-				return err
+	return NewListCommand(ListConfig[api.Webhook]{
+		Use:          "list",
+		Short:        "List webhook subscriptions",
+		Headers:      []string{"ID", "URL", "EVENTS", "STATUS"},
+		EmptyMessage: "No webhooks found",
+		RowFunc: func(wh api.Webhook) []string {
+			events := strings.Join(wh.Events, ", ")
+			if len(events) > 40 {
+				events = events[:37] + "..."
 			}
-
-			result, err := client.ListWebhooks(cmd.Context(), page, pageSize)
-			if err != nil {
-				return err
-			}
-
-			f := outfmt.FromContext(cmd.Context())
-
-			if len(result.Items) == 0 {
-				if outfmt.IsJSON(cmd.Context()) {
-					return f.Output(result)
-				}
-				f.Empty("No webhooks found")
-				return nil
-			}
-
-			headers := []string{"ID", "URL", "EVENTS", "STATUS"}
-			rowFn := func(item any) []string {
-				wh := item.(api.Webhook)
-				events := strings.Join(wh.Events, ", ")
-				if len(events) > 40 {
-					events = events[:37] + "..."
-				}
-				return []string{wh.ID, wh.URL, events, wh.Status}
-			}
-
-			if err := f.OutputList(result.Items, headers, rowFn); err != nil {
-				return err
-			}
-
-			if !outfmt.IsJSON(cmd.Context()) && result.HasMore {
-				fmt.Fprintln(os.Stderr, "# More results available")
-			}
-			return nil
+			return []string{wh.ID, wh.URL, events, wh.Status}
 		},
-	}
-
-	cmd.Flags().IntVar(&page, "page", 0, "Page number (0 = first page)")
-	cmd.Flags().IntVar(&pageSize, "page-size", 20, "API page size (min 10)")
-	return cmd
+		MoreHint: "# More results available",
+		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[api.Webhook], error) {
+			result, err := client.ListWebhooks(ctx, opts.Page, normalizePageSize(opts.Limit))
+			if err != nil {
+				return ListResult[api.Webhook]{}, err
+			}
+			return ListResult[api.Webhook]{
+				Items:   result.Items,
+				HasMore: result.HasMore,
+			}, nil
+		},
+	}, getClient)
 }
 
 func newWebhooksGetCmd() *cobra.Command {
