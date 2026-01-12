@@ -26,68 +26,40 @@ func newFXConversionsCmd() *cobra.Command {
 
 func newFXConversionsListCmd() *cobra.Command {
 	var status, fromDate, toDate string
-	var page int
-	var pageSize int
-
-	cmd := &cobra.Command{
-		Use:   "list",
-		Short: "List conversions",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			// Validate date inputs
-			if err := validateDate(fromDate); err != nil {
-				return fmt.Errorf("--from: %w", err)
+	cmd := NewListCommand(ListConfig[api.Conversion]{
+		Use:          "list",
+		Short:        "List conversions",
+		Headers:      []string{"CONVERSION_ID", "SELL", "BUY", "RATE", "STATUS"},
+		EmptyMessage: "No conversions found",
+		RowFunc: func(c api.Conversion) []string {
+			return []string{
+				c.ID,
+				fmt.Sprintf("%.2f %s", c.SellAmount, c.SellCurrency),
+				fmt.Sprintf("%.2f %s", c.BuyAmount, c.BuyCurrency),
+				fmt.Sprintf("%.6f", c.Rate),
+				c.Status,
 			}
-			if err := validateDate(toDate); err != nil {
-				return fmt.Errorf("--to: %w", err)
-			}
-			if err := validateDateRange(fromDate, toDate); err != nil {
-				return err
-			}
-
-			pageSize = normalizePageSize(pageSize)
-
-			client, err := getClient(cmd.Context())
-			if err != nil {
-				return err
-			}
-
-			result, err := client.ListConversions(cmd.Context(), status, fromDate, toDate, page, pageSize)
-			if err != nil {
-				return err
-			}
-
-			f := outfmt.FromContext(cmd.Context())
-
-			if len(result.Items) == 0 {
-				if outfmt.IsJSON(cmd.Context()) {
-					return f.Output(result)
-				}
-				f.Empty("No conversions found")
-				return nil
-			}
-
-			headers := []string{"CONVERSION_ID", "SELL", "BUY", "RATE", "STATUS"}
-			rowFn := func(item any) []string {
-				c := item.(api.Conversion)
-				return []string{c.ID, fmt.Sprintf("%.2f %s", c.SellAmount, c.SellCurrency), fmt.Sprintf("%.2f %s", c.BuyAmount, c.BuyCurrency), fmt.Sprintf("%.6f", c.Rate), c.Status}
-			}
-
-			if err := f.OutputList(result.Items, headers, rowFn); err != nil {
-				return err
-			}
-
-			if !outfmt.IsJSON(cmd.Context()) && result.HasMore {
-				fmt.Fprintln(os.Stderr, "# More results available")
-			}
-			return nil
 		},
-	}
+		MoreHint: "# More results available",
+		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[api.Conversion], error) {
+			if err := validateDateRangeFlags(fromDate, toDate, "--from", "--to", true); err != nil {
+				return ListResult[api.Conversion]{}, err
+			}
+
+			result, err := client.ListConversions(ctx, status, fromDate, toDate, opts.Page, normalizePageSize(opts.Limit))
+			if err != nil {
+				return ListResult[api.Conversion]{}, err
+			}
+			return ListResult[api.Conversion]{
+				Items:   result.Items,
+				HasMore: result.HasMore,
+			}, nil
+		},
+	}, getClient)
 
 	cmd.Flags().StringVar(&status, "status", "", "Filter by status")
 	cmd.Flags().StringVar(&fromDate, "from", "", "From date (YYYY-MM-DD)")
 	cmd.Flags().StringVar(&toDate, "to", "", "To date (YYYY-MM-DD)")
-	cmd.Flags().IntVar(&page, "page", 0, "Page number (0 = first page)")
-	cmd.Flags().IntVar(&pageSize, "page-size", 20, "API page size (min 10)")
 	return cmd
 }
 

@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"github.com/spf13/cobra"
 
@@ -39,70 +38,45 @@ func newPayersListCmd() *cobra.Command {
 	var nickName string
 	var from string
 	var to string
-	var page int
-	var pageSize int
 
-	cmd := &cobra.Command{
-		Use:   "list",
-		Short: "List payers",
-		RunE: func(cmd *cobra.Command, args []string) error {
+	cmd := NewListCommand(ListConfig[api.Payer]{
+		Use:          "list",
+		Short:        "List payers",
+		Headers:      []string{"PAYER_ID", "ENTITY_TYPE", "NAME", "STATUS"},
+		EmptyMessage: "No payers found",
+		RowFunc: func(p api.Payer) []string {
+			return []string{payerID(p), p.EntityType, p.Name, p.Status}
+		},
+		MoreHint: "# More results available",
+		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[api.Payer], error) {
 			if err := validateDateRangeFlags(from, to, "--from", "--to", true); err != nil {
-				return err
+				return ListResult[api.Payer]{}, err
 			}
 
-			pageSize = normalizePageSize(pageSize)
-
-			client, err := getClient(cmd.Context())
-			if err != nil {
-				return err
-			}
-
-			result, err := client.ListPayers(cmd.Context(), api.PayerListParams{
+			result, err := client.ListPayers(ctx, api.PayerListParams{
 				EntityType: entityType,
 				Name:       name,
 				NickName:   nickName,
 				FromDate:   from,
 				ToDate:     to,
-				PageNum:    page,
-				PageSize:   pageSize,
+				PageNum:    opts.Page,
+				PageSize:   normalizePageSize(opts.Limit),
 			})
 			if err != nil {
-				return err
+				return ListResult[api.Payer]{}, err
 			}
-
-			f := outfmt.FromContext(cmd.Context())
-			if len(result.Items) == 0 {
-				if outfmt.IsJSON(cmd.Context()) {
-					return f.Output(result)
-				}
-				f.Empty("No payers found")
-				return nil
-			}
-
-			headers := []string{"PAYER_ID", "ENTITY_TYPE", "NAME", "STATUS"}
-			rowFn := func(item any) []string {
-				p := item.(api.Payer)
-				return []string{payerID(p), p.EntityType, p.Name, p.Status}
-			}
-
-			if err := f.OutputList(result.Items, headers, rowFn); err != nil {
-				return err
-			}
-
-			if !outfmt.IsJSON(cmd.Context()) && result.HasMore {
-				_, _ = fmt.Fprintln(os.Stderr, "# More results available")
-			}
-			return nil
+			return ListResult[api.Payer]{
+				Items:   result.Items,
+				HasMore: result.HasMore,
+			}, nil
 		},
-	}
+	}, getClient)
 
 	cmd.Flags().StringVar(&entityType, "entity-type", "", "Filter by entity type")
 	cmd.Flags().StringVar(&name, "name", "", "Filter by name")
 	cmd.Flags().StringVar(&nickName, "nick-name", "", "Filter by nickname")
 	cmd.Flags().StringVar(&from, "from", "", "From date (YYYY-MM-DD)")
 	cmd.Flags().StringVar(&to, "to", "", "To date (YYYY-MM-DD)")
-	cmd.Flags().IntVar(&page, "page", 0, "Page number (0 = first page)")
-	cmd.Flags().IntVar(&pageSize, "page-size", 20, "API page size (min 10)")
 	return cmd
 }
 

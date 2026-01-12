@@ -26,58 +26,30 @@ func newPaymentLinksCmd() *cobra.Command {
 }
 
 func newPaymentLinksListCmd() *cobra.Command {
-	var page int
-	var pageSize int
-
-	cmd := &cobra.Command{
-		Use:   "list",
-		Short: "List payment links",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			pageSize = normalizePageSize(pageSize)
-
-			client, err := getClient(cmd.Context())
-			if err != nil {
-				return err
+	cmd := NewListCommand(ListConfig[api.PaymentLink]{
+		Use:          "list",
+		Short:        "List payment links",
+		Headers:      []string{"ID", "AMOUNT", "CURRENCY", "STATUS", "DESCRIPTION"},
+		EmptyMessage: "No payment links found",
+		RowFunc: func(pl api.PaymentLink) []string {
+			desc := pl.Description
+			if len(desc) > 30 {
+				desc = desc[:27] + "..."
 			}
-
-			result, err := client.ListPaymentLinks(cmd.Context(), page, pageSize)
-			if err != nil {
-				return err
-			}
-
-			f := outfmt.FromContext(cmd.Context())
-
-			if len(result.Items) == 0 {
-				if outfmt.IsJSON(cmd.Context()) {
-					return f.Output(result)
-				}
-				f.Empty("No payment links found")
-				return nil
-			}
-
-			headers := []string{"ID", "AMOUNT", "CURRENCY", "STATUS", "DESCRIPTION"}
-			rowFn := func(item any) []string {
-				pl := item.(api.PaymentLink)
-				desc := pl.Description
-				if len(desc) > 30 {
-					desc = desc[:27] + "..."
-				}
-				return []string{pl.ID, fmt.Sprintf("%.2f", pl.Amount), pl.Currency, pl.Status, desc}
-			}
-
-			if err := f.OutputList(result.Items, headers, rowFn); err != nil {
-				return err
-			}
-
-			if !outfmt.IsJSON(cmd.Context()) && result.HasMore {
-				fmt.Fprintln(os.Stderr, "# More results available")
-			}
-			return nil
+			return []string{pl.ID, fmt.Sprintf("%.2f", pl.Amount), pl.Currency, pl.Status, desc}
 		},
-	}
-
-	cmd.Flags().IntVar(&page, "page", 0, "Page number (0 = first page)")
-	cmd.Flags().IntVar(&pageSize, "page-size", 20, "API page size (min 10)")
+		MoreHint: "# More results available",
+		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[api.PaymentLink], error) {
+			result, err := client.ListPaymentLinks(ctx, opts.Page, normalizePageSize(opts.Limit))
+			if err != nil {
+				return ListResult[api.PaymentLink]{}, err
+			}
+			return ListResult[api.PaymentLink]{
+				Items:   result.Items,
+				HasMore: result.HasMore,
+			}, nil
+		},
+	}, getClient)
 	return cmd
 }
 

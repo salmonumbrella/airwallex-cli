@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"github.com/spf13/cobra"
 
@@ -24,10 +23,7 @@ func newDepositsCmd() *cobra.Command {
 
 func newDepositsListCmd() *cobra.Command {
 	var status, fromDate, toDate string
-	var page int
-	var pageSize int
-
-	cmd := &cobra.Command{
+	cmd := NewListCommand(ListConfig[api.Deposit]{
 		Use:   "list",
 		Short: "List deposits",
 		Long: `List inbound deposits with optional filters.
@@ -36,70 +32,40 @@ Examples:
   airwallex deposits list
   airwallex deposits list --status SETTLED
   airwallex deposits list --from 2024-01-01 --to 2024-01-31`,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			// Validate date inputs
-			if err := validateDate(fromDate); err != nil {
-				return fmt.Errorf("--from: %w", err)
-			}
-			if err := validateDate(toDate); err != nil {
-				return fmt.Errorf("--to: %w", err)
-			}
-			if err := validateDateRange(fromDate, toDate); err != nil {
-				return err
-			}
-
-			pageSize = normalizePageSize(pageSize)
-
-			client, err := getClient(cmd.Context())
-			if err != nil {
-				return err
-			}
-
-			result, err := client.ListDeposits(cmd.Context(), status, fromDate, toDate, page, pageSize)
-			if err != nil {
-				return err
-			}
-
-			f := outfmt.FromContext(cmd.Context())
-
-			if len(result.Items) == 0 {
-				if outfmt.IsJSON(cmd.Context()) {
-					return f.Output(result)
-				}
-				f.Empty("No deposits found")
-				return nil
-			}
-
-			headers := []string{"DEPOSIT_ID", "AMOUNT", "CURRENCY", "STATUS", "SOURCE", "CREATED"}
-			colTypes := []outfmt.ColumnType{
-				outfmt.ColumnPlain,    // DEPOSIT_ID
-				outfmt.ColumnAmount,   // AMOUNT
-				outfmt.ColumnCurrency, // CURRENCY
-				outfmt.ColumnStatus,   // STATUS
-				outfmt.ColumnPlain,    // SOURCE
-				outfmt.ColumnPlain,    // CREATED
-			}
-			rowFn := func(item any) []string {
-				d := item.(api.Deposit)
-				return []string{d.ID, fmt.Sprintf("%.2f", d.Amount), d.Currency, d.Status, d.Source, d.CreatedAt}
-			}
-
-			if err := f.OutputListWithColors(result.Items, headers, colTypes, rowFn); err != nil {
-				return err
-			}
-
-			if !outfmt.IsJSON(cmd.Context()) && result.HasMore {
-				fmt.Fprintln(os.Stderr, "# More results available")
-			}
-			return nil
+		Headers:      []string{"DEPOSIT_ID", "AMOUNT", "CURRENCY", "STATUS", "SOURCE", "CREATED"},
+		EmptyMessage: "No deposits found",
+		ColumnTypes: []outfmt.ColumnType{
+			outfmt.ColumnPlain,    // DEPOSIT_ID
+			outfmt.ColumnAmount,   // AMOUNT
+			outfmt.ColumnCurrency, // CURRENCY
+			outfmt.ColumnStatus,   // STATUS
+			outfmt.ColumnPlain,    // SOURCE
+			outfmt.ColumnPlain,    // CREATED
 		},
-	}
+		RowFunc: func(d api.Deposit) []string {
+			return []string{d.ID, fmt.Sprintf("%.2f", d.Amount), d.Currency, d.Status, d.Source, d.CreatedAt}
+		},
+		MoreHint: "# More results available",
+		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[api.Deposit], error) {
+			if err := validateDateRangeFlags(fromDate, toDate, "--from", "--to", true); err != nil {
+				return ListResult[api.Deposit]{}, err
+			}
+
+			result, err := client.ListDeposits(ctx, status, fromDate, toDate, opts.Page, normalizePageSize(opts.Limit))
+			if err != nil {
+				return ListResult[api.Deposit]{}, err
+			}
+
+			return ListResult[api.Deposit]{
+				Items:   result.Items,
+				HasMore: result.HasMore,
+			}, nil
+		},
+	}, getClient)
 
 	cmd.Flags().StringVar(&status, "status", "", "Filter by status (PENDING, SETTLED, FAILED)")
 	cmd.Flags().StringVar(&fromDate, "from", "", "From date (YYYY-MM-DD)")
 	cmd.Flags().StringVar(&toDate, "to", "", "To date (YYYY-MM-DD)")
-	cmd.Flags().IntVar(&page, "page", 0, "Page number (0 = first page)")
-	cmd.Flags().IntVar(&pageSize, "page-size", 20, "API page size (min 10)")
 	return cmd
 }
 

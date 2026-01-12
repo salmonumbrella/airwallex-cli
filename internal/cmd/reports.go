@@ -35,59 +35,31 @@ Report types:
 }
 
 func newReportsListCmd() *cobra.Command {
-	var page int
-	var pageSize int
-
-	cmd := &cobra.Command{
-		Use:   "list",
-		Short: "List all financial reports",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			pageSize = normalizePageSize(pageSize)
-
-			client, err := getClient(cmd.Context())
-			if err != nil {
-				return err
+	cmd := NewListCommand(ListConfig[api.FinancialReport]{
+		Use:          "list",
+		Short:        "List all financial reports",
+		Headers:      []string{"ID", "TYPE", "STATUS", "DATE_RANGE", "FORMAT", "EXPIRES_AT"},
+		EmptyMessage: "No reports found",
+		RowFunc: func(r api.FinancialReport) []string {
+			dateRange := fmt.Sprintf("%s to %s", r.FromDate, r.ToDate)
+			expiresAt := r.ReportExpiresAt
+			if expiresAt == "" {
+				expiresAt = "N/A"
 			}
-
-			result, err := client.ListFinancialReports(cmd.Context(), page, pageSize)
-			if err != nil {
-				return err
-			}
-
-			f := outfmt.FromContext(cmd.Context())
-
-			if len(result.Items) == 0 {
-				if outfmt.IsJSON(cmd.Context()) {
-					return f.Output(result)
-				}
-				f.Empty("No reports found")
-				return nil
-			}
-
-			headers := []string{"ID", "TYPE", "STATUS", "DATE_RANGE", "FORMAT", "EXPIRES_AT"}
-			rowFn := func(item any) []string {
-				r := item.(api.FinancialReport)
-				dateRange := fmt.Sprintf("%s to %s", r.FromDate, r.ToDate)
-				expiresAt := r.ReportExpiresAt
-				if expiresAt == "" {
-					expiresAt = "N/A"
-				}
-				return []string{r.ID, r.Type, r.Status, dateRange, r.FileFormat, expiresAt}
-			}
-
-			if err := f.OutputList(result.Items, headers, rowFn); err != nil {
-				return err
-			}
-
-			if !outfmt.IsJSON(cmd.Context()) && result.HasMore {
-				fmt.Fprintln(os.Stderr, "# More results available")
-			}
-			return nil
+			return []string{r.ID, r.Type, r.Status, dateRange, r.FileFormat, expiresAt}
 		},
-	}
-
-	cmd.Flags().IntVar(&page, "page", 0, "Page number (0 = first page)")
-	cmd.Flags().IntVar(&pageSize, "page-size", 20, "API page size (min 10)")
+		MoreHint: "# More results available",
+		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[api.FinancialReport], error) {
+			result, err := client.ListFinancialReports(ctx, opts.Page, normalizePageSize(opts.Limit))
+			if err != nil {
+				return ListResult[api.FinancialReport]{}, err
+			}
+			return ListResult[api.FinancialReport]{
+				Items:   result.Items,
+				HasMore: result.HasMore,
+			}, nil
+		},
+	}, getClient)
 	return cmd
 }
 
