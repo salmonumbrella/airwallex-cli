@@ -3,11 +3,11 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"github.com/spf13/cobra"
 
 	"github.com/salmonumbrella/airwallex-cli/internal/api"
+	"github.com/salmonumbrella/airwallex-cli/internal/iocontext"
 	"github.com/salmonumbrella/airwallex-cli/internal/outfmt"
 	"github.com/salmonumbrella/airwallex-cli/internal/ui"
 )
@@ -63,7 +63,8 @@ func NewPayloadCommand[T any](cfg PayloadCommandConfig[T], getClient func(contex
 			}
 
 			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, result)
+				io := iocontext.GetIO(cmd.Context())
+				return outfmt.WriteJSON(io.Out, result)
 			}
 
 			if cfg.SuccessMessage != nil {
