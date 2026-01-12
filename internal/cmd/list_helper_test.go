@@ -154,6 +154,78 @@ func TestNewListCommand_AfterCursor(t *testing.T) {
 	}
 }
 
+func TestNewListCommand_PageSizeAlias(t *testing.T) {
+	var capturedOpts ListOptions
+
+	cfg := ListConfig[testItem]{
+		Use:          "test",
+		Short:        "Test list command",
+		Headers:      []string{"ID", "NAME"},
+		EmptyMessage: "No items",
+		RowFunc: func(item testItem) []string {
+			return []string{item.ID, item.Name}
+		},
+		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[testItem], error) {
+			capturedOpts = opts
+			return ListResult[testItem]{
+				Items:   []testItem{{ID: "1", Name: "Test"}},
+				HasMore: false,
+			}, nil
+		},
+	}
+
+	cmd := NewListCommand(cfg, func(ctx context.Context) (*api.Client, error) {
+		return &api.Client{}, nil
+	})
+
+	ctx := outfmt.WithFormat(context.Background(), "text")
+	cmd.SetContext(ctx)
+	cmd.SetArgs([]string{"--page-size", "30"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if capturedOpts.Limit != 30 {
+		t.Errorf("expected limit 30, got %d", capturedOpts.Limit)
+	}
+}
+
+func TestNewListCommand_PageFlag(t *testing.T) {
+	var capturedOpts ListOptions
+
+	cfg := ListConfig[testItem]{
+		Use:          "test",
+		Short:        "Test list command",
+		Headers:      []string{"ID", "NAME"},
+		EmptyMessage: "No items",
+		RowFunc: func(item testItem) []string {
+			return []string{item.ID, item.Name}
+		},
+		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[testItem], error) {
+			capturedOpts = opts
+			return ListResult[testItem]{
+				Items:   []testItem{{ID: "1", Name: "Test"}},
+				HasMore: false,
+			}, nil
+		},
+	}
+
+	cmd := NewListCommand(cfg, func(ctx context.Context) (*api.Client, error) {
+		return &api.Client{}, nil
+	})
+
+	ctx := outfmt.WithFormat(context.Background(), "text")
+	cmd.SetContext(ctx)
+	cmd.SetArgs([]string{"--page", "2"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if capturedOpts.Page != 2 {
+		t.Errorf("expected page 2, got %d", capturedOpts.Page)
+	}
+}
+
 func TestNewListCommand_EmptyResults(t *testing.T) {
 	var emptyCalled bool
 

@@ -22,6 +22,7 @@ type ListResult[T any] struct {
 // Cursor uses the same value as the --after flag in the CLI.
 type ListOptions struct {
 	pagination.Options
+	Page int
 }
 
 // ListConfig defines how a list command behaves
@@ -74,6 +75,12 @@ func NewListCommand[T any](cfg ListConfig[T], getClient func(context.Context) (*
 				limit = 100
 			}
 
+			if pageSize, err := cmd.Flags().GetInt("page-size"); err == nil && pageSize > 0 && !cmd.Flags().Changed("limit") {
+				limit = pageSize
+			}
+
+			page, _ := cmd.Flags().GetInt("page")
+
 			client, err := getClient(cmd.Context())
 			if err != nil {
 				return err
@@ -84,6 +91,7 @@ func NewListCommand[T any](cfg ListConfig[T], getClient func(context.Context) (*
 					Limit:  limit,
 					Cursor: after,
 				},
+				Page: page,
 			}
 			var result ListResult[T]
 			switch {
