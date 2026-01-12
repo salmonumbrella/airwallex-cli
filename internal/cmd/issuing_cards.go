@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"text/tabwriter"
 
 	"github.com/spf13/cobra"
 
@@ -109,17 +108,17 @@ func newCardsGetCmd() *cobra.Command {
 				return outfmt.WriteJSON(io.Out, card)
 			}
 
-			tw := tabwriter.NewWriter(io.Out, 0, 4, 2, ' ', 0)
-			_, _ = fmt.Fprintf(tw, "card_id\t%s\n", card.CardID)
-			_, _ = fmt.Fprintf(tw, "status\t%s\n", card.CardStatus)
-			_, _ = fmt.Fprintf(tw, "nickname\t%s\n", card.NickName)
-			_, _ = fmt.Fprintf(tw, "card_number\t%s\n", card.CardNumber)
-			_, _ = fmt.Fprintf(tw, "brand\t%s\n", card.Brand)
-			_, _ = fmt.Fprintf(tw, "form_factor\t%s\n", card.FormFactor)
-			_, _ = fmt.Fprintf(tw, "cardholder_id\t%s\n", card.CardholderID)
-			_, _ = fmt.Fprintf(tw, "created_at\t%s\n", card.CreatedAt)
-			_ = tw.Flush()
-			return nil
+			rows := []outfmt.KV{
+				{Key: "card_id", Value: card.CardID},
+				{Key: "status", Value: card.CardStatus},
+				{Key: "nickname", Value: card.NickName},
+				{Key: "card_number", Value: card.CardNumber},
+				{Key: "brand", Value: card.Brand},
+				{Key: "form_factor", Value: card.FormFactor},
+				{Key: "cardholder_id", Value: card.CardholderID},
+				{Key: "created_at", Value: card.CreatedAt},
+			}
+			return outfmt.WriteKV(io.Out, rows)
 		},
 	}
 }
@@ -280,12 +279,13 @@ Program types: PREPAID, DEBIT, CREDIT, DEFERRED_DEBIT`,
 				} else {
 					defer details.Zeroize()
 					_, _ = fmt.Fprintln(io.Out)
-					tw := tabwriter.NewWriter(io.Out, 0, 4, 2, ' ', 0)
-					_, _ = fmt.Fprintln(tw, "CARD DETAILS (Company Card)")
-					_, _ = fmt.Fprintf(tw, "card_number\t%s\n", details.CardNumber)
-					_, _ = fmt.Fprintf(tw, "cvv\t%s\n", details.Cvv)
-					_, _ = fmt.Fprintf(tw, "expiry\t%02d/%d\n", details.ExpiryMonth, details.ExpiryYear)
-					_ = tw.Flush()
+					_, _ = fmt.Fprintln(io.Out, "CARD DETAILS (Company Card)")
+					rows := []outfmt.KV{
+						{Key: "card_number", Value: details.CardNumber},
+						{Key: "cvv", Value: details.Cvv},
+						{Key: "expiry", Value: fmt.Sprintf("%02d/%d", details.ExpiryMonth, details.ExpiryYear)},
+					}
+					_ = outfmt.WriteKV(io.Out, rows)
 				}
 			}
 
@@ -408,17 +408,17 @@ func newCardsDetailsCmd() *cobra.Command {
 				return outfmt.WriteJSON(io.Out, details)
 			}
 
-			tw := tabwriter.NewWriter(io.Out, 0, 4, 2, ' ', 0)
-			_, _ = fmt.Fprintf(tw, "card_id\t%s\n", details.CardID)
+			cardNumber := details.MaskedPAN()
 			if showPAN {
-				_, _ = fmt.Fprintf(tw, "card_number\t%s\n", details.CardNumber)
-			} else {
-				_, _ = fmt.Fprintf(tw, "card_number\t%s\n", details.MaskedPAN())
+				cardNumber = details.CardNumber
 			}
-			_, _ = fmt.Fprintf(tw, "cvv\t%s\n", details.Cvv)
-			_, _ = fmt.Fprintf(tw, "expiry\t%02d/%d\n", details.ExpiryMonth, details.ExpiryYear)
-			_ = tw.Flush()
-			return nil
+			rows := []outfmt.KV{
+				{Key: "card_id", Value: details.CardID},
+				{Key: "card_number", Value: cardNumber},
+				{Key: "cvv", Value: details.Cvv},
+				{Key: "expiry", Value: fmt.Sprintf("%02d/%d", details.ExpiryMonth, details.ExpiryYear)},
+			}
+			return outfmt.WriteKV(io.Out, rows)
 		},
 	}
 
