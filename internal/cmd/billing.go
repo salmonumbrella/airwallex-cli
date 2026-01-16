@@ -103,7 +103,7 @@ func newBillingCustomersListCmd() *cobra.Command {
 				MerchantCustomerID: merchantCustomerID,
 				FromCreatedAt:      fromRFC3339,
 				ToCreatedAt:        toRFC3339,
-				PageNum:            0,
+				PageNum:            opts.Page - 1,
 				PageSize:           opts.Limit,
 			})
 			if err != nil {
@@ -214,7 +214,7 @@ func newBillingProductsListCmd() *cobra.Command {
 
 			result, err := client.ListBillingProducts(ctx, api.BillingProductListParams{
 				Active:   activeVal,
-				PageNum:  0,
+				PageNum:  opts.Page - 1,
 				PageSize: opts.Limit,
 			})
 			if err != nil {
@@ -341,7 +341,7 @@ func newBillingPricesListCmd() *cobra.Command {
 				ProductID:           productID,
 				RecurringPeriod:     recurringPeriod,
 				RecurringPeriodUnit: recurringPeriodUnit,
-				PageNum:             0,
+				PageNum:             opts.Page - 1,
 				PageSize:            opts.Limit,
 			})
 			if err != nil {
@@ -474,7 +474,7 @@ func newBillingInvoicesListCmd() *cobra.Command {
 				Status:         status,
 				FromCreatedAt:  fromRFC3339,
 				ToCreatedAt:    toRFC3339,
-				PageNum:        0,
+				PageNum:        opts.Page - 1,
 				PageSize:       opts.Limit,
 			})
 			if err != nil {
@@ -618,7 +618,7 @@ func newBillingInvoiceItemsListCmd() *cobra.Command {
 		},
 		MoreHint: "# More results available",
 		FetchWithArgs: func(ctx context.Context, client *api.Client, opts ListOptions, args []string) (ListResult[api.BillingInvoiceItem], error) {
-			result, err := client.ListBillingInvoiceItems(ctx, args[0], 0, opts.Limit)
+			result, err := client.ListBillingInvoiceItems(ctx, args[0], opts.Page-1, opts.Limit)
 			if err != nil {
 				return ListResult[api.BillingInvoiceItem]{}, err
 			}
@@ -711,7 +711,7 @@ func newBillingSubscriptionsListCmd() *cobra.Command {
 				RecurringPeriodUnit: recurringPeriodUnit,
 				FromCreatedAt:       fromRFC3339,
 				ToCreatedAt:         toRFC3339,
-				PageNum:             0,
+				PageNum:             opts.Page - 1,
 				PageSize:            opts.Limit,
 			})
 			if err != nil {
@@ -842,7 +842,7 @@ func newBillingSubscriptionItemsListCmd() *cobra.Command {
 		},
 		MoreHint: "# More results available",
 		FetchWithArgs: func(ctx context.Context, client *api.Client, opts ListOptions, args []string) (ListResult[api.BillingSubscriptionItem], error) {
-			result, err := client.ListBillingSubscriptionItems(ctx, args[0], 0, opts.Limit)
+			result, err := client.ListBillingSubscriptionItems(ctx, args[0], opts.Page-1, opts.Limit)
 			if err != nil {
 				return ListResult[api.BillingSubscriptionItem]{}, err
 			}

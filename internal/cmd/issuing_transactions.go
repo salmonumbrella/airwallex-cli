@@ -71,7 +71,9 @@ Examples:
 		RowFunc: func(txn api.Transaction) []string {
 			return []string{txn.TransactionID, txn.TransactionType, fmt.Sprintf("%.2f", txn.Amount), txn.Currency, txn.Merchant.Name, txn.Status}
 		},
-		MoreHint: "# More results available",
+		IDFunc: func(txn api.Transaction) string {
+			return txn.TransactionID
+		},
 		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[api.Transaction], error) {
 			fromRFC3339, toRFC3339, err := parseDateRangeRFC3339(from, to, "--from", "--to", false)
 			if err != nil {
