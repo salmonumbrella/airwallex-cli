@@ -25,6 +25,16 @@ type ListOptions struct {
 	Page int
 }
 
+// PaginationMode indicates which pagination model a list command uses.
+type PaginationMode string
+
+const (
+	// PaginationPage uses page_num/page_size style pagination.
+	PaginationPage PaginationMode = "page"
+	// PaginationCursor uses after_id/limit style pagination.
+	PaginationCursor PaginationMode = "cursor"
+)
+
 // ListConfig defines how a list command behaves
 type ListConfig[T any] struct {
 	// Command metadata
@@ -53,12 +63,18 @@ type ListConfig[T any] struct {
 
 	// MoreHint overrides the default "next page" hint when HasMore is true.
 	MoreHint string
+
+	// Pagination configures which pagination model the endpoint uses.
+	// Defaults to PaginationPage.
+	Pagination PaginationMode
 }
 
 // NewListCommand creates a cobra command from ListConfig
 func NewListCommand[T any](cfg ListConfig[T], getClient func(context.Context) (*api.Client, error)) *cobra.Command {
 	var limit int
 	var after string
+	var page int
+	var pageSize int
 	var itemsOnly bool
 
 	cmd := &cobra.Command{
@@ -67,19 +83,33 @@ func NewListCommand[T any](cfg ListConfig[T], getClient func(context.Context) (*
 		Long:    cfg.Long,
 		Example: cfg.Example,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Enforce limits
-			if limit <= 0 {
-				limit = 20
-			}
-			if limit > 100 {
-				limit = 100
+			mode := cfg.Pagination
+			if mode == "" {
+				mode = PaginationPage
 			}
 
-			if pageSize, err := cmd.Flags().GetInt("page-size"); err == nil && pageSize > 0 && !cmd.Flags().Changed("limit") {
-				limit = pageSize
+			// Enforce limits and pagination defaults
+			switch mode {
+			case PaginationCursor:
+				if limit <= 0 {
+					limit = 20
+				}
+				if limit > 100 {
+					limit = 100
+				}
+			case PaginationPage:
+				if pageSize <= 0 {
+					pageSize = 20
+				}
+				if pageSize > 100 {
+					pageSize = 100
+				}
+				if page <= 0 {
+					page = 1
+				}
+			default:
+				return fmt.Errorf("unknown pagination mode %q", mode)
 			}
-
-			page, _ := cmd.Flags().GetInt("page")
 
 			client, err := getClient(cmd.Context())
 			if err != nil {
@@ -92,6 +122,9 @@ func NewListCommand[T any](cfg ListConfig[T], getClient func(context.Context) (*
 					Cursor: after,
 				},
 				Page: page,
+			}
+			if mode == PaginationPage {
+				opts.Limit = pageSize
 			}
 			var result ListResult[T]
 			switch {
@@ -132,9 +165,16 @@ func NewListCommand[T any](cfg ListConfig[T], getClient func(context.Context) (*
 					"items":    result.Items,
 					"has_more": result.HasMore,
 				}
-				if result.HasMore && len(result.Items) > 0 && cfg.IDFunc != nil {
-					lastID := cfg.IDFunc(result.Items[len(result.Items)-1])
-					output["next_cursor"] = lastID
+				if result.HasMore && len(result.Items) > 0 {
+					switch mode {
+					case PaginationCursor:
+						if cfg.IDFunc != nil {
+							lastID := cfg.IDFunc(result.Items[len(result.Items)-1])
+							output["next_cursor"] = lastID
+						}
+					case PaginationPage:
+						output["next_page"] = page + 1
+					}
 				}
 				return f.Output(output)
 			}
@@ -153,9 +193,16 @@ func NewListCommand[T any](cfg ListConfig[T], getClient func(context.Context) (*
 			if result.HasMore {
 				if cfg.MoreHint != "" {
 					fmt.Fprintln(os.Stderr, cfg.MoreHint)
-				} else if cfg.IDFunc != nil {
-					lastID := cfg.IDFunc(result.Items[len(result.Items)-1])
-					fmt.Fprintf(os.Stderr, "# More results available. Next page: --after %s\n", lastID)
+				} else {
+					switch mode {
+					case PaginationCursor:
+						if cfg.IDFunc != nil {
+							lastID := cfg.IDFunc(result.Items[len(result.Items)-1])
+							fmt.Fprintf(os.Stderr, "# More results available. Next page: --after %s\n", lastID)
+						}
+					case PaginationPage:
+						fmt.Fprintf(os.Stderr, "# More results available. Next page: --page %d\n", page+1)
+					}
 				}
 			}
 			return nil
@@ -165,16 +212,22 @@ func NewListCommand[T any](cfg ListConfig[T], getClient func(context.Context) (*
 		cmd.Args = cfg.Args
 	}
 
-	cmd.Flags().IntVar(&limit, "limit", 20, "Max items to return (1-100)")
-	cmd.Flags().StringVar(&after, "after", "", "Cursor for next page (from previous result)")
+	mode := cfg.Pagination
+	if mode == "" {
+		mode = PaginationPage
+	}
+	switch mode {
+	case PaginationCursor:
+		cmd.Flags().IntVar(&limit, "limit", 20, "Max items to return (1-100)")
+		cmd.Flags().StringVar(&after, "after", "", "Cursor for next page (from previous result)")
+	case PaginationPage:
+		cmd.Flags().IntVar(&page, "page", 1, "Page number (1+)")
+		cmd.Flags().IntVar(&pageSize, "page-size", 20, "Page size (1-100)")
+	default:
+		panic(fmt.Sprintf("unsupported pagination mode %q", mode))
+	}
 	cmd.Flags().BoolVar(&itemsOnly, "items-only", false, "Output items array only (JSON mode)")
 	cmd.Flags().BoolVar(&itemsOnly, "results-only", false, "Alias for --items-only")
-
-	// Keep deprecated flags for backwards compatibility
-	cmd.Flags().Int("page", 0, "")
-	cmd.Flags().Int("page-size", 0, "")
-	_ = cmd.Flags().MarkDeprecated("page", "use --after for cursor-based pagination")
-	_ = cmd.Flags().MarkDeprecated("page-size", "use --limit instead")
 
 	return cmd
 }

@@ -72,7 +72,6 @@ func TestReportsSettlementValidation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			flags = rootFlags{}
 
 			reportsCmd := newReportsCmd()
 			rootCmd := &cobra.Command{Use: "root"}
@@ -138,7 +137,6 @@ func TestReportsBalanceActivityValidation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			flags = rootFlags{}
 
 			reportsCmd := newReportsCmd()
 			rootCmd := &cobra.Command{Use: "root"}
@@ -195,7 +193,6 @@ func TestReportsTransactionReconValidation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			flags = rootFlags{}
 
 			reportsCmd := newReportsCmd()
 			rootCmd := &cobra.Command{Use: "root"}
@@ -260,7 +257,6 @@ func TestReportsAccountStatementValidation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			flags = rootFlags{}
 
 			reportsCmd := newReportsCmd()
 			rootCmd := &cobra.Command{Use: "root"}

@@ -70,7 +70,7 @@ Use --output json with --query for advanced filtering using jq syntax.
 
 Examples:
   # List recent transfers
-  airwallex transfers list --limit 20
+  airwallex transfers list --page-size 20
 
   # Filter by status
   airwallex transfers list --status PAID

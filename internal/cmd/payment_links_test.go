@@ -73,23 +73,20 @@ func TestPaymentLinksListCommand(t *testing.T) {
 	}
 }
 
-func TestPaymentLinksListCommand_PageSizeMinimum(t *testing.T) {
+func TestPaymentLinksListCommand_PageSizeFlag(t *testing.T) {
 	cmd := newPaymentLinksListCmd()
 
-	// Verify the help text mentions minimum
 	pageSizeFlag := cmd.Flags().Lookup("page-size")
 	if pageSizeFlag == nil {
 		t.Fatal("page-size flag not found")
 	}
 
-	if pageSizeFlag.Deprecated == "" {
-		t.Errorf("expected page-size flag to be deprecated")
+	if pageSizeFlag.Deprecated != "" {
+		t.Errorf("expected page-size flag to be active, got deprecated: %s", pageSizeFlag.Deprecated)
 	}
 
-	// Verify default value
-	defaultVal := pageSizeFlag.DefValue
-	if defaultVal != "0" {
-		t.Errorf("expected default value of 0 for deprecated page-size, got: %s", defaultVal)
+	if pageSizeFlag.DefValue != "20" {
+		t.Errorf("expected default page-size to be 20, got: %s", pageSizeFlag.DefValue)
 	}
 }
 

@@ -8,41 +8,41 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func TestTransfersListCmd_LimitFlag(t *testing.T) {
+func TestTransfersListCmd_PageSizeFlag(t *testing.T) {
 	tests := []struct {
-		name  string
-		limit int
+		name     string
+		pageSize int
 	}{
 		{
-			name:  "limit below default",
-			limit: 5,
+			name:     "page size below default",
+			pageSize: 5,
 		},
 		{
-			name:  "limit at default",
-			limit: 20,
+			name:     "page size at default",
+			pageSize: 20,
 		},
 		{
-			name:  "limit above default",
-			limit: 50,
+			name:     "page size above default",
+			pageSize: 50,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cmd := newTransfersListCmd()
-			if err := cmd.Flags().Set("limit", intToString(tt.limit)); err != nil {
-				t.Fatalf("failed to set limit flag: %v", err)
+			if err := cmd.Flags().Set("page-size", intToString(tt.pageSize)); err != nil {
+				t.Fatalf("failed to set page-size flag: %v", err)
 			}
 
 			// Verify the flag exists
-			limitFlag := cmd.Flags().Lookup("limit")
-			if limitFlag == nil {
-				t.Fatal("limit flag not found")
+			pageSizeFlag := cmd.Flags().Lookup("page-size")
+			if pageSizeFlag == nil {
+				t.Fatal("page-size flag not found")
 			}
 
 			// Verify the help text mentions max items
-			if !strings.Contains(limitFlag.Usage, "Max items") {
-				t.Errorf("limit flag help text should mention 'Max items', got: %s", limitFlag.Usage)
+			if !strings.Contains(pageSizeFlag.Usage, "Page size") {
+				t.Errorf("page-size flag help text should mention 'Page size', got: %s", pageSizeFlag.Usage)
 			}
 		})
 	}

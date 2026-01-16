@@ -28,8 +28,9 @@ var mappings = map[string]Mapping{
 		Description: "Payment method: LOCAL or SWIFT",
 	},
 	"nickname": {
-		Flag:       "nickname",
-		SchemaPath: "nickname",
+		Flag:        "nickname",
+		SchemaPath:  "nickname",
+		Description: "Nickname for the beneficiary",
 	},
 
 	// SWIFT/International
@@ -241,16 +242,19 @@ var mappings = map[string]Mapping{
 
 	// Account details
 	"account-number": {
-		Flag:       "account-number",
-		SchemaPath: "beneficiary.bank_details.account_number",
+		Flag:        "account-number",
+		SchemaPath:  "beneficiary.bank_details.account_number",
+		Description: "Bank account number",
 	},
 	"account-name": {
-		Flag:       "account-name",
-		SchemaPath: "beneficiary.bank_details.account_name",
+		Flag:        "account-name",
+		SchemaPath:  "beneficiary.bank_details.account_name",
+		Description: "Account holder name",
 	},
 	"account-currency": {
-		Flag:       "account-currency",
-		SchemaPath: "beneficiary.bank_details.account_currency",
+		Flag:        "account-currency",
+		SchemaPath:  "beneficiary.bank_details.account_currency",
+		Description: "Account currency (e.g., USD)",
 	},
 	"clearing-system": {
 		Flag:        "clearing-system",
@@ -292,38 +296,46 @@ var mappings = map[string]Mapping{
 
 	// Entity details
 	"company-name": {
-		Flag:       "company-name",
-		SchemaPath: "beneficiary.company_name",
+		Flag:        "company-name",
+		SchemaPath:  "beneficiary.company_name",
+		Description: "Company name (for COMPANY entity)",
 	},
 	"first-name": {
-		Flag:       "first-name",
-		SchemaPath: "beneficiary.first_name",
+		Flag:        "first-name",
+		SchemaPath:  "beneficiary.first_name",
+		Description: "First name (for PERSONAL entity)",
 	},
 	"last-name": {
-		Flag:       "last-name",
-		SchemaPath: "beneficiary.last_name",
+		Flag:        "last-name",
+		SchemaPath:  "beneficiary.last_name",
+		Description: "Last name (for PERSONAL entity)",
 	},
 
 	// Address
 	"address-country": {
-		Flag:       "address-country",
-		SchemaPath: "beneficiary.address.country_code",
+		Flag:        "address-country",
+		SchemaPath:  "beneficiary.address.country_code",
+		Description: "Beneficiary country code (e.g., CA)",
 	},
 	"address-street": {
-		Flag:       "address-street",
-		SchemaPath: "beneficiary.address.street_address",
+		Flag:        "address-street",
+		SchemaPath:  "beneficiary.address.street_address",
+		Description: "Beneficiary street address",
 	},
 	"address-city": {
-		Flag:       "address-city",
-		SchemaPath: "beneficiary.address.city",
+		Flag:        "address-city",
+		SchemaPath:  "beneficiary.address.city",
+		Description: "Beneficiary city",
 	},
 	"address-state": {
-		Flag:       "address-state",
-		SchemaPath: "beneficiary.address.state",
+		Flag:        "address-state",
+		SchemaPath:  "beneficiary.address.state",
+		Description: "Beneficiary state/province",
 	},
 	"address-postcode": {
-		Flag:       "address-postcode",
-		SchemaPath: "beneficiary.address.postcode",
+		Flag:        "address-postcode",
+		SchemaPath:  "beneficiary.address.postcode",
+		Description: "Beneficiary postal code",
 	},
 }
 

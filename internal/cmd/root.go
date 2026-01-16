@@ -23,15 +23,25 @@ type rootFlags struct {
 	QueryFile string
 	Template  string // Go template for custom output
 	// Agent-friendly flags
-	Yes    bool   // skip confirmation prompts
-	Limit  int    // limit number of results (0 = no limit)
-	SortBy string // field name to sort by
-	Desc   bool   // sort descending (only valid with --sort-by)
+	Yes         bool   // skip confirmation prompts
+	OutputLimit int    // limit number of results in output (0 = no limit)
+	SortBy      string // field name to sort by
+	Desc        bool   // sort descending (only valid with --sort-by)
 }
 
-var flags rootFlags
+type rootFlagsKey struct{}
+
+func withRootFlags(ctx context.Context, f *rootFlags) context.Context {
+	return context.WithValue(ctx, rootFlagsKey{}, f)
+}
+
+func rootFlagsFromContext(ctx context.Context) (*rootFlags, bool) {
+	f, ok := ctx.Value(rootFlagsKey{}).(*rootFlags)
+	return f, ok
+}
 
 func NewRootCmd() *cobra.Command {
+	flags := &rootFlags{}
 	cmd := &cobra.Command{
 		Use:          "airwallex",
 		Short:        "Airwallex CLI for cards, transfers, and more",
@@ -73,10 +83,11 @@ func NewRootCmd() *cobra.Command {
 
 			// Inject agent-friendly flags
 			ctx = outfmt.WithYes(ctx, flags.Yes)
-			ctx = outfmt.WithLimit(ctx, flags.Limit)
+			ctx = outfmt.WithLimit(ctx, flags.OutputLimit)
 			ctx = outfmt.WithSortBy(ctx, flags.SortBy)
 			ctx = outfmt.WithDesc(ctx, flags.Desc)
 
+			ctx = withRootFlags(ctx, flags)
 			cmd.SetContext(ctx)
 			return nil
 		},
@@ -93,7 +104,7 @@ func NewRootCmd() *cobra.Command {
 	// Agent-friendly flags
 	cmd.PersistentFlags().BoolVarP(&flags.Yes, "yes", "y", false, "Skip confirmation prompts")
 	cmd.PersistentFlags().BoolVar(&flags.Yes, "force", false, "Skip confirmation prompts (alias for --yes)")
-	cmd.PersistentFlags().IntVar(&flags.Limit, "limit", 0, "Limit number of results (0 = no limit)")
+	cmd.PersistentFlags().IntVar(&flags.OutputLimit, "output-limit", 0, "Limit number of results in output (0 = no limit)")
 	cmd.PersistentFlags().StringVar(&flags.SortBy, "sort-by", "", "Field name to sort results by")
 	cmd.PersistentFlags().BoolVar(&flags.Desc, "desc", false, "Sort descending (requires --sort-by)")
 
@@ -127,7 +138,12 @@ func getEnvOrDefault(key, def string) string {
 	return def
 }
 
-func requireAccount(f *rootFlags) (string, error) {
+func requireAccount(ctx context.Context) (string, error) {
+	f, ok := rootFlagsFromContext(ctx)
+	if !ok || f == nil {
+		// Allow subcommands to run without root context (tests, embedding).
+		f = &rootFlags{Account: os.Getenv("AWX_ACCOUNT")}
+	}
 	// Check explicit flag or env var first
 	if f.Account != "" {
 		return f.Account, nil

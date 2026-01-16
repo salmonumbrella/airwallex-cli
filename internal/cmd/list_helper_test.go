@@ -54,17 +54,20 @@ func TestNewListCommand_PaginationDefaults(t *testing.T) {
 
 	// Verify default pagination values
 	if capturedOpts.Limit != 20 {
-		t.Errorf("expected limit 20, got %d", capturedOpts.Limit)
+		t.Errorf("expected page size 20, got %d", capturedOpts.Limit)
 	}
 	if capturedOpts.Cursor != "" {
 		t.Errorf("expected empty cursor, got %q", capturedOpts.Cursor)
 	}
+	if capturedOpts.Page != 1 {
+		t.Errorf("expected page 1, got %d", capturedOpts.Page)
+	}
 }
 
-func TestNewListCommand_LimitEnforcement(t *testing.T) {
+func TestNewListCommand_PageSizeEnforcement(t *testing.T) {
 	tests := []struct {
 		name          string
-		inputLimit    string
+		inputPageSize string
 		expectedLimit int
 	}{
 		{"below minimum defaults to 20", "0", 20},
@@ -102,7 +105,7 @@ func TestNewListCommand_LimitEnforcement(t *testing.T) {
 
 			ctx := outfmt.WithFormat(context.Background(), "text")
 			cmd.SetContext(ctx)
-			cmd.SetArgs([]string{"--limit", tt.inputLimit})
+			cmd.SetArgs([]string{"--page-size", tt.inputPageSize})
 
 			err := cmd.Execute()
 			if err != nil {
@@ -116,12 +119,13 @@ func TestNewListCommand_LimitEnforcement(t *testing.T) {
 	}
 }
 
-func TestNewListCommand_AfterCursor(t *testing.T) {
+func TestNewListCommand_CursorMode(t *testing.T) {
 	var capturedOpts ListOptions
 
 	cfg := ListConfig[testItem]{
 		Use:          "test",
 		Short:        "Test list command",
+		Pagination:   PaginationCursor,
 		Headers:      []string{"ID", "NAME"},
 		EmptyMessage: "No items",
 		RowFunc: func(item testItem) []string {
@@ -142,7 +146,7 @@ func TestNewListCommand_AfterCursor(t *testing.T) {
 
 	ctx := outfmt.WithFormat(context.Background(), "text")
 	cmd.SetContext(ctx)
-	cmd.SetArgs([]string{"--after", "cursor_abc123"})
+	cmd.SetArgs([]string{"--after", "cursor_abc123", "--limit", "30"})
 
 	err := cmd.Execute()
 	if err != nil {
@@ -152,9 +156,12 @@ func TestNewListCommand_AfterCursor(t *testing.T) {
 	if capturedOpts.Cursor != "cursor_abc123" {
 		t.Errorf("expected cursor 'cursor_abc123', got %q", capturedOpts.Cursor)
 	}
+	if capturedOpts.Limit != 30 {
+		t.Errorf("expected limit 30, got %d", capturedOpts.Limit)
+	}
 }
 
-func TestNewListCommand_PageSizeAlias(t *testing.T) {
+func TestNewListCommand_PageSizeFlag(t *testing.T) {
 	var capturedOpts ListOptions
 
 	cfg := ListConfig[testItem]{
@@ -614,38 +621,5 @@ func TestNewListCommand_CustomFlagsCapture(t *testing.T) {
 	// Verify the custom flag value was correctly captured inside Fetch
 	if capturedStatus != "SETTLED" {
 		t.Errorf("expected captured status 'SETTLED', got '%s'", capturedStatus)
-	}
-}
-
-func TestNewListCommand_DeprecatedFlagsWork(t *testing.T) {
-	// Verify deprecated flags don't cause errors (they just do nothing now)
-	cfg := ListConfig[testItem]{
-		Use:          "test",
-		Short:        "Test list command",
-		Headers:      []string{"ID", "NAME"},
-		EmptyMessage: "No items",
-		RowFunc: func(item testItem) []string {
-			return []string{item.ID, item.Name}
-		},
-		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[testItem], error) {
-			return ListResult[testItem]{
-				Items:   []testItem{{ID: "1", Name: "Test"}},
-				HasMore: false,
-			}, nil
-		},
-	}
-
-	cmd := NewListCommand(cfg, func(ctx context.Context) (*api.Client, error) {
-		return &api.Client{}, nil
-	})
-
-	ctx := outfmt.WithFormat(context.Background(), "text")
-	cmd.SetContext(ctx)
-	// Use deprecated flags - should not error
-	cmd.SetArgs([]string{"--page", "2", "--page-size", "50"})
-
-	err := cmd.Execute()
-	if err != nil {
-		t.Fatalf("deprecated flags should still work: %v", err)
 	}
 }

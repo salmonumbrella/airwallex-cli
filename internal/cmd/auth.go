@@ -299,7 +299,7 @@ func newAuthTestCmd() *cobra.Command {
 		Short: "Test account credentials",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			u := ui.FromContext(cmd.Context())
-			account, err := requireAccount(&flags)
+			account, err := requireAccount(cmd.Context())
 			if err != nil {
 				return err
 			}

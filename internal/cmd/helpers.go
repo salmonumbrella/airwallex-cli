@@ -42,7 +42,7 @@ var newClientForCreds = func(creds secrets.Credentials) (*api.Client, error) {
 
 // getClient creates an API client from the current account
 func getClient(ctx context.Context) (*api.Client, error) {
-	account, err := requireAccount(&flags)
+	account, err := requireAccount(ctx)
 	if err != nil {
 		return nil, err
 	}

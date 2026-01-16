@@ -86,7 +86,7 @@ Examples:
   airwallex balances history --from 2024-01-01 --to 2024-01-07
 
   # Combine filters with custom limit
-  airwallex balances history --currency USD --from 2024-01-01 --to 2024-01-07 --limit 50`,
+  airwallex balances history --currency USD --from 2024-01-01 --to 2024-01-07 --page-size 50`,
 		Headers:      []string{"ID", "CURRENCY", "AMOUNT", "BALANCE", "TYPE", "POSTED_AT", "DESCRIPTION"},
 		EmptyMessage: "No balance history found",
 		RowFunc: func(item api.BalanceHistoryItem) []string {

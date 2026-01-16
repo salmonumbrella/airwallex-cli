@@ -530,19 +530,22 @@ func TestFXConversionsCreateCommand(t *testing.T) {
 }
 
 // TestFXConversionsListCommand_PageSizeValidation tests page size validation
-func TestFXConversionsListCommand_PageSizeValidation(t *testing.T) {
+func TestFXConversionsListCommand_PageSizeFlag(t *testing.T) {
 	cleanup := setupTestEnvironment(t)
 	defer cleanup()
 
 	cmd := newFXConversionsListCmd()
 
-	// Verify the help text mentions minimum
 	pageSizeFlag := cmd.Flags().Lookup("page-size")
 	if pageSizeFlag == nil {
 		t.Fatal("page-size flag not found")
 	}
 
-	if pageSizeFlag.Deprecated == "" {
-		t.Errorf("expected page-size flag to be deprecated")
+	if pageSizeFlag.Deprecated != "" {
+		t.Errorf("expected page-size flag to be active, got deprecated: %s", pageSizeFlag.Deprecated)
+	}
+
+	if pageSizeFlag.DefValue != "20" {
+		t.Errorf("expected default page-size to be 20, got: %s", pageSizeFlag.DefValue)
 	}
 }

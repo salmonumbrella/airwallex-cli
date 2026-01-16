@@ -39,7 +39,6 @@ func TestAccountsGetValidation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			flags = rootFlags{}
 
 			accountsCmd := newAccountsCmd()
 			rootCmd := &cobra.Command{Use: "root"}

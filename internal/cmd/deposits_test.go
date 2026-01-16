@@ -84,7 +84,6 @@ func TestDepositsListCommand(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			flags = rootFlags{}
 
 			depositsCmd := newDepositsCmd()
 			rootCmd := &cobra.Command{Use: "root"}
@@ -112,50 +111,20 @@ func TestDepositsListCommand(t *testing.T) {
 	}
 }
 
-func TestDepositsListCommand_PageSizeValidation(t *testing.T) {
-	tests := []struct {
-		name        string
-		pageSize    int
-		expectedMin int
-		description string
-	}{
-		{
-			name:        "page size below minimum gets adjusted",
-			pageSize:    5,
-			expectedMin: 10,
-			description: "page size less than 10 should be adjusted to 10",
-		},
-		{
-			name:        "page size at minimum is unchanged",
-			pageSize:    10,
-			expectedMin: 10,
-			description: "page size of exactly 10 should remain 10",
-		},
-		{
-			name:        "page size above minimum is unchanged",
-			pageSize:    50,
-			expectedMin: 10,
-			description: "page size above 10 should be unchanged",
-		},
+func TestDepositsListCommand_PageSizeFlag(t *testing.T) {
+	cmd := newDepositsListCmd()
+
+	pageSizeFlag := cmd.Flags().Lookup("page-size")
+	if pageSizeFlag == nil {
+		t.Fatal("page-size flag not found")
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			cmd := newDepositsListCmd()
-			if err := cmd.Flags().Set("page-size", intToString(tt.pageSize)); err != nil {
-				t.Fatalf("failed to set page-size flag: %v", err)
-			}
+	if pageSizeFlag.Deprecated != "" {
+		t.Errorf("expected page-size flag to be active, got deprecated: %s", pageSizeFlag.Deprecated)
+	}
 
-			// Verify the flag is set
-			pageSizeFlag := cmd.Flags().Lookup("page-size")
-			if pageSizeFlag == nil {
-				t.Fatal("page-size flag not found")
-			}
-
-			if pageSizeFlag.Deprecated == "" {
-				t.Errorf("expected page-size flag to be deprecated")
-			}
-		})
+	if pageSizeFlag.DefValue != "20" {
+		t.Errorf("expected default page-size to be 20, got: %s", pageSizeFlag.DefValue)
 	}
 }
 
@@ -190,7 +159,6 @@ func TestDepositsGetCommand(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			flags = rootFlags{}
 
 			depositsCmd := newDepositsCmd()
 			rootCmd := &cobra.Command{Use: "root"}

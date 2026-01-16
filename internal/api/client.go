@@ -12,6 +12,7 @@ import (
 	"log/slog"
 	mathrand "math/rand"
 	"net/http"
+	"reflect"
 	"strconv"
 	"strings"
 	"sync"
@@ -66,17 +67,6 @@ var (
 	rateLimitBaseDelay    = RateLimitBaseDelay
 	serverErrorRetryDelay = ServerErrorRetryDelay
 )
-
-// financialEndpoints contains all endpoints that require idempotency keys.
-// This list is defined at package level to avoid allocating a new slice on every call.
-var financialEndpoints = []Endpoint{
-	Endpoints.TransfersCreate,
-	Endpoints.CardsCreate,
-	Endpoints.BeneficiariesCreate,
-	Endpoints.FXConversionsCreate,
-	Endpoints.LinkedAccountsCreate,
-	Endpoints.PaymentLinksCreate,
-}
 
 // withDefaultTimeout adds a timeout to the context if none exists.
 func withDefaultTimeout(ctx context.Context) (context.Context, context.CancelFunc) {
@@ -496,20 +486,75 @@ func generateIdempotencyKey() (string, error) {
 	return hex.EncodeToString(b), nil
 }
 
+var (
+	idempotencyPatternsOnce sync.Once
+	idempotencyPatterns     []string
+)
+
 // isFinancialOperation checks if the path is a financial operation that needs idempotency.
-// Uses exact path matching to avoid false positives.
+// Uses endpoint registry metadata to avoid drift.
 func isFinancialOperation(path string) bool {
 	// Remove query parameters if present
 	if idx := strings.Index(path, "?"); idx != -1 {
 		path = path[:idx]
 	}
 
-	for _, ep := range financialEndpoints {
-		if path == ep.Path {
+	idempotencyPatternsOnce.Do(func() {
+		idempotencyPatterns = collectIdempotencyPatterns()
+	})
+
+	for _, pattern := range idempotencyPatterns {
+		if matchEndpointPath(path, pattern) {
 			return true
 		}
 	}
 	return false
+}
+
+func collectIdempotencyPatterns() []string {
+	var patterns []string
+	v := reflect.ValueOf(Endpoints)
+	for i := 0; i < v.NumField(); i++ {
+		ep := v.Field(i).Interface().(Endpoint)
+		if ep.RequiresIdem {
+			patterns = append(patterns, ep.Path)
+		}
+	}
+	return patterns
+}
+
+func matchEndpointPath(path, pattern string) bool {
+	if !strings.Contains(pattern, "{id}") {
+		return path == pattern
+	}
+
+	parts := strings.Split(pattern, "{id}")
+	if len(parts) == 0 {
+		return path == pattern
+	}
+
+	if !strings.HasPrefix(path, parts[0]) {
+		return false
+	}
+
+	pos := len(parts[0])
+	for i := 1; i < len(parts); i++ {
+		part := parts[i]
+		idx := strings.Index(path[pos:], part)
+		if idx < 0 {
+			return false
+		}
+		if idx == 0 {
+			return false
+		}
+		placeholder := path[pos : pos+idx]
+		if strings.Contains(placeholder, "/") {
+			return false
+		}
+		pos = pos + idx + len(part)
+	}
+
+	return pos == len(path)
 }
 
 func (c *Client) Get(ctx context.Context, path string) (*http.Response, error) {

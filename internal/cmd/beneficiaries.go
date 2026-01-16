@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -43,7 +44,7 @@ Tip: add --items-only to output just the array for jq piping.
 
 Examples:
   # List recent beneficiaries
-  airwallex beneficiaries list --limit 20
+  airwallex beneficiaries list --page-size 20
 
   # Filter by nickname (case-insensitive) and show key fields
   airwallex beneficiaries list --output json --query \
@@ -116,77 +117,13 @@ func newBeneficiariesGetCmd() *cobra.Command {
 }
 
 func newBeneficiariesCreateCmd() *cobra.Command {
-	var entityType string
-	var bankCountry string
-	var companyName string
-	var firstName string
-	var lastName string
-	var nickname string
-	var paymentMethod string
-	var accountCurrency string
-	var accountName string
-	var accountNumber string
-	var institutionNumber string
-	var transitNumber string
-	var email string
-	var phone string
-	var localClearingSystem string
-	// SWIFT/international routing
-	var swiftCode string
-	var routingNumber string
-	var iban string
-	// Additional international routing flags
-	var sortCode string
-	var bsb string
-	var ifsc string
-	var clabe string
-	var bankCode string
-	var branchCode string
-	// Japan Zengin
-	var zenginBankCode string
-	var zenginBranchCode string
-	var bankAccountCategory string
-	// China
-	var cnaps string
-	// South Korea
-	var koreaBankCode string
-	// Brazil
-	var cpf string
-	var cnpj string
-	var bankBranch string
-	// Singapore PayNow
-	var paynowVPA string
-	var uen string
-	var nric string
-	var sgBankCode string
-	// Sweden
-	var clearingNumber string
-	// Hong Kong FPS
-	var hkBankCode string
-	var fpsID string
-	var hkid string
-	// Australia PayID
-	var payidPhone string
-	var payidEmail string
-	var payidABN string
-	// China legal representative
-	var legalRepFirstName string
-	var legalRepLastName string
-	var legalRepID string
-	var bankName string
-	var personalIDType string
-	var personalIDNumber string
-	var businessRegNumber string
-	// Address fields (required for Interac)
-	var addressCountry string
-	var addressStreet string
-	var addressCity string
-	var addressState string
-	var addressPostcode string
 	// Validation mode
 	var validateOnly bool
 	// Raw field overrides
 	var fieldOverrides []string
+
+	mappings := flagmap.AllMappings()
+	mappingKeys := sortedMappingKeys(mappings)
 
 	cmd := &cobra.Command{
 		Use:   "create",
@@ -318,6 +255,87 @@ Examples:
 			if err != nil {
 				return err
 			}
+
+			flagValues, err := collectFlagValues(cmd, mappingKeys)
+			if err != nil {
+				return err
+			}
+			if cmd.Flags().Changed("transfer-method") {
+				if transferMethod, err := cmd.Flags().GetString("transfer-method"); err == nil && transferMethod != "" {
+					flagValues["payment-method"] = transferMethod
+				}
+			}
+
+			entityType := flagValues["entity-type"]
+			bankCountry := flagValues["bank-country"]
+			companyName := flagValues["company-name"]
+			firstName := flagValues["first-name"]
+			lastName := flagValues["last-name"]
+			nickname := flagValues["nickname"]
+			paymentMethod := flagValues["payment-method"]
+			accountCurrency := flagValues["account-currency"]
+			accountName := flagValues["account-name"]
+			accountNumber := flagValues["account-number"]
+			institutionNumber := flagValues["institution-number"]
+			transitNumber := flagValues["transit-number"]
+			email := flagValues["email"]
+			phone := flagValues["phone"]
+			localClearingSystem := flagValues["clearing-system"]
+			// SWIFT/international routing
+			swiftCode := flagValues["swift-code"]
+			routingNumber := flagValues["routing-number"]
+			iban := flagValues["iban"]
+			// Additional international routing flags
+			sortCode := flagValues["sort-code"]
+			bsb := flagValues["bsb"]
+			ifsc := flagValues["ifsc"]
+			clabe := flagValues["clabe"]
+			bankCode := flagValues["bank-code"]
+			branchCode := flagValues["branch-code"]
+			// Japan Zengin
+			zenginBankCode := flagValues["zengin-bank-code"]
+			zenginBranchCode := flagValues["zengin-branch-code"]
+			bankAccountCategory := flagValues["bank-account-category"]
+			if val := flagValues["account-category"]; val != "" {
+				bankAccountCategory = val
+			}
+			// China
+			cnaps := flagValues["cnaps"]
+			// South Korea
+			koreaBankCode := flagValues["korea-bank-code"]
+			// Brazil
+			cpf := flagValues["cpf"]
+			cnpj := flagValues["cnpj"]
+			bankBranch := flagValues["bank-branch"]
+			// Singapore PayNow
+			paynowVPA := flagValues["paynow-vpa"]
+			uen := flagValues["uen"]
+			nric := flagValues["nric"]
+			sgBankCode := flagValues["sg-bank-code"]
+			// Sweden
+			clearingNumber := flagValues["clearing-number"]
+			// Hong Kong FPS
+			hkBankCode := flagValues["hk-bank-code"]
+			fpsID := flagValues["fps-id"]
+			hkid := flagValues["hkid"]
+			// Australia PayID
+			payidPhone := flagValues["payid-phone"]
+			payidEmail := flagValues["payid-email"]
+			payidABN := flagValues["payid-abn"]
+			// China legal representative
+			legalRepFirstName := flagValues["legal-rep-first-name"]
+			legalRepLastName := flagValues["legal-rep-last-name"]
+			legalRepID := flagValues["legal-rep-id"]
+			bankName := flagValues["bank-name"]
+			personalIDType := flagValues["personal-id-type"]
+			personalIDNumber := flagValues["personal-id-number"]
+			businessRegNumber := flagValues["business-registration-number"]
+			// Address fields (required for Interac)
+			addressCountry := flagValues["address-country"]
+			addressStreet := flagValues["address-street"]
+			addressCity := flagValues["address-city"]
+			addressState := flagValues["address-state"]
+			addressPostcode := flagValues["address-postcode"]
 
 			// Validation: Required fields based on entity type
 			accountNameValue := valueOrOverride(overrideFields, "beneficiary.bank_details.account_name", accountName)
@@ -628,81 +646,93 @@ Examples:
 			hasRoutingOverride2 := overrideFields["beneficiary.bank_details.account_routing_value2"] != "" ||
 				overrideFields["beneficiary.bank_details.account_routing_type2"] != ""
 
+			routingTypeFor := func(flagName string) string {
+				if mapping, ok := mappings[flagName]; ok && mapping.RoutingType != "" {
+					return mapping.RoutingType
+				}
+				switch flagName {
+				case "bank-code":
+					return "bank_code"
+				default:
+					return ""
+				}
+			}
+
 			if !hasRoutingOverride1 {
 				switch {
 				case routingNumber != "":
-					routingType = "aba"
+					routingType = routingTypeFor("routing-number")
 					routingValue1 = routingNumber
 				case sortCode != "":
-					routingType = "sort_code"
+					routingType = routingTypeFor("sort-code")
 					routingValue1 = sortCode
 				case bsb != "":
-					routingType = "bsb"
+					routingType = routingTypeFor("bsb")
 					routingValue1 = bsb
 				case ifsc != "":
-					routingType = "ifsc"
+					routingType = routingTypeFor("ifsc")
 					routingValue1 = ifsc
 				case bankCode != "":
-					routingType = "bank_code"
+					routingType = routingTypeFor("bank-code")
 					routingValue1 = bankCode
 				case email != "":
-					routingType = "email_address"
+					routingType = routingTypeFor("email")
 					routingValue1 = email
 				case phone != "":
-					routingType = "phone_number"
+					routingType = routingTypeFor("phone")
 					routingValue1 = phone
 				case institutionNumber != "":
-					routingType = "institution_number"
+					routingType = routingTypeFor("institution-number")
 					routingValue1 = institutionNumber
 					if transitNumber != "" {
-						routingType2 = "transit_number"
+						routingType2 = routingTypeFor("transit-number")
 						routingValue2 = transitNumber
 					}
 				case zenginBankCode != "":
-					routingType = "bank_code"
+					routingType = routingTypeFor("zengin-bank-code")
 					routingValue1 = zenginBankCode
 					if zenginBranchCode != "" {
-						routingType2 = "branch_code"
+						routingType2 = routingTypeFor("zengin-branch-code")
 						routingValue2 = zenginBranchCode
 					}
 				case cnaps != "":
-					routingType = "cnaps"
+					routingType = routingTypeFor("cnaps")
 					routingValue1 = cnaps
 				case koreaBankCode != "":
-					routingType = "bank_code"
+					routingType = routingTypeFor("korea-bank-code")
 					routingValue1 = koreaBankCode
 				case nric != "":
-					routingType = "personal_id_number"
+					routingType = routingTypeFor("nric")
 					routingValue1 = strings.ToUpper(nric)
 				case uen != "":
-					routingType = "business_registration_number"
+					routingType = routingTypeFor("uen")
 					routingValue1 = uen
 				case paynowVPA != "":
-					routingType = "virtual_payment_address"
+					routingType = routingTypeFor("paynow-vpa")
 					routingValue1 = paynowVPA
 				case sgBankCode != "":
-					routingType = "bank_code"
+					routingType = routingTypeFor("sg-bank-code")
 					routingValue1 = sgBankCode
 				case clearingNumber != "":
-					routingType = "bank_code"
+					routingType = routingTypeFor("clearing-number")
 					routingValue1 = clearingNumber
 				case hkBankCode != "":
-					routingType = "bank_code"
+					routingType = routingTypeFor("hk-bank-code")
 					routingValue1 = hkBankCode
 				case fpsID != "":
-					routingType = "fps_identifier"
+					routingType = routingTypeFor("fps-id")
 					routingValue1 = fpsID
 				case hkid != "":
-					routingType = "personal_id_number"
+					routingType = routingTypeFor("hkid")
 					routingValue1 = hkid
 				case payidPhone != "":
-					routingType = "phone_number"
+					routingType = routingTypeFor("payid-phone")
 					routingValue1 = payidPhone
 				case payidEmail != "":
-					routingType = "email_address"
+					routingType = routingTypeFor("payid-email")
 					routingValue1 = payidEmail
 				case payidABN != "":
-					routingType = "australian_business_number"
+					routingType = routingTypeFor("payid-abn")
 					routingValue1 = payidABN
 				}
 			}
@@ -875,97 +905,15 @@ Examples:
 		},
 	}
 
-	// Required flags
-	cmd.Flags().StringVar(&entityType, "entity-type", "", "COMPANY or PERSONAL (required)")
-	cmd.Flags().StringVar(&bankCountry, "bank-country", "", "Bank country code e.g. CA, US (required)")
-	cmd.Flags().StringVar(&paymentMethod, "payment-method", "LOCAL", "Payment method: LOCAL or SWIFT")
-	// Alias for backwards compatibility
-	cmd.Flags().StringVar(&paymentMethod, "transfer-method", "LOCAL", "Alias for --payment-method (deprecated)")
+	registerMappedFlags(cmd, mappingKeys, map[string]string{
+		"payment-method": "LOCAL",
+	}, map[string]string{
+		"entity-type":  "COMPANY or PERSONAL (required)",
+		"bank-country": "Bank country code e.g. CA, US (required)",
+	})
+	cmd.Flags().String("transfer-method", "LOCAL", "Alias for --payment-method (deprecated)")
 	_ = cmd.Flags().MarkHidden("transfer-method")
-	cmd.Flags().StringVar(&accountCurrency, "account-currency", "", "Currency e.g. CAD, USD (required)")
-	cmd.Flags().StringVar(&accountName, "account-name", "", "Account holder name (required)")
-
-	// Name flags
-	cmd.Flags().StringVar(&companyName, "company-name", "", "Company name (for COMPANY entity)")
-	cmd.Flags().StringVar(&firstName, "first-name", "", "First name (for PERSONAL entity)")
-	cmd.Flags().StringVar(&lastName, "last-name", "", "Last name (for PERSONAL entity)")
-	cmd.Flags().StringVar(&nickname, "nickname", "", "Nickname for the beneficiary")
-
-	// Bank account flags (EFT)
-	cmd.Flags().StringVar(&accountNumber, "account-number", "", "Bank account number")
-	cmd.Flags().StringVar(&bankAccountCategory, "bank-account-category", "", "Account category: Checking or Savings (required for US)")
-	cmd.Flags().StringVar(&bankAccountCategory, "account-category", "", "Alias for --bank-account-category")
 	_ = cmd.Flags().MarkHidden("bank-account-category")
-	cmd.Flags().StringVar(&institutionNumber, "institution-number", "", "Institution number (Canada: 3 digits)")
-	cmd.Flags().StringVar(&transitNumber, "transit-number", "", "Transit/branch number (Canada: 5 digits)")
-
-	// Interac e-Transfer flags
-	cmd.Flags().StringVar(&email, "email", "", "Email for Interac e-Transfer")
-	cmd.Flags().StringVar(&phone, "phone", "", "Phone for Interac e-Transfer (format: +1-nnnnnnnnnn)")
-	cmd.Flags().StringVar(&localClearingSystem, "clearing-system", "", "Clearing system: EFT, REGULAR_EFT, INTERAC, etc.")
-
-	// SWIFT/international routing flags
-	cmd.Flags().StringVar(&swiftCode, "swift-code", "", "SWIFT/BIC code for international transfers")
-	cmd.Flags().StringVar(&routingNumber, "routing-number", "", "US ABA routing number (9 digits)")
-	cmd.Flags().StringVar(&iban, "iban", "", "IBAN for European/international transfers")
-
-	// Additional international routing flags
-	cmd.Flags().StringVar(&sortCode, "sort-code", "", "UK sort code (6 digits)")
-	cmd.Flags().StringVar(&bsb, "bsb", "", "Australian BSB number (6 digits)")
-	cmd.Flags().StringVar(&ifsc, "ifsc", "", "Indian IFSC code")
-	cmd.Flags().StringVar(&clabe, "clabe", "", "Mexican CLABE (18 digits)")
-	cmd.Flags().StringVar(&bankCode, "bank-code", "", "Generic bank code")
-	cmd.Flags().StringVar(&branchCode, "branch-code", "", "Generic branch code")
-
-	// Japan Zengin routing
-	cmd.Flags().StringVar(&zenginBankCode, "zengin-bank-code", "", "Japan Zengin bank code (4 digits)")
-	cmd.Flags().StringVar(&zenginBranchCode, "zengin-branch-code", "", "Japan Zengin branch code (3 digits)")
-
-	// China CNAPS routing
-	cmd.Flags().StringVar(&cnaps, "cnaps", "", "China CNAPS code (12 digits)")
-
-	// South Korea routing
-	cmd.Flags().StringVar(&koreaBankCode, "korea-bank-code", "", "South Korea bank code (3 digits)")
-
-	// Brazil routing
-	cmd.Flags().StringVar(&cpf, "cpf", "", "Brazil CPF individual tax ID (11 digits)")
-	cmd.Flags().StringVar(&cnpj, "cnpj", "", "Brazil CNPJ business tax ID (14 digits)")
-	cmd.Flags().StringVar(&bankBranch, "bank-branch", "", "Bank branch code (Brazil: 4-7 chars)")
-
-	// Singapore PayNow routing
-	cmd.Flags().StringVar(&paynowVPA, "paynow-vpa", "", "Singapore PayNow VPA (up to 21 chars)")
-	cmd.Flags().StringVar(&uen, "uen", "", "Singapore UEN for business PayNow (8-13 chars)")
-	cmd.Flags().StringVar(&nric, "nric", "", "Singapore NRIC for personal PayNow (9 chars, format: SnnnnnnnA)")
-	cmd.Flags().StringVar(&sgBankCode, "sg-bank-code", "", "Singapore bank code (7 digits)")
-
-	// Sweden routing
-	cmd.Flags().StringVar(&clearingNumber, "clearing-number", "", "Sweden clearing number (4-5 digits)")
-
-	// Hong Kong FPS routing
-	cmd.Flags().StringVar(&hkBankCode, "hk-bank-code", "", "Hong Kong bank code (3 digits)")
-	cmd.Flags().StringVar(&fpsID, "fps-id", "", "Hong Kong FPS identifier (7-9 digits)")
-	cmd.Flags().StringVar(&hkid, "hkid", "", "Hong Kong ID for FPS routing")
-
-	// Australia PayID flags
-	cmd.Flags().StringVar(&payidPhone, "payid-phone", "", "Australia PayID phone (format: +61-nnnnnnnnn)")
-	cmd.Flags().StringVar(&payidEmail, "payid-email", "", "Australia PayID email address")
-	cmd.Flags().StringVar(&payidABN, "payid-abn", "", "Australia PayID ABN (9 or 11 digits)")
-
-	// China special fields
-	cmd.Flags().StringVar(&legalRepFirstName, "legal-rep-first-name", "", "China legal representative first name (Chinese)")
-	cmd.Flags().StringVar(&legalRepLastName, "legal-rep-last-name", "", "China legal representative last name (Chinese)")
-	cmd.Flags().StringVar(&legalRepID, "legal-rep-id", "", "China legal representative ID number (15 or 18 chars)")
-	cmd.Flags().StringVar(&bankName, "bank-name", "", "Bank name (required for China)")
-	cmd.Flags().StringVar(&personalIDType, "personal-id-type", "", "Personal ID type (e.g., INDIVIDUAL_TAX_ID, CHINESE_NATIONAL_ID)")
-	cmd.Flags().StringVar(&personalIDNumber, "personal-id-number", "", "Personal ID number")
-	cmd.Flags().StringVar(&businessRegNumber, "business-registration-number", "", "Business registration number")
-
-	// Address flags (required for Interac)
-	cmd.Flags().StringVar(&addressCountry, "address-country", "", "Beneficiary country code (e.g. CA)")
-	cmd.Flags().StringVar(&addressStreet, "address-street", "", "Beneficiary street address")
-	cmd.Flags().StringVar(&addressCity, "address-city", "", "Beneficiary city")
-	cmd.Flags().StringVar(&addressState, "address-state", "", "Beneficiary state/province")
-	cmd.Flags().StringVar(&addressPostcode, "address-postcode", "", "Beneficiary postal code")
 
 	// Validation mode flag
 	cmd.Flags().BoolVar(&validateOnly, "validate", false, "Validate against schema without creating")
@@ -977,17 +925,18 @@ Examples:
 }
 
 func newBeneficiariesUpdateCmd() *cobra.Command {
-	var nickname string
-	var companyName string
-	var firstName string
-	var lastName string
-	// Address fields
-	var addressCountry string
-	var addressStreet string
-	var addressCity string
-	var addressState string
-	var addressPostcode string
 	var fieldOverrides []string
+	updateFlagKeys := []string{
+		"nickname",
+		"company-name",
+		"first-name",
+		"last-name",
+		"address-country",
+		"address-street",
+		"address-city",
+		"address-state",
+		"address-postcode",
+	}
 
 	cmd := &cobra.Command{
 		Use:   "update <beneficiaryId>",
@@ -1001,16 +950,18 @@ func newBeneficiariesUpdateCmd() *cobra.Command {
 			}
 
 			// Check if any updates were specified
-			hasUpdates := cmd.Flags().Changed("nickname") ||
-				cmd.Flags().Changed("company-name") ||
-				cmd.Flags().Changed("first-name") ||
-				cmd.Flags().Changed("last-name") ||
-				cmd.Flags().Changed("address-country") ||
-				cmd.Flags().Changed("address-street") ||
-				cmd.Flags().Changed("address-city") ||
-				cmd.Flags().Changed("address-state") ||
-				cmd.Flags().Changed("address-postcode") ||
-				len(fieldOverrides) > 0
+			flagValues, err := collectFlagValues(cmd, updateFlagKeys)
+			if err != nil {
+				return err
+			}
+
+			hasUpdates := len(fieldOverrides) > 0
+			for _, flagName := range updateFlagKeys {
+				if cmd.Flags().Changed(flagName) {
+					hasUpdates = true
+					break
+				}
+			}
 
 			if !hasUpdates {
 				return fmt.Errorf("no updates specified")
@@ -1031,41 +982,17 @@ func newBeneficiariesUpdateCmd() *cobra.Command {
 			delete(existing, "id")
 
 			updateFields := make(map[string]string)
-			addMapped := func(flagName, value string) {
+			for _, flagName := range updateFlagKeys {
+				if !cmd.Flags().Changed(flagName) {
+					continue
+				}
+				value := flagValues[flagName]
 				if value == "" {
-					return
+					continue
 				}
 				if mapping, ok := flagmap.GetMapping(flagName); ok {
 					updateFields[mapping.SchemaPath] = value
 				}
-			}
-
-			if cmd.Flags().Changed("nickname") {
-				addMapped("nickname", nickname)
-			}
-			if cmd.Flags().Changed("company-name") {
-				addMapped("company-name", companyName)
-			}
-			if cmd.Flags().Changed("first-name") {
-				addMapped("first-name", firstName)
-			}
-			if cmd.Flags().Changed("last-name") {
-				addMapped("last-name", lastName)
-			}
-			if cmd.Flags().Changed("address-country") {
-				addMapped("address-country", addressCountry)
-			}
-			if cmd.Flags().Changed("address-street") {
-				addMapped("address-street", addressStreet)
-			}
-			if cmd.Flags().Changed("address-city") {
-				addMapped("address-city", addressCity)
-			}
-			if cmd.Flags().Changed("address-state") {
-				addMapped("address-state", addressState)
-			}
-			if cmd.Flags().Changed("address-postcode") {
-				addMapped("address-postcode", addressPostcode)
 			}
 
 			updateReq := reqbuilder.BuildNestedMap(updateFields)
@@ -1088,16 +1015,7 @@ func newBeneficiariesUpdateCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&nickname, "nickname", "", "Beneficiary nickname")
-	cmd.Flags().StringVar(&companyName, "company-name", "", "Company name")
-	cmd.Flags().StringVar(&firstName, "first-name", "", "First name")
-	cmd.Flags().StringVar(&lastName, "last-name", "", "Last name")
-	// Address flags
-	cmd.Flags().StringVar(&addressCountry, "address-country", "", "Beneficiary country code (e.g. CA)")
-	cmd.Flags().StringVar(&addressStreet, "address-street", "", "Beneficiary street address")
-	cmd.Flags().StringVar(&addressCity, "address-city", "", "Beneficiary city")
-	cmd.Flags().StringVar(&addressState, "address-state", "", "Beneficiary state/province")
-	cmd.Flags().StringVar(&addressPostcode, "address-postcode", "", "Beneficiary postal code")
+	registerMappedFlags(cmd, updateFlagKeys, nil, nil)
 	cmd.Flags().StringArrayVar(&fieldOverrides, "field", nil, "Set raw field (path=value)")
 	return cmd
 }
@@ -1187,6 +1105,53 @@ func parseFieldOverrides(entries []string) (map[string]string, error) {
 		overrides[parts[0]] = parts[1]
 	}
 	return overrides, nil
+}
+
+func sortedMappingKeys(m map[string]flagmap.Mapping) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
+func registerMappedFlags(cmd *cobra.Command, keys []string, defaults, overrides map[string]string) {
+	mappings := flagmap.AllMappings()
+	for _, key := range keys {
+		mapping, ok := mappings[key]
+		if !ok {
+			panic(fmt.Sprintf("unknown flag mapping for %q", key))
+		}
+		desc := mapping.Description
+		if overrides != nil {
+			if override, ok := overrides[key]; ok {
+				desc = override
+			}
+		}
+		if desc == "" {
+			desc = key
+		}
+		def := ""
+		if defaults != nil {
+			if d, ok := defaults[key]; ok {
+				def = d
+			}
+		}
+		cmd.Flags().String(key, def, desc)
+	}
+}
+
+func collectFlagValues(cmd *cobra.Command, keys []string) (map[string]string, error) {
+	values := make(map[string]string, len(keys))
+	for _, key := range keys {
+		value, err := cmd.Flags().GetString(key)
+		if err != nil {
+			return nil, err
+		}
+		values[key] = value
+	}
+	return values, nil
 }
 
 func valueOrOverride(overrides map[string]string, path, fallback string) string {

@@ -313,7 +313,7 @@ airwallex webhooks delete <webhookId>
 ### Reports
 
 ```bash
-airwallex reports list [--limit <n>]
+airwallex reports list [--page-size <n>]
 airwallex reports get <reportId>
 airwallex reports account-statement --from-date <YYYY-MM-DD> --to-date <YYYY-MM-DD> \
   --currencies <CAD,USD> [--output <file>] [--wait]
@@ -420,17 +420,17 @@ airwallex balances
 
 ### Automation
 
-Use `--yes` to skip confirmations, `--limit` to control result size, and `--sort-by` for ordering:
+Use `--yes` to skip confirmations, `--output-limit` to cap output rows, and `--sort-by` for ordering (pagination uses `--page`/`--page-size`):
 
 ```bash
 # Delete a beneficiary without confirmation prompt
 airwallex beneficiaries delete ben_xxx --yes
 
 # Get the 5 most recent transfers
-airwallex transfers list --limit 5 --sort-by created_at --desc --output json
+airwallex transfers list --page-size 5 --sort-by created_at --desc --output json
 
-# Fetch all cards (no pagination limit)
-airwallex issuing cards list --limit 0 --output json
+# Fetch the first 100 cards
+airwallex issuing cards list --page-size 100 --output json
 
 # Pipeline: cancel all pending transfers older than 30 days
 airwallex transfers list --status PENDING --output json \
@@ -438,7 +438,7 @@ airwallex transfers list --status PENDING --output json \
   | xargs -I{} airwallex transfers cancel {} --yes
 
 # Agent-friendly: get latest 10 transactions sorted by amount
-airwallex issuing transactions list --limit 10 --sort-by amount --desc --output json
+airwallex issuing transactions list --page-size 10 --sort-by amount --desc --output json
 ```
 
 ### Debug Mode
@@ -540,7 +540,7 @@ All commands support these flags:
 - `--results-only` - Alias for `--items-only`
 - `--yes`, `-y` - Skip confirmation prompts (useful for scripts and automation)
 - `--force` - Alias for `--yes`
-- `--limit <n>` - Limit number of results returned (0 = no limit, fetches all)
+- `--output-limit <n>` - Limit number of results in output (0 = no limit)
 - `--sort-by <field>` - Sort results by field name (e.g., `created_at`, `amount`)
 - `--desc` - Sort descending (requires `--sort-by`)
 - `--help` - Show help for any command

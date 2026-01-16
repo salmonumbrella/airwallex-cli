@@ -48,9 +48,6 @@ func TestRootCmd_ContextInjection(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Reset flags for each test
-			flags = rootFlags{}
-
 			var capturedCtx context.Context
 
 			// Create root command with a test subcommand that captures context
@@ -130,7 +127,7 @@ func TestRootCmd_AgentFlags(t *testing.T) {
 		},
 		{
 			name:       "limit flag",
-			args:       []string{"--limit", "10"},
+			args:       []string{"--output-limit", "10"},
 			wantYes:    false,
 			wantLimit:  10,
 			wantSortBy: "",
@@ -154,7 +151,7 @@ func TestRootCmd_AgentFlags(t *testing.T) {
 		},
 		{
 			name:       "all agent flags combined",
-			args:       []string{"--yes", "--limit", "5", "--sort-by", "amount", "--desc"},
+			args:       []string{"--yes", "--output-limit", "5", "--sort-by", "amount", "--desc"},
 			wantYes:    true,
 			wantLimit:  5,
 			wantSortBy: "amount",
@@ -164,9 +161,6 @@ func TestRootCmd_AgentFlags(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Reset flags for each test
-			flags = rootFlags{}
-
 			var capturedCtx context.Context
 
 			// Create root command with a test subcommand that captures context
@@ -230,9 +224,6 @@ func TestRootCmd_DescRequiresSortBy(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Reset flags for each test
-			flags = rootFlags{}
-
 			// Create root command with a test subcommand
 			cmd := NewRootCmd()
 			testCmd := &cobra.Command{
@@ -264,8 +255,6 @@ func TestRootCmd_DescRequiresSortBy(t *testing.T) {
 }
 
 func TestRootCmd_QueryFile(t *testing.T) {
-	flags = rootFlags{}
-
 	dir := t.TempDir()
 	path := filepath.Join(dir, "query.jq")
 	if err := os.WriteFile(path, []byte(".items[] | .id"), 0o600); err != nil {
@@ -296,8 +285,6 @@ func TestRootCmd_QueryFile(t *testing.T) {
 }
 
 func TestRootCmd_QueryFileConflict(t *testing.T) {
-	flags = rootFlags{}
-
 	cmd := NewRootCmd()
 	testCmd := &cobra.Command{
 		Use:  "test",
