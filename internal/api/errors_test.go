@@ -173,6 +173,86 @@ func TestParseAPIError_WithNestedDetailsErrors(t *testing.T) {
 	}
 }
 
+func TestParseAPIError_WithStringDetails(t *testing.T) {
+	// This is the actual format returned by Airwallex for access_denied errors
+	body := []byte(`{
+		"code": "access_denied_not_enabled",
+		"details": "API access for this resource has been disabled",
+		"message": "API access for this resource has been disabled",
+		"source": ""
+	}`)
+	err := ParseAPIError(body)
+
+	if err.Code != "access_denied_not_enabled" {
+		t.Errorf("Code = %q, want 'access_denied_not_enabled'", err.Code)
+	}
+	if err.Message != "API access for this resource has been disabled" {
+		t.Errorf("Message = %q, want 'API access for this resource has been disabled'", err.Message)
+	}
+	if err.Details == nil {
+		t.Fatal("Details should not be nil")
+	}
+	if err.Details.String != "API access for this resource has been disabled" {
+		t.Errorf("Details.String = %q, want 'API access for this resource has been disabled'", err.Details.String)
+	}
+
+	// Verify Error() output is proper (should not duplicate the same message)
+	got := err.Error()
+	if !strings.Contains(got, "access_denied_not_enabled") {
+		t.Errorf("Error() = %q, want to contain error code", got)
+	}
+	if !strings.Contains(got, "API access for this resource has been disabled") {
+		t.Errorf("Error() = %q, want to contain error message", got)
+	}
+}
+
+func TestParseAPIError_WithDifferentStringDetails(t *testing.T) {
+	// Test case where details string differs from message
+	body := []byte(`{
+		"code": "access_denied",
+		"details": "Additional context about the error",
+		"message": "Access denied"
+	}`)
+	err := ParseAPIError(body)
+
+	got := err.Error()
+	if !strings.Contains(got, "details: Additional context about the error") {
+		t.Errorf("Error() = %q, want to contain different details string", got)
+	}
+}
+
+func TestParseAPIError_WithEmptyObjectDetails(t *testing.T) {
+	body := []byte(`{
+		"code": "some_error",
+		"message": "Some error",
+		"details": {}
+	}`)
+	err := ParseAPIError(body)
+
+	if err.Details == nil {
+		t.Fatal("Details should not be nil for empty object")
+	}
+	if err.Details.String != "" {
+		t.Errorf("Details.String = %q, want empty string", err.Details.String)
+	}
+	if len(err.Details.Errors) != 0 {
+		t.Errorf("len(Details.Errors) = %d, want 0", len(err.Details.Errors))
+	}
+}
+
+func TestParseAPIError_WithNullDetails(t *testing.T) {
+	body := []byte(`{
+		"code": "some_error",
+		"message": "Some error",
+		"details": null
+	}`)
+	err := ParseAPIError(body)
+
+	if err.Details != nil {
+		t.Errorf("Details should be nil for null value, got %+v", err.Details)
+	}
+}
+
 func TestContextualError(t *testing.T) {
 	inner := &APIError{Code: "not_found", Message: "Transfer not found"}
 	err := WrapError("GET", "/api/v1/transfers/123", 404, inner)

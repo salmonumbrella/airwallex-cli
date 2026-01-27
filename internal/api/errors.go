@@ -17,14 +17,39 @@ type FieldError struct {
 	Params  map[string]interface{} `json:"params,omitempty"`
 }
 
-type APIError struct {
-	Code    string       `json:"code"`
-	Message string       `json:"message"`
-	Source  string       `json:"source,omitempty"`
-	Errors  []FieldError `json:"errors,omitempty"`
-	Details *struct {
+// APIErrorDetails can be either a string or an object containing field errors.
+// Airwallex returns details as a string for some errors (e.g., access_denied)
+// and as an object with nested errors for validation errors.
+type APIErrorDetails struct {
+	String string       // When details is a plain string
+	Errors []FieldError // When details is {errors: [...]}
+}
+
+func (d *APIErrorDetails) UnmarshalJSON(data []byte) error {
+	// Try string first
+	var s string
+	if err := json.Unmarshal(data, &s); err == nil {
+		d.String = s
+		return nil
+	}
+	// Try object with errors array
+	var obj struct {
 		Errors []FieldError `json:"errors,omitempty"`
-	} `json:"details,omitempty"`
+	}
+	if err := json.Unmarshal(data, &obj); err == nil {
+		d.Errors = obj.Errors
+		return nil
+	}
+	// Ignore unparseable details
+	return nil
+}
+
+type APIError struct {
+	Code    string           `json:"code"`
+	Message string           `json:"message"`
+	Source  string           `json:"source,omitempty"`
+	Errors  []FieldError     `json:"errors,omitempty"`
+	Details *APIErrorDetails `json:"details,omitempty"`
 }
 
 func (e *APIError) Error() string {
@@ -33,15 +58,20 @@ func (e *APIError) Error() string {
 		msg += fmt.Sprintf(" (source: %s)", e.Source)
 	}
 
-	// Get errors from either top-level or nested in details
-	errors := e.Errors
-	if len(errors) == 0 && e.Details != nil {
-		errors = e.Details.Errors
+	// Include details string if present and different from message
+	if e.Details != nil && e.Details.String != "" && e.Details.String != e.Message {
+		msg += fmt.Sprintf(" (details: %s)", e.Details.String)
 	}
 
-	if len(errors) > 0 {
+	// Get errors from either top-level or nested in details
+	fieldErrors := e.Errors
+	if len(fieldErrors) == 0 && e.Details != nil {
+		fieldErrors = e.Details.Errors
+	}
+
+	if len(fieldErrors) > 0 {
 		msg += "\nField errors:"
-		for _, fe := range errors {
+		for _, fe := range fieldErrors {
 			errMsg := fe.Message
 			if errMsg == "" && fe.Params != nil {
 				if opts, ok := fe.Params["value_options"]; ok {
@@ -98,8 +128,11 @@ func ParseAPIError(body []byte) *APIError {
 		}
 	}
 
-	// Sanitize nested details.errors
+	// Sanitize nested details (string or errors array)
 	if e.Details != nil {
+		if len(e.Details.String) > maxMessageLength {
+			e.Details.String = e.Details.String[:maxMessageLength] + "..."
+		}
 		if len(e.Details.Errors) > maxFieldErrors {
 			e.Details.Errors = e.Details.Errors[:maxFieldErrors]
 		}
