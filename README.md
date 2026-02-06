@@ -439,6 +439,19 @@ airwallex transfers list --status PENDING --output json \
 
 # Agent-friendly: get latest 10 transactions sorted by amount
 airwallex issuing transactions list --page-size 10 --sort-by amount --desc --output json
+
+# Desire path: fetch any resource by ID (auto-detect type)
+airwallex get tfr_123
+airwallex get ben_456
+airwallex get inv_123:item_456
+
+# Desire path: verb-first routers
+airwallex list transfers --page-size 5
+airwallex create webhook --url https://example.com/hook --events transfer.completed
+airwallex cancel tfr_123
+
+# Agent mode: stable JSON, no color, no prompts, structured errors
+AWX_AGENT=1 airwallex list transfers --page-size 5
 ```
 
 ### Debug Mode
@@ -503,7 +516,7 @@ airwallex transfers batch-create --from-file data.json --continue-on-error
 
 Filter JSON output with JQ expressions:
 
-List commands return `{items, has_more, next_cursor}` in JSON mode, so use `.items[]` when filtering.
+List commands return `{items, has_more, next_cursor, _links}` in JSON mode, so use `.items[]` when filtering.
 
 ```bash
 # Get only USD balance
@@ -532,10 +545,14 @@ All commands support these flags:
 
 - `--account <name>` - Account to use (overrides AWX_ACCOUNT)
 - `--output <format>` - Output format: `text` or `json` (default: text)
+- `--json` - Shorthand for `--output json`
 - `--color <mode>` - Color mode: `auto`, `always`, or `never` (default: auto)
+- `--no-color` - Shorthand for `--color never`
+- `--agent` - Agent mode: stable JSON, no color, no prompts, structured errors (or `AWX_AGENT` env)
 - `--debug` - Enable debug output (shows API requests/responses)
 - `--query <expr>` - JQ filter expression for JSON output
 - `--query-file <path>` - Read JQ filter expression from file (use `-` for stdin)
+- `--template <tmpl>` - Go template for custom output (e.g., `{{.id}}: {{.status}}`)
 - `--items-only` - Output items array only for list commands (JSON mode)
 - `--results-only` - Alias for `--items-only`
 - `--yes`, `-y` - Skip confirmation prompts (useful for scripts and automation)
