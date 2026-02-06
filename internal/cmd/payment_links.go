@@ -15,7 +15,7 @@ import (
 func newPaymentLinksCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "payment-links",
-		Aliases: []string{"pl"},
+		Aliases: []string{"pl", "payment_links", "paymentlinks", "paylinks", "paylink"},
 		Short:   "Payment link operations",
 		Long:    "Create and manage payment links for collecting payments.",
 	}

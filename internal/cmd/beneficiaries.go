@@ -21,7 +21,7 @@ import (
 func newBeneficiariesCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "beneficiaries",
-		Aliases: []string{"benef"},
+		Aliases: []string{"benef", "beneficiary", "ben"},
 		Short:   "Beneficiary management",
 	}
 	cmd.AddCommand(newBeneficiariesListCmd())

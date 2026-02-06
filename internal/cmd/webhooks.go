@@ -84,8 +84,9 @@ var validWebhookEvents = map[string]bool{
 
 func newWebhooksCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "webhooks",
-		Short: "Webhook operations",
+		Use:     "webhooks",
+		Aliases: []string{"webhook", "wh"},
+		Short:   "Webhook operations",
 		Long: `Manage webhook subscriptions for receiving event notifications.
 
 Common events:

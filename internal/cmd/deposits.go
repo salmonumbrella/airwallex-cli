@@ -12,9 +12,10 @@ import (
 
 func newDepositsCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "deposits",
-		Short: "Deposit operations",
-		Long:  "View and track inbound deposits from bank transfers and linked accounts.",
+		Use:     "deposits",
+		Aliases: []string{"deposit", "dep"},
+		Short:   "Deposit operations",
+		Long:    "View and track inbound deposits from bank transfers and linked accounts.",
 	}
 	cmd.AddCommand(newDepositsListCmd())
 	cmd.AddCommand(newDepositsGetCmd())

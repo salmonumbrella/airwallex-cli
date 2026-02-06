@@ -21,8 +21,9 @@ import (
 
 func newTransfersCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "transfers",
-		Short: "Transfer/payout operations",
+		Use:     "transfers",
+		Aliases: []string{"transfer", "payout", "payouts"},
+		Short:   "Transfer/payout operations",
 	}
 	cmd.AddCommand(newTransfersListCmd())
 	cmd.AddCommand(newTransfersGetCmd())

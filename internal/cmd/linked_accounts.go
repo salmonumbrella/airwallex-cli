@@ -15,7 +15,7 @@ import (
 func newLinkedAccountsCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "linked-accounts",
-		Aliases: []string{"la"},
+		Aliases: []string{"la", "linked_accounts", "linkedaccounts", "linkedaccount"},
 		Short:   "Linked account operations",
 		Long:    "Manage linked external bank accounts for direct debits.",
 	}
