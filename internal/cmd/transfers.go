@@ -255,6 +255,19 @@ Interac e-Transfer notes:
 				}
 			}
 
+			// Normalize --method: if set to a clearing system name, convert to LOCAL + clearing system
+			clearingSystems := map[string]bool{
+				"INTERAC": true, "EFT": true, "REGULAR_EFT": true, "BILL_PAYMENT": true,
+				"ACH": true, "NEXT_DAY_ACH": true, "FEDNOW": true, "FEDWIRE": true,
+			}
+			upper := strings.ToUpper(transferMethod)
+			if clearingSystems[upper] {
+				if localClearingSystem == "" {
+					localClearingSystem = upper
+				}
+				transferMethod = "LOCAL"
+			}
+
 			u := ui.FromContext(cmd.Context())
 			client, err := getClient(cmd.Context())
 			if err != nil {
@@ -369,7 +382,7 @@ Interac e-Transfer notes:
 	cmd.Flags().StringVar(&transferCurrency, "transfer-currency", "", "Currency of transfer amount (required)")
 	cmd.Flags().Float64Var(&sourceAmount, "source-amount", 0, "Amount to send from wallet")
 	cmd.Flags().StringVar(&sourceCurrency, "source-currency", "", "Source currency (required)")
-	cmd.Flags().StringVar(&transferMethod, "method", "LOCAL", "LOCAL or SWIFT")
+	cmd.Flags().StringVar(&transferMethod, "method", "LOCAL", "LOCAL, SWIFT, or a clearing system (INTERAC, ACH, FEDWIRE, etc.)")
 	cmd.Flags().StringVar(&localClearingSystem, "clearing-system", "", "Clearing system (CA: EFT/INTERAC, US: ACH/FEDWIRE)")
 	cmd.Flags().StringVar(&reference, "reference", "", "Reference text (required)")
 	cmd.Flags().StringVar(&reason, "reason", "", "Transfer reason (required)")
