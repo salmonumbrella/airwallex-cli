@@ -78,6 +78,7 @@ func NewListCommand[T any](cfg ListConfig[T], getClient func(context.Context) (*
 	var page int
 	var pageSize int
 	var itemsOnly bool
+	var fetchAll bool
 
 	cmd := &cobra.Command{
 		Use:     cfg.Use,
@@ -128,6 +129,14 @@ func NewListCommand[T any](cfg ListConfig[T], getClient func(context.Context) (*
 			if mode == PaginationPage {
 				opts.Limit = pageSize
 			}
+
+			// When --all is used with page-based pagination, fetch all pages
+			// by using max page size and iterating until has_more is false.
+			if fetchAll && mode == PaginationPage {
+				opts.Limit = 100 // max page size
+				opts.Page = 1
+			}
+
 			var result ListResult[T]
 			switch {
 			case cfg.FetchWithArgs != nil:
@@ -139,6 +148,27 @@ func NewListCommand[T any](cfg ListConfig[T], getClient func(context.Context) (*
 			}
 			if err != nil {
 				return err
+			}
+
+			// Auto-paginate when --all is set
+			if fetchAll && mode == PaginationPage && result.HasMore {
+				allItems := make([]T, 0, len(result.Items)*2)
+				allItems = append(allItems, result.Items...)
+				for result.HasMore {
+					opts.Page++
+					switch {
+					case cfg.FetchWithArgs != nil:
+						result, err = cfg.FetchWithArgs(cmd.Context(), client, opts, args)
+					case cfg.Fetch != nil:
+						result, err = cfg.Fetch(cmd.Context(), client, opts)
+					}
+					if err != nil {
+						return err
+					}
+					allItems = append(allItems, result.Items...)
+				}
+				result.Items = allItems
+				result.HasMore = false
 			}
 
 			f := outfmt.FromContext(cmd.Context())
@@ -273,6 +303,7 @@ func NewListCommand[T any](cfg ListConfig[T], getClient func(context.Context) (*
 	default:
 		panic(fmt.Sprintf("unsupported pagination mode %q", mode))
 	}
+	cmd.Flags().BoolVar(&fetchAll, "all", false, "Fetch all pages (auto-paginate)")
 	cmd.Flags().BoolVar(&itemsOnly, "items-only", false, "Output items array only (JSON mode)")
 	cmd.Flags().BoolVar(&itemsOnly, "results-only", false, "Alias for --items-only")
 

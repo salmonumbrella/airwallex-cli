@@ -26,31 +26,51 @@ func newAPICmd() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "api <endpoint>",
+		Use:   "api [method] <endpoint>",
 		Short: "Make raw API requests",
 		Long: `Make authenticated requests to any Airwallex API endpoint.
 
 The endpoint should start with / (e.g., /api/v1/balances/current).
 Authentication is handled automatically using your configured account.
 
+An optional HTTP method (get, post, put, patch, delete) can be provided
+as the first argument instead of using -X.
+
 Examples:
   # GET current balances
   airwallex api /api/v1/balances/current
+
+  # GET with method as positional arg
+  airwallex api get /api/v1/balances/current
 
   # GET with query parameters
   airwallex api /api/v1/transfers -q status=COMPLETED -q page_size=10
 
   # POST with inline JSON
+  airwallex api post /api/v1/beneficiaries -d '{"beneficiary": {...}}'
+
+  # POST with -X flag
   airwallex api /api/v1/beneficiaries -X POST -d '{"beneficiary": {...}}'
 
   # POST with file
-  airwallex api /api/v1/transfers -X POST --data-file transfer.json
+  airwallex api post /api/v1/transfers --data-file transfer.json
 
   # Include response headers
   airwallex api /api/v1/balances/current -i`,
-		Args: cobra.ExactArgs(1),
+		Args: cobra.RangeArgs(1, 2),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			endpoint := args[0]
+			var endpoint string
+			if len(args) == 2 && isHTTPMethod(args[0]) {
+				// "api get /api/v1/..." — use first arg as method (unless -X was explicit)
+				if !cmd.Flags().Changed("method") {
+					method = strings.ToUpper(args[0])
+				}
+				endpoint = args[1]
+			} else if len(args) == 2 {
+				return fmt.Errorf("unknown HTTP method %q; expected get, post, put, patch, delete, head, or options", args[0])
+			} else {
+				endpoint = args[0]
+			}
 			if !strings.HasPrefix(endpoint, "/") {
 				endpoint = "/" + endpoint
 			}
@@ -178,4 +198,12 @@ Examples:
 func isJSONResponse(resp *http.Response) bool {
 	ct := resp.Header.Get("Content-Type")
 	return strings.Contains(ct, "application/json")
+}
+
+func isHTTPMethod(s string) bool {
+	switch strings.ToUpper(s) {
+	case "GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS":
+		return true
+	}
+	return false
 }

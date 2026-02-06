@@ -66,7 +66,7 @@ func TestAPICommand_EndpointNormalization(t *testing.T) {
 func TestAPICommand_Usage(t *testing.T) {
 	cmd := newAPICmd()
 
-	if cmd.Use != "api <endpoint>" {
+	if cmd.Use != "api [method] <endpoint>" {
 		t.Errorf("unexpected Use: %s", cmd.Use)
 	}
 
@@ -74,8 +74,45 @@ func TestAPICommand_Usage(t *testing.T) {
 	if !strings.Contains(cmd.Long, "GET current balances") {
 		t.Error("expected help to include GET example")
 	}
-	if !strings.Contains(cmd.Long, "POST with inline JSON") {
-		t.Error("expected help to include POST example")
+	if !strings.Contains(cmd.Long, "GET with method as positional arg") {
+		t.Error("expected help to include positional method example")
+	}
+}
+
+func TestIsHTTPMethod(t *testing.T) {
+	for _, m := range []string{"get", "GET", "Get", "post", "POST", "put", "patch", "delete", "head", "options"} {
+		if !isHTTPMethod(m) {
+			t.Errorf("expected %q to be recognized as HTTP method", m)
+		}
+	}
+	for _, m := range []string{"/api/v1/foo", "transfers", "list", ""} {
+		if isHTTPMethod(m) {
+			t.Errorf("expected %q to NOT be recognized as HTTP method", m)
+		}
+	}
+}
+
+func TestAPICommand_AcceptsMethodAsPositionalArg(t *testing.T) {
+	cmd := newAPICmd()
+
+	// 1 arg should be accepted
+	if err := cmd.Args(cmd, []string{"/api/v1/balances"}); err != nil {
+		t.Errorf("1 arg should be accepted: %v", err)
+	}
+
+	// 2 args should be accepted
+	if err := cmd.Args(cmd, []string{"get", "/api/v1/balances"}); err != nil {
+		t.Errorf("2 args should be accepted: %v", err)
+	}
+
+	// 0 args should be rejected
+	if err := cmd.Args(cmd, []string{}); err == nil {
+		t.Error("0 args should be rejected")
+	}
+
+	// 3 args should be rejected
+	if err := cmd.Args(cmd, []string{"get", "/api/v1/balances", "extra"}); err == nil {
+		t.Error("3 args should be rejected")
 	}
 }
 

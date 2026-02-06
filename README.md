@@ -420,7 +420,7 @@ airwallex balances
 
 ### Automation
 
-Use `--yes` to skip confirmations, `--output-limit` to cap output rows, and `--sort-by` for ordering (pagination uses `--page`/`--page-size`):
+Use `--yes` to skip confirmations, `--output-limit` to cap output rows, `--sort-by` for ordering, and `--all` to auto-paginate through every page (pagination uses `--page`/`--page-size`):
 
 ```bash
 # Delete a beneficiary without confirmation prompt
@@ -431,6 +431,9 @@ airwallex transfers list --page-size 5 --sort-by created_at --desc --output json
 
 # Fetch the first 100 cards
 airwallex issuing cards list --page-size 100 --output json
+
+# Fetch ALL beneficiaries (auto-paginates through every page)
+airwallex beneficiaries list --all --output json
 
 # Pipeline: cancel all pending transfers older than 30 days
 airwallex transfers list --status PENDING --output json \

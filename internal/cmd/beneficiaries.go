@@ -95,7 +95,7 @@ Examples:
 			return b.BeneficiaryID
 		},
 		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[api.Beneficiary], error) {
-			result, err := client.ListBeneficiaries(ctx, 0, opts.Limit)
+			result, err := client.ListBeneficiaries(ctx, opts.Page, opts.Limit)
 			if err != nil {
 				return ListResult[api.Beneficiary]{}, err
 			}
