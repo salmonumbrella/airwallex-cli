@@ -99,8 +99,15 @@ func templateFuncs() template.FuncMap {
 			}
 			return s[:n] + "..."
 		},
-		"currency": func(amount float64, code string) string {
-			return fmt.Sprintf("%.2f %s", amount, code)
+		"currency": func(amount interface{}, code string) string {
+			switch v := amount.(type) {
+			case json.Number:
+				return FormatMoney(v) + " " + code
+			case float64:
+				return fmt.Sprintf("%.2f %s", v, code)
+			default:
+				return fmt.Sprintf("%v %s", v, code)
+			}
 		},
 		"default": func(def, val any) any {
 			if val == nil || val == "" {
@@ -436,6 +443,23 @@ func compareValues(a, b reflect.Value) int {
 	}
 	if !b.IsValid() {
 		return 1
+	}
+
+	// Handle json.Number specially (it's a named string type used for monetary amounts)
+	if a.Type() == reflect.TypeOf(json.Number("")) {
+		fa, errA := a.Interface().(json.Number).Float64()
+		fb, errB := b.Interface().(json.Number).Float64()
+		if errA == nil && errB == nil {
+			if fa < fb {
+				return -1
+			}
+			if fa > fb {
+				return 1
+			}
+			return 0
+		}
+		// Fallback to string comparison if not valid numbers
+		return strings.Compare(a.String(), b.String())
 	}
 
 	// Handle time.Time specially (it's a struct)

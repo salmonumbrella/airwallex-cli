@@ -1,6 +1,7 @@
 package outfmt
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"io"
@@ -78,7 +79,9 @@ func WriteJSONFiltered(w io.Writer, v interface{}, query string) error {
 		return err
 	}
 	var data interface{}
-	if err := json.Unmarshal(jsonBytes, &data); err != nil {
+	dec := json.NewDecoder(bytes.NewReader(jsonBytes))
+	dec.UseNumber()
+	if err := dec.Decode(&data); err != nil {
 		return err
 	}
 

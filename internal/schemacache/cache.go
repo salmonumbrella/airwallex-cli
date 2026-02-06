@@ -1,13 +1,8 @@
 // Package schemacache provides local caching for beneficiary schemas.
 //
-// FUTURE INFRASTRUCTURE: This package is not yet integrated into the beneficiaries
-// command but is ready for use. It was created as part of the schema-driven
-// architecture to reduce API calls by caching schemas locally with TTL.
-//
-// Integration points:
-//   - beneficiaries create: cache schemas after fetching to avoid repeated API calls
-//   - beneficiaries validate: use cached schemas for local validation
-//   - schemas beneficiary: populate cache when user explicitly fetches schema
+// It reduces API calls by caching schemas locally with a configurable TTL.
+// Not yet wired into any command; available for integration when schema-driven
+// workflows need to avoid repeated API round-trips.
 //
 // Example usage:
 //

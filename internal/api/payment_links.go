@@ -10,14 +10,14 @@ import (
 
 // PaymentLink represents a payment link
 type PaymentLink struct {
-	ID          string  `json:"id"`
-	URL         string  `json:"url"`
-	Amount      float64 `json:"amount"`
-	Currency    string  `json:"currency"`
-	Description string  `json:"description,omitempty"`
-	Status      string  `json:"status"`
-	ExpiresAt   string  `json:"expires_at,omitempty"`
-	CreatedAt   string  `json:"created_at"`
+	ID          string      `json:"id"`
+	URL         string      `json:"url"`
+	Amount      json.Number `json:"amount"`
+	Currency    string      `json:"currency"`
+	Description string      `json:"description,omitempty"`
+	Status      string      `json:"status"`
+	ExpiresAt   string      `json:"expires_at,omitempty"`
+	CreatedAt   string      `json:"created_at"`
 }
 
 type PaymentLinksResponse struct {

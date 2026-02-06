@@ -27,10 +27,10 @@ type LinkedAccountsResponse struct {
 
 // DepositInitiation represents the response from initiating a deposit
 type DepositInitiation struct {
-	ID       string  `json:"id"`
-	Amount   float64 `json:"amount"`
-	Currency string  `json:"currency"`
-	Status   string  `json:"status"`
+	ID       string      `json:"id"`
+	Amount   json.Number `json:"amount"`
+	Currency string      `json:"currency"`
+	Status   string      `json:"status"`
 }
 
 // ListLinkedAccounts lists all linked accounts

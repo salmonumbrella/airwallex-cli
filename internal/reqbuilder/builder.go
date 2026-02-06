@@ -1,14 +1,8 @@
 // Package reqbuilder provides utilities for building nested request maps from flat CLI flags.
 //
-// FUTURE INFRASTRUCTURE: This package is not yet integrated into the beneficiaries
-// command but is ready for use. It was created as part of the schema-driven
-// architecture to convert flat CLI flag paths (e.g., "beneficiary.bank_details.account_name")
-// into the nested JSON structures required by the Airwallex API.
-//
-// Integration points:
-//   - beneficiaries create: build request body from --field flags
-//   - beneficiaries update: merge partial updates with existing data
-//   - transfers create: build complex nested payment instructions
+// It converts flat CLI flag paths (e.g., "beneficiary.bank_details.account_name") into the
+// nested JSON structures required by the Airwallex API. Currently used by the beneficiaries
+// command for both create and update flows.
 //
 // Example usage:
 //

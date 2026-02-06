@@ -50,10 +50,10 @@ func newBalancesCmd() *cobra.Command {
 			for _, b := range balances.Balances {
 				f.ColorRow(colTypes,
 					b.Currency,
-					fmt.Sprintf("%.2f", b.AvailableAmount),
-					fmt.Sprintf("%.2f", b.PendingAmount),
-					fmt.Sprintf("%.2f", b.ReservedAmount),
-					fmt.Sprintf("%.2f", b.TotalAmount))
+					outfmt.FormatMoney(b.AvailableAmount),
+					outfmt.FormatMoney(b.PendingAmount),
+					outfmt.FormatMoney(b.ReservedAmount),
+					outfmt.FormatMoney(b.TotalAmount))
 			}
 			return f.EndTable()
 		},
@@ -93,8 +93,8 @@ Examples:
 			return []string{
 				item.ID,
 				item.Currency,
-				fmt.Sprintf("%.2f", item.Amount),
-				fmt.Sprintf("%.2f", item.Balance),
+				outfmt.FormatMoney(item.Amount),
+				outfmt.FormatMoney(item.Balance),
 				item.TransactionType,
 				item.PostedAt,
 				item.Description,

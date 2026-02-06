@@ -115,7 +115,7 @@ Examples:
 		RowFunc: func(t api.Transfer) []string {
 			return []string{
 				t.TransferID,
-				fmt.Sprintf("%.2f", t.TransferAmount),
+				outfmt.FormatMoney(t.TransferAmount),
 				t.TransferCurrency,
 				t.Status,
 				t.Reference,
@@ -153,9 +153,9 @@ func newTransfersGetCmd() *cobra.Command {
 			rows := []outfmt.KV{
 				{Key: "transfer_id", Value: t.TransferID},
 				{Key: "beneficiary_id", Value: t.BeneficiaryID},
-				{Key: "transfer_amount", Value: fmt.Sprintf("%.2f", t.TransferAmount)},
+				{Key: "transfer_amount", Value: outfmt.FormatMoney(t.TransferAmount)},
 				{Key: "transfer_currency", Value: t.TransferCurrency},
-				{Key: "source_amount", Value: fmt.Sprintf("%.2f", t.SourceAmount)},
+				{Key: "source_amount", Value: outfmt.FormatMoney(t.SourceAmount)},
 				{Key: "source_currency", Value: t.SourceCurrency},
 				{Key: "status", Value: t.Status},
 				{Key: "reference", Value: t.Reference},

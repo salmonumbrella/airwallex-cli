@@ -64,9 +64,9 @@ type CardLimits struct {
 
 // CardLimit represents a single spending limit
 type CardLimit struct {
-	Amount    float64 `json:"amount"`
-	Interval  string  `json:"interval"`
-	Remaining float64 `json:"remaining"`
+	Amount    json.Number `json:"amount"`
+	Interval  string      `json:"interval"`
+	Remaining json.Number `json:"remaining"`
 }
 
 // Cardholder represents an Airwallex cardholder
@@ -133,14 +133,14 @@ type CardholdersResponse struct {
 
 // Transaction represents an issuing transaction
 type Transaction struct {
-	TransactionID   string  `json:"transaction_id"`
-	CardID          string  `json:"card_id"`
-	CardNickname    string  `json:"card_nickname"`
-	TransactionType string  `json:"transaction_type"`
-	Amount          float64 `json:"transaction_amount"`
-	Currency        string  `json:"transaction_currency"`
-	BillingAmount   float64 `json:"billing_amount"`
-	BillingCurrency string  `json:"billing_currency"`
+	TransactionID   string      `json:"transaction_id"`
+	CardID          string      `json:"card_id"`
+	CardNickname    string      `json:"card_nickname"`
+	TransactionType string      `json:"transaction_type"`
+	Amount          json.Number `json:"transaction_amount"`
+	Currency        string      `json:"transaction_currency"`
+	BillingAmount   json.Number `json:"billing_amount"`
+	BillingCurrency string      `json:"billing_currency"`
 	Merchant        struct {
 		Name string `json:"name"`
 	} `json:"merchant"`
@@ -335,15 +335,14 @@ func (c *Client) CreateCard(ctx context.Context, req map[string]interface{}) (*C
 	}
 	defer closeBody(resp)
 
-	body, _ := io.ReadAll(resp.Body)
-
 	// Accept 200, 201, and 202 (Accepted) as success
 	if resp.StatusCode != 200 && resp.StatusCode != 201 && resp.StatusCode != 202 {
+		body, _ := io.ReadAll(resp.Body)
 		return nil, WrapError("POST", path, resp.StatusCode, ParseAPIError(body))
 	}
 
 	var card Card
-	if err := json.Unmarshal(body, &card); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&card); err != nil {
 		return nil, err
 	}
 	return &card, nil

@@ -176,11 +176,6 @@ func ConfirmOrYes(ctx context.Context, prompt string) (bool, error) {
 		return true, nil
 	}
 
-	// If JSON output mode, skip confirmation (scripts expect non-interactive)
-	if outfmt.IsJSON(ctx) {
-		return true, nil
-	}
-
 	// Check if stdin is a terminal
 	if !isTerminal() {
 		return false, fmt.Errorf("cannot prompt for confirmation: stdin is not a terminal (use --yes to skip)")
@@ -292,10 +287,13 @@ func readQueryInput(query, queryFile string) (string, error) {
 	return readTextInput(queryFile)
 }
 
-// normalizePageSize ensures page size is at least the API minimum (10)
+// normalizePageSize clamps page size to the valid API range [1, 100].
 func normalizePageSize(pageSize int) int {
-	if pageSize < 10 {
-		return 10
+	if pageSize < 1 {
+		return 1
+	}
+	if pageSize > 100 {
+		return 100
 	}
 	return pageSize
 }

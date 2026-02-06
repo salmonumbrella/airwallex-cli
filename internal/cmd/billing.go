@@ -314,12 +314,12 @@ func newBillingPricesListCmd() *cobra.Command {
 		EmptyMessage: "No prices found",
 		RowFunc: func(p api.BillingPrice) []string {
 			amount := p.UnitAmount
-			if amount == 0 {
+			if outfmt.MoneyFloat64(amount) == 0 {
 				amount = p.FlatAmount
 			}
 			amountText := ""
-			if amount != 0 {
-				amountText = fmt.Sprintf("%.2f", amount)
+			if outfmt.MoneyFloat64(amount) != 0 {
+				amountText = outfmt.FormatMoney(amount)
 			}
 			return []string{billingPriceID(p), p.ProductID, amountText, p.Currency, fmt.Sprintf("%t", p.Active)}
 		},
@@ -375,12 +375,12 @@ func newBillingPricesGetCmd() *cobra.Command {
 				{Key: "product_id", Value: price.ProductID},
 				{Key: "active", Value: fmt.Sprintf("%t", price.Active)},
 			}
-			if price.UnitAmount != 0 || price.FlatAmount != 0 || price.Currency != "" {
+			if outfmt.MoneyFloat64(price.UnitAmount) != 0 || outfmt.MoneyFloat64(price.FlatAmount) != 0 || price.Currency != "" {
 				amount := price.UnitAmount
-				if amount == 0 {
+				if outfmt.MoneyFloat64(amount) == 0 {
 					amount = price.FlatAmount
 				}
-				rows = append(rows, outfmt.KV{Key: "amount", Value: fmt.Sprintf("%.2f %s", amount, price.Currency)})
+				rows = append(rows, outfmt.KV{Key: "amount", Value: outfmt.FormatMoney(amount) + " " + price.Currency})
 			}
 			if price.Recurring != nil {
 				rows = append(rows, outfmt.KV{Key: "recurring", Value: fmt.Sprintf("%d %s", price.Recurring.Period, price.Recurring.PeriodUnit)})
@@ -454,8 +454,8 @@ func newBillingInvoicesListCmd() *cobra.Command {
 		EmptyMessage: "No invoices found",
 		RowFunc: func(i api.BillingInvoice) []string {
 			amount := ""
-			if i.TotalAmount != 0 {
-				amount = fmt.Sprintf("%.2f", i.TotalAmount)
+			if outfmt.MoneyFloat64(i.TotalAmount) != 0 {
+				amount = outfmt.FormatMoney(i.TotalAmount)
 			}
 			return []string{billingInvoiceID(i), i.Status, amount, i.Currency, i.CustomerID}
 		},
@@ -514,8 +514,8 @@ func newBillingInvoicesGetCmd() *cobra.Command {
 				{Key: "updated_at", Value: invoice.UpdatedAt},
 				{Key: "paid_at", Value: invoice.PaidAt},
 			}
-			if invoice.TotalAmount != 0 || invoice.Currency != "" {
-				rows = append(rows, outfmt.KV{Key: "total", Value: fmt.Sprintf("%.2f %s", invoice.TotalAmount, invoice.Currency)})
+			if outfmt.MoneyFloat64(invoice.TotalAmount) != 0 || invoice.Currency != "" {
+				rows = append(rows, outfmt.KV{Key: "total", Value: outfmt.FormatMoney(invoice.TotalAmount) + " " + invoice.Currency})
 			}
 			return outfmt.WriteKV(cmd.OutOrStdout(), rows)
 		},
@@ -577,8 +577,8 @@ Examples:
 				{Key: "subscription_id", Value: preview.SubscriptionID},
 				{Key: "created_at", Value: preview.CreatedAt},
 			}
-			if preview.TotalAmount != 0 || preview.Currency != "" {
-				rows = append(rows, outfmt.KV{Key: "total", Value: fmt.Sprintf("%.2f %s", preview.TotalAmount, preview.Currency)})
+			if outfmt.MoneyFloat64(preview.TotalAmount) != 0 || preview.Currency != "" {
+				rows = append(rows, outfmt.KV{Key: "total", Value: outfmt.FormatMoney(preview.TotalAmount) + " " + preview.Currency})
 			}
 			return outfmt.WriteKV(cmd.OutOrStdout(), rows)
 		},
@@ -608,10 +608,10 @@ func newBillingInvoiceItemsListCmd() *cobra.Command {
 		Args:         cobra.ExactArgs(1),
 		RowFunc: func(i api.BillingInvoiceItem) []string {
 			amount := ""
-			if i.Amount != 0 {
-				amount = fmt.Sprintf("%.2f", i.Amount)
+			if outfmt.MoneyFloat64(i.Amount) != 0 {
+				amount = outfmt.FormatMoney(i.Amount)
 			}
-			return []string{i.ID, i.InvoiceID, amount, i.Currency, fmt.Sprintf("%.2f", i.Quantity)}
+			return []string{i.ID, i.InvoiceID, amount, i.Currency, outfmt.FormatMoney(i.Quantity)}
 		},
 		IDFunc: func(i api.BillingInvoiceItem) string {
 			return i.ID
@@ -658,10 +658,10 @@ func newBillingInvoiceItemsGetCmd() *cobra.Command {
 			rows := []outfmt.KV{
 				{Key: "item_id", Value: item.ID},
 				{Key: "invoice_id", Value: item.InvoiceID},
-				{Key: "quantity", Value: fmt.Sprintf("%.2f", item.Quantity)},
+				{Key: "quantity", Value: outfmt.FormatMoney(item.Quantity)},
 			}
-			if item.Amount != 0 || item.Currency != "" {
-				rows = append(rows, outfmt.KV{Key: "amount", Value: fmt.Sprintf("%.2f %s", item.Amount, item.Currency)})
+			if outfmt.MoneyFloat64(item.Amount) != 0 || item.Currency != "" {
+				rows = append(rows, outfmt.KV{Key: "amount", Value: outfmt.FormatMoney(item.Amount) + " " + item.Currency})
 			}
 			return outfmt.WriteKV(cmd.OutOrStdout(), rows)
 		},
@@ -838,7 +838,7 @@ func newBillingSubscriptionItemsListCmd() *cobra.Command {
 			if i.Price != nil {
 				priceID = i.Price.ID
 			}
-			return []string{i.ID, i.SubscriptionID, priceID, fmt.Sprintf("%.2f", i.Quantity)}
+			return []string{i.ID, i.SubscriptionID, priceID, outfmt.FormatMoney(i.Quantity)}
 		},
 		IDFunc: func(i api.BillingSubscriptionItem) string {
 			return i.ID
@@ -885,7 +885,7 @@ func newBillingSubscriptionItemsGetCmd() *cobra.Command {
 			rows := []outfmt.KV{
 				{Key: "item_id", Value: item.ID},
 				{Key: "subscription_id", Value: item.SubscriptionID},
-				{Key: "quantity", Value: fmt.Sprintf("%.2f", item.Quantity)},
+				{Key: "quantity", Value: outfmt.FormatMoney(item.Quantity)},
 			}
 			if item.Price != nil {
 				rows = append(rows, outfmt.KV{Key: "price_id", Value: item.Price.ID})

@@ -52,8 +52,8 @@ func newDisputesListCmd() *cobra.Command {
 		EmptyMessage: "No disputes found",
 		RowFunc: func(d api.TransactionDispute) []string {
 			amount := ""
-			if d.Amount != 0 {
-				amount = fmt.Sprintf("%.2f", d.Amount)
+			if outfmt.MoneyFloat64(d.Amount) != 0 {
+				amount = outfmt.FormatMoney(d.Amount)
 			}
 			return []string{disputeID(d), d.TransactionID, d.Status, amount, d.Currency}
 		},
@@ -122,8 +122,8 @@ func newDisputesGetCmd() *cobra.Command {
 				{Key: "reason", Value: dispute.Reason},
 				{Key: "created_at", Value: dispute.CreatedAt},
 			}
-			if dispute.Amount != 0 || dispute.Currency != "" {
-				rows = append(rows, outfmt.KV{Key: "amount", Value: fmt.Sprintf("%.2f %s", dispute.Amount, dispute.Currency)})
+			if outfmt.MoneyFloat64(dispute.Amount) != 0 || dispute.Currency != "" {
+				rows = append(rows, outfmt.KV{Key: "amount", Value: outfmt.FormatMoney(dispute.Amount) + " " + dispute.Currency})
 			}
 			return outfmt.WriteKV(cmd.OutOrStdout(), rows)
 		},

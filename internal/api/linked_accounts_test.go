@@ -531,8 +531,8 @@ func TestInitiateDeposit_Success(t *testing.T) {
 	if deposit.ID != "dep_abc123" {
 		t.Errorf("id = %q, want 'dep_abc123'", deposit.ID)
 	}
-	if deposit.Amount != 1000.50 {
-		t.Errorf("amount = %f, want 1000.50", deposit.Amount)
+	if deposit.Amount != jn("1000.50") {
+		t.Errorf("amount = %s, want 1000.50", deposit.Amount)
 	}
 	if deposit.Currency != "USD" {
 		t.Errorf("currency = %q, want 'USD'", deposit.Currency)

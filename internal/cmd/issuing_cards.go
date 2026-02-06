@@ -416,7 +416,7 @@ func newCardsLimitsCmd() *cobra.Command {
 			_, _ = fmt.Fprintf(io.Out, "currency\t%s\n\n", limits.Currency)
 			f.StartTable([]string{"INTERVAL", "LIMIT", "REMAINING"})
 			for _, l := range limits.Limits {
-				f.Row(l.Interval, fmt.Sprintf("%.2f", l.Amount), fmt.Sprintf("%.2f", l.Remaining))
+				f.Row(l.Interval, outfmt.FormatMoney(l.Amount), outfmt.FormatMoney(l.Remaining))
 			}
 			return f.EndTable()
 		},

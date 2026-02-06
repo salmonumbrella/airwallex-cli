@@ -91,8 +91,8 @@ func TestListTransactionDisputes_Success(t *testing.T) {
 	if d1.Reason != "FRAUD" {
 		t.Errorf("reason = %q, want 'FRAUD'", d1.Reason)
 	}
-	if d1.Amount != 100.50 {
-		t.Errorf("amount = %f, want 100.50", d1.Amount)
+	if d1.Amount != jn("100.50") {
+		t.Errorf("amount = %s, want 100.50", d1.Amount)
 	}
 	if d1.Currency != "USD" {
 		t.Errorf("currency = %q, want 'USD'", d1.Currency)
@@ -352,8 +352,8 @@ func TestGetTransactionDispute_Success(t *testing.T) {
 	if dispute.Reason != "FRAUD" {
 		t.Errorf("reason = %q, want 'FRAUD'", dispute.Reason)
 	}
-	if dispute.Amount != 150.75 {
-		t.Errorf("amount = %f, want 150.75", dispute.Amount)
+	if dispute.Amount != jn("150.75") {
+		t.Errorf("amount = %s, want 150.75", dispute.Amount)
 	}
 	if dispute.Currency != "USD" {
 		t.Errorf("currency = %q, want 'USD'", dispute.Currency)
@@ -505,8 +505,8 @@ func TestCreateTransactionDispute_Success(t *testing.T) {
 	if dispute.Reason != "MERCHANDISE_NOT_RECEIVED" {
 		t.Errorf("reason = %q, want 'MERCHANDISE_NOT_RECEIVED'", dispute.Reason)
 	}
-	if dispute.Amount != 200.00 {
-		t.Errorf("amount = %f, want 200.00", dispute.Amount)
+	if dispute.Amount != jn("200.00") {
+		t.Errorf("amount = %s, want 200.00", dispute.Amount)
 	}
 }
 
@@ -677,8 +677,8 @@ func TestUpdateTransactionDispute_Success(t *testing.T) {
 	if dispute.Reason != "DUPLICATE_CHARGE" {
 		t.Errorf("reason = %q, want 'DUPLICATE_CHARGE'", dispute.Reason)
 	}
-	if dispute.Amount != 175.00 {
-		t.Errorf("amount = %f, want 175.00", dispute.Amount)
+	if dispute.Amount != jn("175.00") {
+		t.Errorf("amount = %s, want 175.00", dispute.Amount)
 	}
 }
 

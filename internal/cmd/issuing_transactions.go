@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/spf13/cobra"
 
@@ -69,7 +68,7 @@ Examples:
 		Headers:      []string{"TRANSACTION_ID", "TYPE", "AMOUNT", "CURRENCY", "MERCHANT", "STATUS"},
 		EmptyMessage: "No transactions found",
 		RowFunc: func(txn api.Transaction) []string {
-			return []string{txn.TransactionID, txn.TransactionType, fmt.Sprintf("%.2f", txn.Amount), txn.Currency, txn.Merchant.Name, txn.Status}
+			return []string{txn.TransactionID, txn.TransactionType, outfmt.FormatMoney(txn.Amount), txn.Currency, txn.Merchant.Name, txn.Status}
 		},
 		IDFunc: func(txn api.Transaction) string {
 			return txn.TransactionID
@@ -111,8 +110,8 @@ func newTransactionsGetCmd() *cobra.Command {
 				{Key: "card_id", Value: txn.CardID},
 				{Key: "card_nickname", Value: txn.CardNickname},
 				{Key: "type", Value: txn.TransactionType},
-				{Key: "amount", Value: fmt.Sprintf("%.2f %s", txn.Amount, txn.Currency)},
-				{Key: "billing", Value: fmt.Sprintf("%.2f %s", txn.BillingAmount, txn.BillingCurrency)},
+				{Key: "amount", Value: outfmt.FormatMoney(txn.Amount) + " " + txn.Currency},
+				{Key: "billing", Value: outfmt.FormatMoney(txn.BillingAmount) + " " + txn.BillingCurrency},
 				{Key: "merchant", Value: txn.Merchant.Name},
 				{Key: "status", Value: txn.Status},
 				{Key: "date", Value: txn.TransactionDate},

@@ -10,16 +10,16 @@ import (
 
 // Deposit represents an inbound deposit
 type Deposit struct {
-	ID              string  `json:"id"`
-	Amount          float64 `json:"amount"`
-	Currency        string  `json:"currency"`
-	Status          string  `json:"status"`
-	Source          string  `json:"source"`
-	LinkedAccountID string  `json:"linked_account_id,omitempty"`
-	GlobalAccountID string  `json:"global_account_id,omitempty"`
-	Reference       string  `json:"reference,omitempty"`
-	CreatedAt       string  `json:"created_at"`
-	SettledAt       string  `json:"settled_at,omitempty"`
+	ID              string      `json:"id"`
+	Amount          json.Number `json:"amount"`
+	Currency        string      `json:"currency"`
+	Status          string      `json:"status"`
+	Source          string      `json:"source"`
+	LinkedAccountID string      `json:"linked_account_id,omitempty"`
+	GlobalAccountID string      `json:"global_account_id,omitempty"`
+	Reference       string      `json:"reference,omitempty"`
+	CreatedAt       string      `json:"created_at"`
+	SettledAt       string      `json:"settled_at,omitempty"`
 }
 
 type DepositsResponse struct {

@@ -179,8 +179,9 @@ func TestConfirmOrYes(t *testing.T) {
 			jsonMode:  true,
 			isTTY:     false,
 			input:     "",
-			want:      true,
-			wantErr:   false,
+			want:      false,
+			wantErr:   true,
+			errMsg:    "stdin is not a terminal",
 		},
 		{
 			name:      "non-TTY without yes flag returns error",
@@ -336,16 +337,23 @@ func TestConfirmOrYes_YesFlagSkipsPrompt(t *testing.T) {
 	}
 }
 
-func TestConfirmOrYes_JSONModeSkipsPrompt(t *testing.T) {
+func TestConfirmOrYes_JSONModeRequiresYesFlag(t *testing.T) {
+	// Save and restore original
+	origIsTerminal := isTerminal
+	defer func() { isTerminal = origIsTerminal }()
+
+	// Mock non-TTY (realistic: JSON mode is typically used in scripts)
+	isTerminal = func() bool { return false }
+
 	ctx := context.Background()
 	ctx = outfmt.WithFormat(ctx, "json")
 
-	got, err := ConfirmOrYes(ctx, "Delete everything?")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+	_, err := ConfirmOrYes(ctx, "Delete everything?")
+	if err == nil {
+		t.Fatal("expected error for JSON mode without --yes flag on non-TTY")
 	}
-	if !got {
-		t.Error("expected true when JSON mode is enabled")
+	if !strings.Contains(err.Error(), "use --yes to skip") {
+		t.Errorf("expected error to mention --yes flag, got: %v", err)
 	}
 }
 
@@ -413,25 +421,25 @@ func TestNormalizePageSize(t *testing.T) {
 		input    int
 		expected int
 	}{
-		// Negative values
-		{name: "negative value", input: -1, expected: 10},
-		{name: "large negative value", input: -100, expected: 10},
-
-		// Zero
-		{name: "zero", input: 0, expected: 10},
-
-		// Values below minimum
-		{name: "one", input: 1, expected: 10},
-		{name: "five", input: 5, expected: 10},
-		{name: "nine (just below minimum)", input: 9, expected: 10},
+		// Below minimum (clamped to 1)
+		{name: "negative value", input: -1, expected: 1},
+		{name: "large negative value", input: -100, expected: 1},
+		{name: "zero", input: 0, expected: 1},
 
 		// Minimum boundary
-		{name: "ten (minimum)", input: 10, expected: 10},
+		{name: "one (minimum)", input: 1, expected: 1},
 
-		// Values above minimum
-		{name: "eleven (just above minimum)", input: 11, expected: 11},
-		{name: "twenty", input: 20, expected: 20},
-		{name: "one hundred", input: 100, expected: 100},
+		// Valid range
+		{name: "five", input: 5, expected: 5},
+		{name: "ten", input: 10, expected: 10},
+		{name: "fifty", input: 50, expected: 50},
+
+		// Maximum boundary
+		{name: "one hundred (maximum)", input: 100, expected: 100},
+
+		// Above maximum (clamped to 100)
+		{name: "one hundred one", input: 101, expected: 100},
+		{name: "large value", input: 1000, expected: 100},
 	}
 
 	for _, tt := range tests {

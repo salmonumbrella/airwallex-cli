@@ -9,11 +9,11 @@ import (
 )
 
 type Balance struct {
-	Currency        string  `json:"currency"`
-	AvailableAmount float64 `json:"available_amount"`
-	PendingAmount   float64 `json:"pending_amount"`
-	ReservedAmount  float64 `json:"reserved_amount"`
-	TotalAmount     float64 `json:"total_amount"`
+	Currency        string      `json:"currency"`
+	AvailableAmount json.Number `json:"available_amount"`
+	PendingAmount   json.Number `json:"pending_amount"`
+	ReservedAmount  json.Number `json:"reserved_amount"`
+	TotalAmount     json.Number `json:"total_amount"`
 }
 
 type BalancesResponse struct {
@@ -21,13 +21,13 @@ type BalancesResponse struct {
 }
 
 type BalanceHistoryItem struct {
-	ID              string  `json:"id"`
-	Currency        string  `json:"currency"`
-	Amount          float64 `json:"amount"`
-	Balance         float64 `json:"balance"`
-	TransactionType string  `json:"transaction_type"`
-	PostedAt        string  `json:"posted_at"`
-	Description     string  `json:"description,omitempty"`
+	ID              string      `json:"id"`
+	Currency        string      `json:"currency"`
+	Amount          json.Number `json:"amount"`
+	Balance         json.Number `json:"balance"`
+	TransactionType string      `json:"transaction_type"`
+	PostedAt        string      `json:"posted_at"`
+	Description     string      `json:"description,omitempty"`
 }
 
 type BalanceHistoryResponse struct {

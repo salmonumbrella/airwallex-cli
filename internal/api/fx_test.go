@@ -66,8 +66,8 @@ func TestGetRates_Success(t *testing.T) {
 	if result.Rates[0].BuyCurrency != "EUR" {
 		t.Errorf("buy_currency = %q, want 'EUR'", result.Rates[0].BuyCurrency)
 	}
-	if result.Rates[0].Rate != 0.85 {
-		t.Errorf("rate = %f, want 0.85", result.Rates[0].Rate)
+	if result.Rates[0].Rate != jn("0.85") {
+		t.Errorf("rate = %s, want 0.85", result.Rates[0].Rate)
 	}
 	if result.Rates[0].RateType != "SPOT" {
 		t.Errorf("rate_type = %q, want 'SPOT'", result.Rates[0].RateType)
@@ -257,14 +257,14 @@ func TestCreateQuote_WithSellAmount(t *testing.T) {
 	if quote.BuyCurrency != "EUR" {
 		t.Errorf("buy_currency = %q, want 'EUR'", quote.BuyCurrency)
 	}
-	if quote.SellAmount != 1000.00 {
-		t.Errorf("sell_amount = %f, want 1000.00", quote.SellAmount)
+	if quote.SellAmount != jn("1000.00") {
+		t.Errorf("sell_amount = %s, want 1000.00", quote.SellAmount)
 	}
-	if quote.BuyAmount != 850.00 {
-		t.Errorf("buy_amount = %f, want 850.00", quote.BuyAmount)
+	if quote.BuyAmount != jn("850.00") {
+		t.Errorf("buy_amount = %s, want 850.00", quote.BuyAmount)
 	}
-	if quote.Rate != 0.85 {
-		t.Errorf("rate = %f, want 0.85", quote.Rate)
+	if quote.Rate != jn("0.85") {
+		t.Errorf("rate = %s, want 0.85", quote.Rate)
 	}
 	if quote.Status != "ACTIVE" {
 		t.Errorf("status = %q, want 'ACTIVE'", quote.Status)
@@ -319,8 +319,8 @@ func TestCreateQuote_WithBuyAmount(t *testing.T) {
 	if quote.ID != "quote_456" {
 		t.Errorf("id = %q, want 'quote_456'", quote.ID)
 	}
-	if quote.BuyAmount != 1000.00 {
-		t.Errorf("buy_amount = %f, want 1000.00", quote.BuyAmount)
+	if quote.BuyAmount != jn("1000.00") {
+		t.Errorf("buy_amount = %s, want 1000.00", quote.BuyAmount)
 	}
 }
 
@@ -751,14 +751,14 @@ func TestGetConversion_Success(t *testing.T) {
 	if conv.BuyCurrency != "EUR" {
 		t.Errorf("buy_currency = %q, want 'EUR'", conv.BuyCurrency)
 	}
-	if conv.SellAmount != 1000.00 {
-		t.Errorf("sell_amount = %f, want 1000.00", conv.SellAmount)
+	if conv.SellAmount != jn("1000.00") {
+		t.Errorf("sell_amount = %s, want 1000.00", conv.SellAmount)
 	}
-	if conv.BuyAmount != 850.00 {
-		t.Errorf("buy_amount = %f, want 850.00", conv.BuyAmount)
+	if conv.BuyAmount != jn("850.00") {
+		t.Errorf("buy_amount = %s, want 850.00", conv.BuyAmount)
 	}
-	if conv.Rate != 0.85 {
-		t.Errorf("rate = %f, want 0.85", conv.Rate)
+	if conv.Rate != jn("0.85") {
+		t.Errorf("rate = %s, want 0.85", conv.Rate)
 	}
 	if conv.Status != "COMPLETED" {
 		t.Errorf("status = %q, want 'COMPLETED'", conv.Status)

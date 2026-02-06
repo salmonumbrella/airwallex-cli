@@ -58,7 +58,7 @@ Examples:
 
 			f.StartTable([]string{"SELL", "BUY", "RATE", "TYPE"})
 			for _, r := range result.Rates {
-				f.Row(r.SellCurrency, r.BuyCurrency, fmt.Sprintf("%.6f", r.Rate), r.RateType)
+				f.Row(r.SellCurrency, r.BuyCurrency, outfmt.FormatRate(r.Rate), r.RateType)
 			}
 			return f.EndTable()
 		},

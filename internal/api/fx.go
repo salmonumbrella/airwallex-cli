@@ -10,10 +10,10 @@ import (
 
 // Rate represents current exchange rate
 type Rate struct {
-	SellCurrency string  `json:"sell_currency"`
-	BuyCurrency  string  `json:"buy_currency"`
-	Rate         float64 `json:"rate"`
-	RateType     string  `json:"rate_type"`
+	SellCurrency string      `json:"sell_currency"`
+	BuyCurrency  string      `json:"buy_currency"`
+	Rate         json.Number `json:"rate"`
+	RateType     string      `json:"rate_type"`
 }
 
 type RatesResponse struct {
@@ -22,29 +22,29 @@ type RatesResponse struct {
 
 // Quote represents a locked FX rate quote
 type Quote struct {
-	ID             string  `json:"quote_id"`
-	SellCurrency   string  `json:"sell_currency"`
-	BuyCurrency    string  `json:"buy_currency"`
-	SellAmount     float64 `json:"sell_amount,omitempty"`
-	BuyAmount      float64 `json:"buy_amount,omitempty"`
-	Rate           float64 `json:"client_rate"`
-	RateExpiry     string  `json:"valid_to_at"`
-	ValidityPeriod string  `json:"validity"`
-	Status         string  `json:"status"`
-	CreatedAt      string  `json:"valid_from_at"`
+	ID             string      `json:"quote_id"`
+	SellCurrency   string      `json:"sell_currency"`
+	BuyCurrency    string      `json:"buy_currency"`
+	SellAmount     json.Number `json:"sell_amount,omitempty"`
+	BuyAmount      json.Number `json:"buy_amount,omitempty"`
+	Rate           json.Number `json:"client_rate"`
+	RateExpiry     string      `json:"valid_to_at"`
+	ValidityPeriod string      `json:"validity"`
+	Status         string      `json:"status"`
+	CreatedAt      string      `json:"valid_from_at"`
 }
 
 // Conversion represents an executed currency conversion
 type Conversion struct {
-	ID           string  `json:"id"`
-	QuoteID      string  `json:"quote_id,omitempty"`
-	SellCurrency string  `json:"sell_currency"`
-	BuyCurrency  string  `json:"buy_currency"`
-	SellAmount   float64 `json:"sell_amount"`
-	BuyAmount    float64 `json:"buy_amount"`
-	Rate         float64 `json:"rate"`
-	Status       string  `json:"status"`
-	CreatedAt    string  `json:"created_at"`
+	ID           string      `json:"id"`
+	QuoteID      string      `json:"quote_id,omitempty"`
+	SellCurrency string      `json:"sell_currency"`
+	BuyCurrency  string      `json:"buy_currency"`
+	SellAmount   json.Number `json:"sell_amount"`
+	BuyAmount    json.Number `json:"buy_amount"`
+	Rate         json.Number `json:"rate"`
+	Status       string      `json:"status"`
+	CreatedAt    string      `json:"created_at"`
 }
 
 type ConversionsResponse struct {

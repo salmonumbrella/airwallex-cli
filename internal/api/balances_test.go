@@ -67,17 +67,17 @@ func TestGetBalances_Success(t *testing.T) {
 	if usd.Currency != "USD" {
 		t.Errorf("currency = %q, want 'USD'", usd.Currency)
 	}
-	if usd.AvailableAmount != 1000.50 {
-		t.Errorf("available_amount = %f, want 1000.50", usd.AvailableAmount)
+	if usd.AvailableAmount != jn("1000.50") {
+		t.Errorf("available_amount = %s, want 1000.50", usd.AvailableAmount)
 	}
-	if usd.PendingAmount != 50.25 {
-		t.Errorf("pending_amount = %f, want 50.25", usd.PendingAmount)
+	if usd.PendingAmount != jn("50.25") {
+		t.Errorf("pending_amount = %s, want 50.25", usd.PendingAmount)
 	}
-	if usd.ReservedAmount != 25.00 {
-		t.Errorf("reserved_amount = %f, want 25.00", usd.ReservedAmount)
+	if usd.ReservedAmount != jn("25.00") {
+		t.Errorf("reserved_amount = %s, want 25.00", usd.ReservedAmount)
 	}
-	if usd.TotalAmount != 1075.75 {
-		t.Errorf("total_amount = %f, want 1075.75", usd.TotalAmount)
+	if usd.TotalAmount != jn("1075.75") {
+		t.Errorf("total_amount = %s, want 1075.75", usd.TotalAmount)
 	}
 
 	// Verify second balance (EUR)
@@ -85,11 +85,11 @@ func TestGetBalances_Success(t *testing.T) {
 	if eur.Currency != "EUR" {
 		t.Errorf("currency = %q, want 'EUR'", eur.Currency)
 	}
-	if eur.AvailableAmount != 500.00 {
-		t.Errorf("available_amount = %f, want 500.00", eur.AvailableAmount)
+	if eur.AvailableAmount != jn("500.00") {
+		t.Errorf("available_amount = %s, want 500.00", eur.AvailableAmount)
 	}
-	if eur.TotalAmount != 500.00 {
-		t.Errorf("total_amount = %f, want 500.00", eur.TotalAmount)
+	if eur.TotalAmount != jn("500.00") {
+		t.Errorf("total_amount = %s, want 500.00", eur.TotalAmount)
 	}
 }
 
@@ -267,11 +267,11 @@ func TestGetBalanceHistory_Success(t *testing.T) {
 	if item1.Currency != "USD" {
 		t.Errorf("currency = %q, want 'USD'", item1.Currency)
 	}
-	if item1.Amount != 100.00 {
-		t.Errorf("amount = %f, want 100.00", item1.Amount)
+	if item1.Amount != jn("100.00") {
+		t.Errorf("amount = %s, want 100.00", item1.Amount)
 	}
-	if item1.Balance != 1000.00 {
-		t.Errorf("balance = %f, want 1000.00", item1.Balance)
+	if item1.Balance != jn("1000.00") {
+		t.Errorf("balance = %s, want 1000.00", item1.Balance)
 	}
 	if item1.TransactionType != "DEPOSIT" {
 		t.Errorf("transaction_type = %q, want 'DEPOSIT'", item1.TransactionType)
@@ -285,8 +285,8 @@ func TestGetBalanceHistory_Success(t *testing.T) {
 	if item2.ID != "txn_456" {
 		t.Errorf("id = %q, want 'txn_456'", item2.ID)
 	}
-	if item2.Amount != -50.00 {
-		t.Errorf("amount = %f, want -50.00", item2.Amount)
+	if item2.Amount != jn("-50.00") {
+		t.Errorf("amount = %s, want -50.00", item2.Amount)
 	}
 	if item2.TransactionType != "WITHDRAWAL" {
 		t.Errorf("transaction_type = %q, want 'WITHDRAWAL'", item2.TransactionType)
@@ -721,10 +721,10 @@ func TestGetBalanceHistory_ZeroAmounts(t *testing.T) {
 	if len(result.Items) != 1 {
 		t.Errorf("items count = %d, want 1", len(result.Items))
 	}
-	if result.Items[0].Amount != 0.00 {
-		t.Errorf("amount = %f, want 0.00", result.Items[0].Amount)
+	if result.Items[0].Amount != jn("0.00") {
+		t.Errorf("amount = %s, want 0.00", result.Items[0].Amount)
 	}
-	if result.Items[0].Balance != 0.00 {
-		t.Errorf("balance = %f, want 0.00", result.Items[0].Balance)
+	if result.Items[0].Balance != jn("0.00") {
+		t.Errorf("balance = %s, want 0.00", result.Items[0].Balance)
 	}
 }

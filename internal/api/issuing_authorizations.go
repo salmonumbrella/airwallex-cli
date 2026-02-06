@@ -10,15 +10,15 @@ import (
 
 // Authorization represents a card authorization.
 type Authorization struct {
-	AuthorizationID string  `json:"authorization_id"`
-	ID              string  `json:"id"`
-	TransactionID   string  `json:"transaction_id"`
-	CardID          string  `json:"card_id"`
-	CardholderID    string  `json:"cardholder_id"`
-	Status          string  `json:"status"`
-	Amount          float64 `json:"amount"`
-	Currency        string  `json:"currency"`
-	CreatedAt       string  `json:"created_at"`
+	AuthorizationID string      `json:"authorization_id"`
+	ID              string      `json:"id"`
+	TransactionID   string      `json:"transaction_id"`
+	CardID          string      `json:"card_id"`
+	CardholderID    string      `json:"cardholder_id"`
+	Status          string      `json:"status"`
+	Amount          json.Number `json:"amount"`
+	Currency        string      `json:"currency"`
+	CreatedAt       string      `json:"created_at"`
 	Merchant        struct {
 		Name string `json:"name"`
 	} `json:"merchant"`

@@ -10,14 +10,14 @@ import (
 
 // TransactionDispute represents a dispute for an issuing transaction.
 type TransactionDispute struct {
-	DisputeID     string  `json:"dispute_id"`
-	ID            string  `json:"id"`
-	TransactionID string  `json:"transaction_id"`
-	Status        string  `json:"status"`
-	Reason        string  `json:"reason"`
-	Amount        float64 `json:"amount"`
-	Currency      string  `json:"currency"`
-	CreatedAt     string  `json:"created_at"`
+	DisputeID     string      `json:"dispute_id"`
+	ID            string      `json:"id"`
+	TransactionID string      `json:"transaction_id"`
+	Status        string      `json:"status"`
+	Reason        string      `json:"reason"`
+	Amount        json.Number `json:"amount"`
+	Currency      string      `json:"currency"`
+	CreatedAt     string      `json:"created_at"`
 }
 
 type TransactionDisputesResponse struct {

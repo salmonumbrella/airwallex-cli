@@ -36,7 +36,7 @@ func newPaymentLinksListCmd() *cobra.Command {
 			if len(desc) > 30 {
 				desc = desc[:27] + "..."
 			}
-			return []string{pl.ID, fmt.Sprintf("%.2f", pl.Amount), pl.Currency, pl.Status, desc}
+			return []string{pl.ID, outfmt.FormatMoney(pl.Amount), pl.Currency, pl.Status, desc}
 		},
 		MoreHint: "# More results available",
 		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[api.PaymentLink], error) {
@@ -64,7 +64,7 @@ func newPaymentLinksGetCmd() *cobra.Command {
 			rows := []outfmt.KV{
 				{Key: "id", Value: pl.ID},
 				{Key: "url", Value: pl.URL},
-				{Key: "amount", Value: fmt.Sprintf("%.2f", pl.Amount)},
+				{Key: "amount", Value: outfmt.FormatMoney(pl.Amount)},
 				{Key: "currency", Value: pl.Currency},
 				{Key: "status", Value: pl.Status},
 				{Key: "created_at", Value: pl.CreatedAt},

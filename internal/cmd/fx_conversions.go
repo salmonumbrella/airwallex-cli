@@ -34,9 +34,9 @@ func newFXConversionsListCmd() *cobra.Command {
 		RowFunc: func(c api.Conversion) []string {
 			return []string{
 				c.ID,
-				fmt.Sprintf("%.2f %s", c.SellAmount, c.SellCurrency),
-				fmt.Sprintf("%.2f %s", c.BuyAmount, c.BuyCurrency),
-				fmt.Sprintf("%.6f", c.Rate),
+				outfmt.FormatMoney(c.SellAmount) + " " + c.SellCurrency,
+				outfmt.FormatMoney(c.BuyAmount) + " " + c.BuyCurrency,
+				outfmt.FormatRate(c.Rate),
 				c.Status,
 			}
 		},
@@ -75,9 +75,9 @@ func newFXConversionsGetCmd() *cobra.Command {
 				{Key: "conversion_id", Value: conv.ID},
 				{Key: "sell_currency", Value: conv.SellCurrency},
 				{Key: "buy_currency", Value: conv.BuyCurrency},
-				{Key: "sell_amount", Value: fmt.Sprintf("%.2f", conv.SellAmount)},
-				{Key: "buy_amount", Value: fmt.Sprintf("%.2f", conv.BuyAmount)},
-				{Key: "rate", Value: fmt.Sprintf("%.6f", conv.Rate)},
+				{Key: "sell_amount", Value: outfmt.FormatMoney(conv.SellAmount)},
+				{Key: "buy_amount", Value: outfmt.FormatMoney(conv.BuyAmount)},
+				{Key: "rate", Value: outfmt.FormatRate(conv.Rate)},
 				{Key: "status", Value: conv.Status},
 				{Key: "created_at", Value: conv.CreatedAt},
 			}
@@ -171,9 +171,9 @@ Examples:
 			u.Success(fmt.Sprintf("Conversion executed: %s", conv.ID))
 			rows := []outfmt.KV{
 				{Key: "conversion_id", Value: conv.ID},
-				{Key: "sold", Value: fmt.Sprintf("%.2f %s", conv.SellAmount, conv.SellCurrency)},
-				{Key: "bought", Value: fmt.Sprintf("%.2f %s", conv.BuyAmount, conv.BuyCurrency)},
-				{Key: "rate", Value: fmt.Sprintf("%.6f", conv.Rate)},
+				{Key: "sold", Value: outfmt.FormatMoney(conv.SellAmount) + " " + conv.SellCurrency},
+				{Key: "bought", Value: outfmt.FormatMoney(conv.BuyAmount) + " " + conv.BuyCurrency},
+				{Key: "rate", Value: outfmt.FormatRate(conv.Rate)},
 				{Key: "status", Value: conv.Status},
 			}
 			return outfmt.WriteKV(cmd.OutOrStdout(), rows)

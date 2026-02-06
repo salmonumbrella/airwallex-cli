@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/spf13/cobra"
 
@@ -46,8 +45,8 @@ func newAuthorizationsListCmd() *cobra.Command {
 		EmptyMessage: "No authorizations found",
 		RowFunc: func(a api.Authorization) []string {
 			amount := ""
-			if a.Amount != 0 {
-				amount = fmt.Sprintf("%.2f", a.Amount)
+			if outfmt.MoneyFloat64(a.Amount) != 0 {
+				amount = outfmt.FormatMoney(a.Amount)
 			}
 			return []string{authorizationID(a), a.TransactionID, a.CardID, a.Status, amount, a.Currency, a.Merchant.Name}
 		},
@@ -107,8 +106,8 @@ func newAuthorizationsGetCmd() *cobra.Command {
 				{Key: "status", Value: auth.Status},
 				{Key: "created_at", Value: auth.CreatedAt},
 			}
-			if auth.Amount != 0 || auth.Currency != "" {
-				rows = append(rows, outfmt.KV{Key: "amount", Value: fmt.Sprintf("%.2f %s", auth.Amount, auth.Currency)})
+			if outfmt.MoneyFloat64(auth.Amount) != 0 || auth.Currency != "" {
+				rows = append(rows, outfmt.KV{Key: "amount", Value: outfmt.FormatMoney(auth.Amount) + " " + auth.Currency})
 			}
 			if auth.Merchant.Name != "" {
 				rows = append(rows, outfmt.KV{Key: "merchant", Value: auth.Merchant.Name})

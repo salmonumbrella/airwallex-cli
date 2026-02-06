@@ -76,8 +76,8 @@ func TestListPaymentLinks_WithPagination(t *testing.T) {
 	if result.Items[0].URL != "https://checkout.airwallex.com/pl_123" {
 		t.Errorf("url = %q, want 'https://checkout.airwallex.com/pl_123'", result.Items[0].URL)
 	}
-	if result.Items[0].Amount != 100.50 {
-		t.Errorf("amount = %f, want 100.50", result.Items[0].Amount)
+	if result.Items[0].Amount != jn("100.50") {
+		t.Errorf("amount = %s, want 100.50", result.Items[0].Amount)
 	}
 	if result.Items[0].Currency != "USD" {
 		t.Errorf("currency = %q, want 'USD'", result.Items[0].Currency)
@@ -267,8 +267,8 @@ func TestListPaymentLinks_MultipleItems(t *testing.T) {
 	if result.Items[1].Currency != "EUR" {
 		t.Errorf("items[1].currency = %q, want 'EUR'", result.Items[1].Currency)
 	}
-	if result.Items[2].Amount != 200.00 {
-		t.Errorf("items[2].amount = %f, want 200.00", result.Items[2].Amount)
+	if result.Items[2].Amount != jn("200.00") {
+		t.Errorf("items[2].amount = %s, want 200.00", result.Items[2].Amount)
 	}
 }
 
@@ -318,8 +318,8 @@ func TestGetPaymentLink_Success(t *testing.T) {
 	if link.URL != "https://checkout.airwallex.com/pl_123" {
 		t.Errorf("url = %q, want 'https://checkout.airwallex.com/pl_123'", link.URL)
 	}
-	if link.Amount != 100.50 {
-		t.Errorf("amount = %f, want 100.50", link.Amount)
+	if link.Amount != jn("100.50") {
+		t.Errorf("amount = %s, want 100.50", link.Amount)
 	}
 	if link.Currency != "USD" {
 		t.Errorf("currency = %q, want 'USD'", link.Currency)
@@ -485,8 +485,8 @@ func TestCreatePaymentLink_Success(t *testing.T) {
 	if link.URL != "https://checkout.airwallex.com/pl_new" {
 		t.Errorf("url = %q, want 'https://checkout.airwallex.com/pl_new'", link.URL)
 	}
-	if link.Amount != 100.50 {
-		t.Errorf("amount = %f, want 100.50", link.Amount)
+	if link.Amount != jn("100.50") {
+		t.Errorf("amount = %s, want 100.50", link.Amount)
 	}
 	if link.Currency != "USD" {
 		t.Errorf("currency = %q, want 'USD'", link.Currency)
@@ -580,8 +580,8 @@ func TestCreatePaymentLink_MinimalRequest(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CreatePaymentLink() error: %v", err)
 	}
-	if link.Amount != 10.00 {
-		t.Errorf("amount = %f, want 10.00", link.Amount)
+	if link.Amount != jn("10.00") {
+		t.Errorf("amount = %s, want 10.00", link.Amount)
 	}
 	if link.Currency != "USD" {
 		t.Errorf("currency = %q, want 'USD'", link.Currency)

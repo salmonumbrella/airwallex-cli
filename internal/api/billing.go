@@ -50,8 +50,8 @@ type BillingPrice struct {
 	ID           string                 `json:"id"`
 	ProductID    string                 `json:"product_id"`
 	Currency     string                 `json:"currency"`
-	UnitAmount   float64                `json:"unit_amount"`
-	FlatAmount   float64                `json:"flat_amount"`
+	UnitAmount   json.Number            `json:"unit_amount"`
+	FlatAmount   json.Number            `json:"flat_amount"`
 	PricingModel string                 `json:"pricing_model"`
 	Type         string                 `json:"type"`
 	Active       bool                   `json:"active"`
@@ -67,22 +67,22 @@ type BillingPricesResponse struct {
 
 // BillingInvoice represents a billing invoice.
 type BillingInvoice struct {
-	ID                           string  `json:"id"`
-	CustomerID                   string  `json:"customer_id"`
-	SubscriptionID               string  `json:"subscription_id"`
-	Status                       string  `json:"status"`
-	Currency                     string  `json:"currency"`
-	TotalAmount                  float64 `json:"total_amount"`
-	PeriodStartAt                string  `json:"period_start_at"`
-	PeriodEndAt                  string  `json:"period_end_at"`
-	PaidAt                       string  `json:"paid_at"`
-	CreatedAt                    string  `json:"created_at"`
-	UpdatedAt                    string  `json:"updated_at"`
-	PaymentIntentID              string  `json:"payment_intent_id"`
-	LastPaymentAttemptAt         string  `json:"last_payment_attempt_at"`
-	NextPaymentAttemptAt         string  `json:"next_payment_attempt_at"`
-	PastPaymentAttemptCount      int     `json:"past_payment_attempt_count"`
-	RemainingPaymentAttemptCount int     `json:"remaining_payment_attempt_count"`
+	ID                           string      `json:"id"`
+	CustomerID                   string      `json:"customer_id"`
+	SubscriptionID               string      `json:"subscription_id"`
+	Status                       string      `json:"status"`
+	Currency                     string      `json:"currency"`
+	TotalAmount                  json.Number `json:"total_amount"`
+	PeriodStartAt                string      `json:"period_start_at"`
+	PeriodEndAt                  string      `json:"period_end_at"`
+	PaidAt                       string      `json:"paid_at"`
+	CreatedAt                    string      `json:"created_at"`
+	UpdatedAt                    string      `json:"updated_at"`
+	PaymentIntentID              string      `json:"payment_intent_id"`
+	LastPaymentAttemptAt         string      `json:"last_payment_attempt_at"`
+	NextPaymentAttemptAt         string      `json:"next_payment_attempt_at"`
+	PastPaymentAttemptCount      int         `json:"past_payment_attempt_count"`
+	RemainingPaymentAttemptCount int         `json:"remaining_payment_attempt_count"`
 }
 
 type BillingInvoicesResponse struct {
@@ -96,7 +96,7 @@ type BillingInvoicePreview struct {
 	Currency       string               `json:"currency"`
 	CustomerID     string               `json:"customer_id"`
 	SubscriptionID string               `json:"subscription_id"`
-	TotalAmount    float64              `json:"total_amount"`
+	TotalAmount    json.Number          `json:"total_amount"`
 	Items          []BillingInvoiceItem `json:"items"`
 }
 
@@ -104,9 +104,9 @@ type BillingInvoicePreview struct {
 type BillingInvoiceItem struct {
 	ID            string        `json:"id"`
 	InvoiceID     string        `json:"invoice_id"`
-	Amount        float64       `json:"amount"`
+	Amount        json.Number   `json:"amount"`
 	Currency      string        `json:"currency"`
-	Quantity      float64       `json:"quantity"`
+	Quantity      json.Number   `json:"quantity"`
 	PeriodStartAt string        `json:"period_start_at"`
 	PeriodEndAt   string        `json:"period_end_at"`
 	Price         *BillingPrice `json:"price"`
@@ -146,7 +146,7 @@ type BillingSubscriptionsResponse struct {
 type BillingSubscriptionItem struct {
 	ID             string        `json:"id"`
 	SubscriptionID string        `json:"subscription_id"`
-	Quantity       float64       `json:"quantity"`
+	Quantity       json.Number   `json:"quantity"`
 	Price          *BillingPrice `json:"price"`
 }
 

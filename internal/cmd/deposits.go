@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/spf13/cobra"
 
@@ -44,7 +43,7 @@ Examples:
 			outfmt.ColumnPlain,    // CREATED
 		},
 		RowFunc: func(d api.Deposit) []string {
-			return []string{d.ID, fmt.Sprintf("%.2f", d.Amount), d.Currency, d.Status, d.Source, d.CreatedAt}
+			return []string{d.ID, outfmt.FormatMoney(d.Amount), d.Currency, d.Status, d.Source, d.CreatedAt}
 		},
 		IDFunc: func(d api.Deposit) string { return d.ID },
 		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[api.Deposit], error) {
@@ -80,7 +79,7 @@ func newDepositsGetCmd() *cobra.Command {
 		TextOutput: func(cmd *cobra.Command, d *api.Deposit) error {
 			rows := []outfmt.KV{
 				{Key: "deposit_id", Value: d.ID},
-				{Key: "amount", Value: fmt.Sprintf("%.2f", d.Amount)},
+				{Key: "amount", Value: outfmt.FormatMoney(d.Amount)},
 				{Key: "currency", Value: d.Currency},
 				{Key: "status", Value: d.Status},
 				{Key: "source", Value: d.Source},

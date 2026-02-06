@@ -186,7 +186,7 @@ Examples:
 				return outfmt.WriteJSON(os.Stdout, di)
 			}
 
-			u.Success(fmt.Sprintf("Deposit initiated: %s (%.2f %s)", di.ID, di.Amount, di.Currency))
+			u.Success(fmt.Sprintf("Deposit initiated: %s (%s %s)", di.ID, outfmt.FormatMoney(di.Amount), di.Currency))
 			return nil
 		},
 	}

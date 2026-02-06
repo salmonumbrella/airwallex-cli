@@ -64,8 +64,8 @@ func TestMockIntegration_GetBalances_Success(t *testing.T) {
 	if usd.Currency != "USD" {
 		t.Errorf("currency = %q, want 'USD'", usd.Currency)
 	}
-	if usd.AvailableAmount != 1000.50 {
-		t.Errorf("available_amount = %f, want 1000.50", usd.AvailableAmount)
+	if usd.AvailableAmount != jn("1000.5") {
+		t.Errorf("available_amount = %s, want 1000.50", usd.AvailableAmount)
 	}
 }
 

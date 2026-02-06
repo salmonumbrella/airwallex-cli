@@ -22,16 +22,16 @@ var TransferFinalStatuses = map[string]bool{
 
 // Transfer represents a transfer/payout
 type Transfer struct {
-	TransferID       string  `json:"id"`
-	BeneficiaryID    string  `json:"beneficiary_id"`
-	TransferAmount   float64 `json:"transfer_amount"`
-	TransferCurrency string  `json:"transfer_currency"`
-	SourceAmount     float64 `json:"source_amount"`
-	SourceCurrency   string  `json:"source_currency"`
-	Status           string  `json:"status"`
-	Reference        string  `json:"reference"`
-	Reason           string  `json:"reason"`
-	CreatedAt        string  `json:"created_at"`
+	TransferID       string      `json:"id"`
+	BeneficiaryID    string      `json:"beneficiary_id"`
+	TransferAmount   json.Number `json:"transfer_amount"`
+	TransferCurrency string      `json:"transfer_currency"`
+	SourceAmount     json.Number `json:"source_amount"`
+	SourceCurrency   string      `json:"source_currency"`
+	Status           string      `json:"status"`
+	Reference        string      `json:"reference"`
+	Reason           string      `json:"reason"`
+	CreatedAt        string      `json:"created_at"`
 }
 
 type TransfersResponse struct {

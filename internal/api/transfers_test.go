@@ -761,8 +761,8 @@ func TestListTransfers_WithAllParams(t *testing.T) {
 	if result.Items[0].Status != "COMPLETED" {
 		t.Errorf("status = %q, want 'COMPLETED'", result.Items[0].Status)
 	}
-	if result.Items[0].TransferAmount != 1000.00 {
-		t.Errorf("transfer_amount = %f, want 1000.00", result.Items[0].TransferAmount)
+	if result.Items[0].TransferAmount != jn("1000.00") {
+		t.Errorf("transfer_amount = %s, want 1000.00", result.Items[0].TransferAmount)
 	}
 }
 
@@ -896,8 +896,8 @@ func TestGetTransfer_Success(t *testing.T) {
 	if transfer.BeneficiaryID != "ben_456" {
 		t.Errorf("beneficiary_id = %q, want 'ben_456'", transfer.BeneficiaryID)
 	}
-	if transfer.TransferAmount != 2500.50 {
-		t.Errorf("transfer_amount = %f, want 2500.50", transfer.TransferAmount)
+	if transfer.TransferAmount != jn("2500.50") {
+		t.Errorf("transfer_amount = %s, want 2500.50", transfer.TransferAmount)
 	}
 	if transfer.TransferCurrency != "GBP" {
 		t.Errorf("transfer_currency = %q, want 'GBP'", transfer.TransferCurrency)
@@ -1023,8 +1023,8 @@ func TestCreateTransfer_Success(t *testing.T) {
 	if transfer.Status != "PENDING" {
 		t.Errorf("status = %q, want 'PENDING'", transfer.Status)
 	}
-	if transfer.TransferAmount != 5000.00 {
-		t.Errorf("transfer_amount = %f, want 5000.00", transfer.TransferAmount)
+	if transfer.TransferAmount != jn("5000.00") {
+		t.Errorf("transfer_amount = %s, want 5000.00", transfer.TransferAmount)
 	}
 }
 

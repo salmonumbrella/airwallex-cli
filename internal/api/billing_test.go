@@ -667,8 +667,8 @@ func TestListBillingPrices_Success(t *testing.T) {
 	if len(result.Items) != 1 {
 		t.Errorf("items count = %d, want 1", len(result.Items))
 	}
-	if result.Items[0].UnitAmount != 99.99 {
-		t.Errorf("unit_amount = %f, want 99.99", result.Items[0].UnitAmount)
+	if result.Items[0].UnitAmount != jn("99.99") {
+		t.Errorf("unit_amount = %s, want 99.99", result.Items[0].UnitAmount)
 	}
 	if result.Items[0].Recurring == nil {
 		t.Fatal("recurring is nil")
@@ -909,8 +909,8 @@ func TestListBillingInvoices_Success(t *testing.T) {
 	if result.Items[0].Status != "PAID" {
 		t.Errorf("status = %q, want 'PAID'", result.Items[0].Status)
 	}
-	if result.Items[0].TotalAmount != 199.99 {
-		t.Errorf("total_amount = %f, want 199.99", result.Items[0].TotalAmount)
+	if result.Items[0].TotalAmount != jn("199.99") {
+		t.Errorf("total_amount = %s, want 199.99", result.Items[0].TotalAmount)
 	}
 }
 
@@ -1096,8 +1096,8 @@ func TestPreviewBillingInvoice_Success(t *testing.T) {
 	if err != nil {
 		t.Fatalf("PreviewBillingInvoice() error: %v", err)
 	}
-	if preview.TotalAmount != 99.99 {
-		t.Errorf("total_amount = %f, want 99.99", preview.TotalAmount)
+	if preview.TotalAmount != jn("99.99") {
+		t.Errorf("total_amount = %s, want 99.99", preview.TotalAmount)
 	}
 	if len(preview.Items) != 1 {
 		t.Errorf("items count = %d, want 1", len(preview.Items))
@@ -1145,8 +1145,8 @@ func TestListBillingInvoiceItems_Success(t *testing.T) {
 	if len(result.Items) != 1 {
 		t.Errorf("items count = %d, want 1", len(result.Items))
 	}
-	if result.Items[0].Amount != 50.00 {
-		t.Errorf("amount = %f, want 50.00", result.Items[0].Amount)
+	if result.Items[0].Amount != jn("50.00") {
+		t.Errorf("amount = %s, want 50.00", result.Items[0].Amount)
 	}
 }
 
@@ -1595,14 +1595,14 @@ func TestListBillingSubscriptionItems_Success(t *testing.T) {
 	if len(result.Items) != 1 {
 		t.Errorf("items count = %d, want 1", len(result.Items))
 	}
-	if result.Items[0].Quantity != 5.0 {
-		t.Errorf("quantity = %f, want 5.0", result.Items[0].Quantity)
+	if result.Items[0].Quantity != jn("5.0") {
+		t.Errorf("quantity = %s, want 5.0", result.Items[0].Quantity)
 	}
 	if result.Items[0].Price == nil {
 		t.Fatal("price is nil")
 	}
-	if result.Items[0].Price.UnitAmount != 10.00 {
-		t.Errorf("price.unit_amount = %f, want 10.00", result.Items[0].Price.UnitAmount)
+	if result.Items[0].Price.UnitAmount != jn("10.00") {
+		t.Errorf("price.unit_amount = %s, want 10.00", result.Items[0].Price.UnitAmount)
 	}
 }
 
