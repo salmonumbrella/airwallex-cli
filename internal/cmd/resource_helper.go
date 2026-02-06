@@ -33,7 +33,8 @@ func NewGetCommand[T any](cfg GetConfig[T], getClient func(context.Context) (*ap
 				return err
 			}
 
-			item, err := cfg.Fetch(cmd.Context(), client, args[0])
+			id := NormalizeIDArg(args[0])
+			item, err := cfg.Fetch(cmd.Context(), client, id)
 			if err != nil {
 				return err
 			}

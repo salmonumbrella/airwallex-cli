@@ -159,7 +159,7 @@ Examples:
   airwallex issuing disputes update dpt_123 --from-file update.json`,
 		Args: cobra.ExactArgs(1),
 		Run: func(ctx context.Context, client *api.Client, args []string, payload map[string]interface{}) (*api.TransactionDispute, error) {
-			return client.UpdateTransactionDispute(ctx, args[0], payload)
+			return client.UpdateTransactionDispute(ctx, NormalizeIDArg(args[0]), payload)
 		},
 		SuccessMessage: func(dispute *api.TransactionDispute) string {
 			return fmt.Sprintf("Updated dispute: %s", disputeID(*dispute))
@@ -179,7 +179,8 @@ func newDisputesSubmitCmd() *cobra.Command {
 				return err
 			}
 
-			dispute, err := client.SubmitTransactionDispute(cmd.Context(), args[0])
+			disputeIDArg := NormalizeIDArg(args[0])
+			dispute, err := client.SubmitTransactionDispute(cmd.Context(), disputeIDArg)
 			if err != nil {
 				return err
 			}
@@ -206,7 +207,8 @@ func newDisputesCancelCmd() *cobra.Command {
 				return err
 			}
 
-			dispute, err := client.CancelTransactionDispute(cmd.Context(), args[0])
+			disputeIDArg := NormalizeIDArg(args[0])
+			dispute, err := client.CancelTransactionDispute(cmd.Context(), disputeIDArg)
 			if err != nil {
 				return err
 			}

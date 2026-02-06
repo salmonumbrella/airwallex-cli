@@ -297,7 +297,8 @@ func newCardsUpdateCmd() *cobra.Command {
 				return fmt.Errorf("no updates specified")
 			}
 
-			card, err := client.UpdateCard(cmd.Context(), args[0], update)
+			cardID := NormalizeIDArg(args[0])
+			card, err := client.UpdateCard(cmd.Context(), cardID, update)
 			if err != nil {
 				return err
 			}
@@ -329,7 +330,8 @@ func newCardsActivateCmd() *cobra.Command {
 				return err
 			}
 
-			card, err := client.ActivateCard(cmd.Context(), args[0])
+			cardID := NormalizeIDArg(args[0])
+			card, err := client.ActivateCard(cmd.Context(), cardID)
 			if err != nil {
 				return err
 			}
@@ -358,7 +360,8 @@ func newCardsDetailsCmd() *cobra.Command {
 				return err
 			}
 
-			details, err := client.GetCardDetails(cmd.Context(), args[0])
+			cardID := NormalizeIDArg(args[0])
+			details, err := client.GetCardDetails(cmd.Context(), cardID)
 			if err != nil {
 				return err
 			}
@@ -398,7 +401,8 @@ func newCardsLimitsCmd() *cobra.Command {
 				return err
 			}
 
-			limits, err := client.GetCardLimits(cmd.Context(), args[0])
+			cardID := NormalizeIDArg(args[0])
+			limits, err := client.GetCardLimits(cmd.Context(), cardID)
 			if err != nil {
 				return err
 			}

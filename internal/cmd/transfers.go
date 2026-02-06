@@ -494,7 +494,7 @@ func newTransfersCancelCmd() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			u := ui.FromContext(cmd.Context())
-			transferID := args[0]
+			transferID := NormalizeIDArg(args[0])
 
 			// Prompt for confirmation (respects --yes flag and TTY detection)
 			prompt := fmt.Sprintf("Are you sure you want to cancel transfer %s?", transferID)
@@ -550,7 +550,7 @@ Format options:
   NO_FEE_DISPLAY   - Excludes transfer fees from the confirmation letter`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			transferID := args[0]
+			transferID := NormalizeIDArg(args[0])
 
 			if format != "STANDARD" && format != "NO_FEE_DISPLAY" {
 				return fmt.Errorf("invalid format: %s (must be STANDARD or NO_FEE_DISPLAY)", format)

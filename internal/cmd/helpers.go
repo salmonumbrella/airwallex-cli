@@ -141,6 +141,27 @@ func validateDateRange(from, to string) error {
 	return nil
 }
 
+// NormalizeIDArg accepts an ID or an ID embedded in a URL/path and returns just
+// the canonical ID portion (the last path segment, without query/fragment).
+//
+// This is a "desire path" helper: agents often pass full URLs from webhooks or
+// copied links instead of bare IDs.
+func NormalizeIDArg(s string) string {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return s
+	}
+
+	if i := strings.IndexAny(s, "?#"); i >= 0 {
+		s = s[:i]
+	}
+	s = strings.TrimRight(s, "/")
+	if j := strings.LastIndex(s, "/"); j >= 0 && j < len(s)-1 {
+		s = s[j+1:]
+	}
+	return s
+}
+
 // isTerminal is a variable that can be overridden in tests
 var isTerminal = func() bool {
 	return term.IsTerminal(int(os.Stdin.Fd()))

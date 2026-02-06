@@ -176,7 +176,8 @@ Examples:
 				return err
 			}
 
-			di, err := client.InitiateDeposit(cmd.Context(), args[0], amount, currency)
+			accountID := NormalizeIDArg(args[0])
+			di, err := client.InitiateDeposit(cmd.Context(), accountID, amount, currency)
 			if err != nil {
 				return err
 			}

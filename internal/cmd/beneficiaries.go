@@ -972,8 +972,10 @@ func newBeneficiariesUpdateCmd() *cobra.Command {
 				return err
 			}
 
+			beneficiaryID := NormalizeIDArg(args[0])
+
 			// Fetch existing beneficiary data
-			existing, err := client.GetBeneficiaryRaw(cmd.Context(), args[0])
+			existing, err := client.GetBeneficiaryRaw(cmd.Context(), beneficiaryID)
 			if err != nil {
 				return fmt.Errorf("failed to fetch existing beneficiary: %w", err)
 			}
@@ -1001,7 +1003,7 @@ func newBeneficiariesUpdateCmd() *cobra.Command {
 			}
 			existing = reqbuilder.MergeRequest(existing, updateReq)
 
-			b, err := client.UpdateBeneficiary(cmd.Context(), args[0], existing)
+			b, err := client.UpdateBeneficiary(cmd.Context(), beneficiaryID, existing)
 			if err != nil {
 				return err
 			}
@@ -1027,7 +1029,7 @@ func newBeneficiariesDeleteCmd() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			u := ui.FromContext(cmd.Context())
-			beneficiaryID := args[0]
+			beneficiaryID := NormalizeIDArg(args[0])
 
 			// Prompt for confirmation (respects --yes flag and TTY detection)
 			prompt := fmt.Sprintf("Are you sure you want to delete beneficiary %s?", beneficiaryID)

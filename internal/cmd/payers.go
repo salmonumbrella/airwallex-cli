@@ -129,7 +129,7 @@ Examples:
   airwallex payers update payer_123 --from-file update.json`,
 		Args: cobra.ExactArgs(1),
 		Run: func(ctx context.Context, client *api.Client, args []string, payload map[string]interface{}) (*api.Payer, error) {
-			return client.UpdatePayer(ctx, args[0], payload)
+			return client.UpdatePayer(ctx, NormalizeIDArg(args[0]), payload)
 		},
 		SuccessMessage: func(payer *api.Payer) string {
 			return fmt.Sprintf("Updated payer: %s", payerID(*payer))
@@ -149,7 +149,8 @@ func newPayersDeleteCmd() *cobra.Command {
 				return err
 			}
 
-			ok, err := ConfirmOrYes(cmd.Context(), fmt.Sprintf("Delete payer %s?", args[0]))
+			payerID := NormalizeIDArg(args[0])
+			ok, err := ConfirmOrYes(cmd.Context(), fmt.Sprintf("Delete payer %s?", payerID))
 			if err != nil {
 				return err
 			}
@@ -158,7 +159,7 @@ func newPayersDeleteCmd() *cobra.Command {
 				return nil
 			}
 
-			if err := client.DeletePayer(cmd.Context(), args[0]); err != nil {
+			if err := client.DeletePayer(cmd.Context(), payerID); err != nil {
 				return err
 			}
 

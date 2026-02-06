@@ -172,7 +172,7 @@ Examples:
   airwallex billing customers update cus_123 --from-file update.json`,
 		Args: cobra.ExactArgs(1),
 		Run: func(ctx context.Context, client *api.Client, args []string, payload map[string]interface{}) (*api.BillingCustomer, error) {
-			return client.UpdateBillingCustomer(ctx, args[0], payload)
+			return client.UpdateBillingCustomer(ctx, NormalizeIDArg(args[0]), payload)
 		},
 		SuccessMessage: func(customer *api.BillingCustomer) string {
 			return fmt.Sprintf("Updated billing customer: %s", billingCustomerID(*customer))
@@ -280,7 +280,7 @@ Examples:
   airwallex billing products update prod_123 --from-file update.json`,
 		Args: cobra.ExactArgs(1),
 		Run: func(ctx context.Context, client *api.Client, args []string, payload map[string]interface{}) (*api.BillingProduct, error) {
-			return client.UpdateBillingProduct(ctx, args[0], payload)
+			return client.UpdateBillingProduct(ctx, NormalizeIDArg(args[0]), payload)
 		},
 		SuccessMessage: func(product *api.BillingProduct) string {
 			return fmt.Sprintf("Updated billing product: %s", billingProductID(*product))
@@ -419,7 +419,7 @@ Examples:
   airwallex billing prices update price_123 --from-file update.json`,
 		Args: cobra.ExactArgs(1),
 		Run: func(ctx context.Context, client *api.Client, args []string, payload map[string]interface{}) (*api.BillingPrice, error) {
-			return client.UpdateBillingPrice(ctx, args[0], payload)
+			return client.UpdateBillingPrice(ctx, NormalizeIDArg(args[0]), payload)
 		},
 		SuccessMessage: func(price *api.BillingPrice) string {
 			return fmt.Sprintf("Updated billing price: %s", billingPriceID(*price))
@@ -618,7 +618,8 @@ func newBillingInvoiceItemsListCmd() *cobra.Command {
 		},
 		MoreHint: "# More results available",
 		FetchWithArgs: func(ctx context.Context, client *api.Client, opts ListOptions, args []string) (ListResult[api.BillingInvoiceItem], error) {
-			result, err := client.ListBillingInvoiceItems(ctx, args[0], opts.Page-1, opts.Limit)
+			invoiceID := NormalizeIDArg(args[0])
+			result, err := client.ListBillingInvoiceItems(ctx, invoiceID, opts.Page-1, opts.Limit)
 			if err != nil {
 				return ListResult[api.BillingInvoiceItem]{}, err
 			}
@@ -643,7 +644,9 @@ func newBillingInvoiceItemsGetCmd() *cobra.Command {
 				return err
 			}
 
-			item, err := client.GetBillingInvoiceItem(cmd.Context(), args[0], args[1])
+			invoiceID := NormalizeIDArg(args[0])
+			itemID := NormalizeIDArg(args[1])
+			item, err := client.GetBillingInvoiceItem(cmd.Context(), invoiceID, itemID)
 			if err != nil {
 				return err
 			}
@@ -785,7 +788,7 @@ Examples:
   airwallex billing subscriptions update sub_123 --from-file update.json`,
 		Args: cobra.ExactArgs(1),
 		Run: func(ctx context.Context, client *api.Client, args []string, payload map[string]interface{}) (*api.BillingSubscription, error) {
-			return client.UpdateBillingSubscription(ctx, args[0], payload)
+			return client.UpdateBillingSubscription(ctx, NormalizeIDArg(args[0]), payload)
 		},
 		SuccessMessage: func(sub *api.BillingSubscription) string {
 			return fmt.Sprintf("Updated billing subscription: %s", billingSubscriptionID(*sub))
@@ -805,7 +808,7 @@ Examples:
 		Args:        cobra.ExactArgs(1),
 		ReadPayload: readOptionalJSONPayload,
 		Run: func(ctx context.Context, client *api.Client, args []string, payload map[string]interface{}) (*api.BillingSubscription, error) {
-			return client.CancelBillingSubscription(ctx, args[0], payload)
+			return client.CancelBillingSubscription(ctx, NormalizeIDArg(args[0]), payload)
 		},
 		SuccessMessage: func(sub *api.BillingSubscription) string {
 			return fmt.Sprintf("Cancelled billing subscription: %s", billingSubscriptionID(*sub))
@@ -842,7 +845,8 @@ func newBillingSubscriptionItemsListCmd() *cobra.Command {
 		},
 		MoreHint: "# More results available",
 		FetchWithArgs: func(ctx context.Context, client *api.Client, opts ListOptions, args []string) (ListResult[api.BillingSubscriptionItem], error) {
-			result, err := client.ListBillingSubscriptionItems(ctx, args[0], opts.Page-1, opts.Limit)
+			subscriptionID := NormalizeIDArg(args[0])
+			result, err := client.ListBillingSubscriptionItems(ctx, subscriptionID, opts.Page-1, opts.Limit)
 			if err != nil {
 				return ListResult[api.BillingSubscriptionItem]{}, err
 			}
@@ -867,7 +871,9 @@ func newBillingSubscriptionItemsGetCmd() *cobra.Command {
 				return err
 			}
 
-			item, err := client.GetBillingSubscriptionItem(cmd.Context(), args[0], args[1])
+			subscriptionID := NormalizeIDArg(args[0])
+			itemID := NormalizeIDArg(args[1])
+			item, err := client.GetBillingSubscriptionItem(cmd.Context(), subscriptionID, itemID)
 			if err != nil {
 				return err
 			}

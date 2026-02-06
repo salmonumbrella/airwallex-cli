@@ -239,7 +239,7 @@ func newWebhooksDeleteCmd() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			u := ui.FromContext(cmd.Context())
-			webhookID := args[0]
+			webhookID := NormalizeIDArg(args[0])
 
 			// Prompt for confirmation (respects --yes flag, JSON mode, and TTY detection)
 			prompt := fmt.Sprintf("Are you sure you want to delete webhook %s?", webhookID)

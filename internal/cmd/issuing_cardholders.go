@@ -141,7 +141,8 @@ func newCardholdersUpdateCmd() *cobra.Command {
 				return fmt.Errorf("no updates specified")
 			}
 
-			ch, err := client.UpdateCardholder(cmd.Context(), args[0], update)
+			cardholderID := NormalizeIDArg(args[0])
+			ch, err := client.UpdateCardholder(cmd.Context(), cardholderID, update)
 			if err != nil {
 				return err
 			}
