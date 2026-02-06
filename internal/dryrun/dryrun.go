@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"sort"
 	"strings"
 )
 
@@ -43,8 +44,13 @@ func (p *Preview) Write(w io.Writer) {
 	}
 
 	if len(p.Details) > 0 {
-		for k, v := range p.Details {
-			_, _ = fmt.Fprintf(w, "  %s: %v\n", k, v)
+		keys := make([]string, 0, len(p.Details))
+		for k := range p.Details {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		for _, k := range keys {
+			_, _ = fmt.Fprintf(w, "  %s: %v\n", k, p.Details[k])
 		}
 		_, _ = fmt.Fprintln(w)
 	}

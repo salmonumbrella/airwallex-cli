@@ -45,8 +45,10 @@ func (cd *CardDetails) MaskedPAN() string {
 	return strings.Repeat("*", len(cd.CardNumber)-4) + cd.CardNumber[len(cd.CardNumber)-4:]
 }
 
-// Zeroize clears all sensitive card data from memory.
-// Call this when done using the card details.
+// Zeroize clears sensitive card data from the struct fields to prevent
+// accidental logging or serialization. Note: Go strings are immutable,
+// so the original bytes may remain in memory until garbage collected.
+// This is a best-effort defense-in-depth measure, not a cryptographic guarantee.
 func (cd *CardDetails) Zeroize() {
 	cd.CardNumber = ""
 	cd.Cvv = ""
@@ -167,8 +169,9 @@ func (c *Client) ListCards(ctx context.Context, status, cardholderID string, pag
 	}
 	// Airwallex API requires both page_num and page_size together
 	if pageSize > 0 {
+		pageNum-- // CLI uses 1-based, API uses 0-based
 		if pageNum < 0 {
-			pageNum = 0 // API uses 0-based page numbering
+			pageNum = 0
 		}
 		params.Set("page_num", fmt.Sprintf("%d", pageNum))
 		params.Set("page_size", fmt.Sprintf("%d", pageSize))
@@ -351,8 +354,9 @@ func (c *Client) ListCardholders(ctx context.Context, pageNum, pageSize int) (*C
 	params := url.Values{}
 	// Airwallex API requires both page_num and page_size together
 	if pageSize > 0 {
+		pageNum-- // CLI uses 1-based, API uses 0-based
 		if pageNum < 0 {
-			pageNum = 0 // API uses 0-based page numbering
+			pageNum = 0
 		}
 		params.Set("page_num", fmt.Sprintf("%d", pageNum))
 		params.Set("page_size", fmt.Sprintf("%d", pageSize))
@@ -469,8 +473,9 @@ func (c *Client) ListTransactions(ctx context.Context, cardID string, from, to s
 	}
 	// Airwallex API requires both page_num and page_size together
 	if pageSize > 0 {
+		pageNum-- // CLI uses 1-based, API uses 0-based
 		if pageNum < 0 {
-			pageNum = 0 // API uses 0-based page numbering
+			pageNum = 0
 		}
 		params.Set("page_num", fmt.Sprintf("%d", pageNum))
 		params.Set("page_size", fmt.Sprintf("%d", pageSize))

@@ -18,6 +18,29 @@ import (
 	"github.com/salmonumbrella/airwallex-cli/internal/ui"
 )
 
+// Pre-compiled regexes for beneficiary field validation.
+// Grouped by pattern: "digits of length N" share reDigitsN vars.
+var (
+	reDigits3     = regexp.MustCompile(`^\d{3}$`)          // institution-number, zengin-branch-code, korea-bank-code, hk-bank-code
+	reDigits4     = regexp.MustCompile(`^\d{4}$`)          // zengin-bank-code
+	reDigits5     = regexp.MustCompile(`^\d{5}$`)          // transit-number
+	reDigits6     = regexp.MustCompile(`^\d{6}$`)          // sort-code, bsb
+	reDigits7     = regexp.MustCompile(`^\d{7}$`)          // sg-bank-code
+	reDigits9     = regexp.MustCompile(`^\d{9}$`)          // routing-number
+	reDigits11    = regexp.MustCompile(`^\d{11}$`)         // cpf
+	reDigits12    = regexp.MustCompile(`^\d{12}$`)         // cnaps
+	reDigits14    = regexp.MustCompile(`^\d{14}$`)         // cnpj
+	reDigits18    = regexp.MustCompile(`^\d{18}$`)         // clabe
+	reDigits4or5  = regexp.MustCompile(`^\d{4,5}$`)        // clearing-number
+	reDigits7to9  = regexp.MustCompile(`^\d{7,9}$`)        // fps-id
+	reDigits9or11 = regexp.MustCompile(`^\d{9}$|^\d{11}$`) // payid-abn
+	rePhoneCA     = regexp.MustCompile(`^\+1-\d{10}$`)     // Canada phone
+	rePhoneAU     = regexp.MustCompile(`^\+61-\d{9}$`)     // Australia PayID phone
+	reIFSC        = regexp.MustCompile(`^[A-Z]{4}0[A-Z0-9]{6}$`)
+	reNRIC        = regexp.MustCompile(`^[STFG]\d{7}[A-Z]$`)
+	reEmail       = regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
+)
+
 func newBeneficiariesCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "beneficiaries",
@@ -400,24 +423,21 @@ Examples:
 
 			// Validation: Phone number format
 			if phone != "" {
-				phoneRegex := regexp.MustCompile(`^\+1-\d{10}$`)
-				if !phoneRegex.MatchString(phone) {
+				if !rePhoneCA.MatchString(phone) {
 					return fmt.Errorf("--phone must match format +1-nnnnnnnnnn (e.g., +1-4165551234)")
 				}
 			}
 
 			// Validation: Institution number format
 			if institutionNumber != "" {
-				instRegex := regexp.MustCompile(`^\d{3}$`)
-				if !instRegex.MatchString(institutionNumber) {
+				if !reDigits3.MatchString(institutionNumber) {
 					return fmt.Errorf("--institution-number must be exactly 3 digits")
 				}
 			}
 
 			// Validation: Transit number format
 			if transitNumber != "" {
-				transitRegex := regexp.MustCompile(`^\d{5}$`)
-				if !transitRegex.MatchString(transitNumber) {
+				if !reDigits5.MatchString(transitNumber) {
 					return fmt.Errorf("--transit-number must be exactly 5 digits")
 				}
 			}
@@ -462,48 +482,42 @@ Examples:
 
 			// Validation: Routing number format (US ABA - 9 digits)
 			if routingNumber != "" {
-				abaRegex := regexp.MustCompile(`^\d{9}$`)
-				if !abaRegex.MatchString(routingNumber) {
+				if !reDigits9.MatchString(routingNumber) {
 					return fmt.Errorf("--routing-number must be exactly 9 digits")
 				}
 			}
 
 			// Validation: Sort code format (UK - 6 digits)
 			if sortCode != "" {
-				sortCodeRegex := regexp.MustCompile(`^\d{6}$`)
-				if !sortCodeRegex.MatchString(sortCode) {
+				if !reDigits6.MatchString(sortCode) {
 					return fmt.Errorf("--sort-code must be exactly 6 digits")
 				}
 			}
 
 			// Validation: BSB format (Australia - 6 digits)
 			if bsb != "" {
-				bsbRegex := regexp.MustCompile(`^\d{6}$`)
-				if !bsbRegex.MatchString(bsb) {
+				if !reDigits6.MatchString(bsb) {
 					return fmt.Errorf("--bsb must be exactly 6 digits")
 				}
 			}
 
 			// Validation: CLABE format (Mexico - 18 digits)
 			if clabe != "" {
-				clabeRegex := regexp.MustCompile(`^\d{18}$`)
-				if !clabeRegex.MatchString(clabe) {
+				if !reDigits18.MatchString(clabe) {
 					return fmt.Errorf("--clabe must be exactly 18 digits")
 				}
 			}
 
 			// Validation: IFSC format (India - 11 chars: 4 letters, 0, 6 alphanumeric)
 			if ifsc != "" {
-				ifscRegex := regexp.MustCompile(`^[A-Z]{4}0[A-Z0-9]{6}$`)
-				if !ifscRegex.MatchString(strings.ToUpper(ifsc)) {
+				if !reIFSC.MatchString(strings.ToUpper(ifsc)) {
 					return fmt.Errorf("--ifsc must be 11 characters: 4 letters, 0, then 6 alphanumeric (e.g., SBIN0001234)")
 				}
 			}
 
 			// Validation: Japan Zengin bank code (4 digits)
 			if zenginBankCode != "" {
-				zenginBankRegex := regexp.MustCompile(`^\d{4}$`)
-				if !zenginBankRegex.MatchString(zenginBankCode) {
+				if !reDigits4.MatchString(zenginBankCode) {
 					return fmt.Errorf("--zengin-bank-code must be exactly 4 digits")
 				}
 				if zenginBranchCode == "" {
@@ -513,8 +527,7 @@ Examples:
 
 			// Validation: Japan Zengin branch code (3 digits)
 			if zenginBranchCode != "" {
-				zenginBranchRegex := regexp.MustCompile(`^\d{3}$`)
-				if !zenginBranchRegex.MatchString(zenginBranchCode) {
+				if !reDigits3.MatchString(zenginBranchCode) {
 					return fmt.Errorf("--zengin-branch-code must be exactly 3 digits")
 				}
 				if zenginBankCode == "" {
@@ -524,40 +537,35 @@ Examples:
 
 			// Validation: China CNAPS (12 digits)
 			if cnaps != "" {
-				cnapsRegex := regexp.MustCompile(`^\d{12}$`)
-				if !cnapsRegex.MatchString(cnaps) {
+				if !reDigits12.MatchString(cnaps) {
 					return fmt.Errorf("--cnaps must be exactly 12 digits")
 				}
 			}
 
 			// Validation: South Korea bank code (3 digits)
 			if koreaBankCode != "" {
-				koreaBankRegex := regexp.MustCompile(`^\d{3}$`)
-				if !koreaBankRegex.MatchString(koreaBankCode) {
+				if !reDigits3.MatchString(koreaBankCode) {
 					return fmt.Errorf("--korea-bank-code must be exactly 3 digits")
 				}
 			}
 
 			// Validation: Brazil CPF (11 digits)
 			if cpf != "" {
-				cpfRegex := regexp.MustCompile(`^\d{11}$`)
-				if !cpfRegex.MatchString(cpf) {
+				if !reDigits11.MatchString(cpf) {
 					return fmt.Errorf("--cpf must be exactly 11 digits")
 				}
 			}
 
 			// Validation: Brazil CNPJ (14 digits)
 			if cnpj != "" {
-				cnpjRegex := regexp.MustCompile(`^\d{14}$`)
-				if !cnpjRegex.MatchString(cnpj) {
+				if !reDigits14.MatchString(cnpj) {
 					return fmt.Errorf("--cnpj must be exactly 14 digits")
 				}
 			}
 
 			// Validation: Singapore NRIC (9 chars, format SnnnnnnnA)
 			if nric != "" {
-				nricRegex := regexp.MustCompile(`^[STFG]\d{7}[A-Z]$`)
-				if !nricRegex.MatchString(strings.ToUpper(nric)) {
+				if !reNRIC.MatchString(strings.ToUpper(nric)) {
 					return fmt.Errorf("--nric must be 9 characters in format SnnnnnnnA (e.g., S1234567A)")
 				}
 			}
@@ -571,8 +579,7 @@ Examples:
 
 			// Validation: Singapore bank code (7 digits)
 			if sgBankCode != "" {
-				sgBankRegex := regexp.MustCompile(`^\d{7}$`)
-				if !sgBankRegex.MatchString(sgBankCode) {
+				if !reDigits7.MatchString(sgBankCode) {
 					return fmt.Errorf("--sg-bank-code must be exactly 7 digits")
 				}
 			}
@@ -586,45 +593,38 @@ Examples:
 
 			// Australia PayID validation
 			if payidPhone != "" {
-				payidPhoneRegex := regexp.MustCompile(`^\+61-\d{9}$`)
-				if !payidPhoneRegex.MatchString(payidPhone) {
+				if !rePhoneAU.MatchString(payidPhone) {
 					return fmt.Errorf("--payid-phone must be in format +61-nnnnnnnnn")
 				}
 			}
 			if payidEmail != "" {
-				// Basic email validation
-				emailRegex := regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
-				if !emailRegex.MatchString(payidEmail) {
+				if !reEmail.MatchString(payidEmail) {
 					return fmt.Errorf("--payid-email must be a valid email address")
 				}
 			}
 			if payidABN != "" {
-				abnRegex := regexp.MustCompile(`^\d{9}$|^\d{11}$`)
-				if !abnRegex.MatchString(payidABN) {
+				if !reDigits9or11.MatchString(payidABN) {
 					return fmt.Errorf("--payid-abn must be 9 or 11 digits")
 				}
 			}
 
 			// Validation: Sweden clearing number (4-5 digits)
 			if clearingNumber != "" {
-				clearingRegex := regexp.MustCompile(`^\d{4,5}$`)
-				if !clearingRegex.MatchString(clearingNumber) {
+				if !reDigits4or5.MatchString(clearingNumber) {
 					return fmt.Errorf("--clearing-number must be 4-5 digits")
 				}
 			}
 
 			// Validation: Hong Kong bank code (3 digits)
 			if hkBankCode != "" {
-				hkBankRegex := regexp.MustCompile(`^\d{3}$`)
-				if !hkBankRegex.MatchString(hkBankCode) {
+				if !reDigits3.MatchString(hkBankCode) {
 					return fmt.Errorf("--hk-bank-code must be exactly 3 digits")
 				}
 			}
 
 			// Validation: Hong Kong FPS ID (7-9 digits)
 			if fpsID != "" {
-				fpsIDRegex := regexp.MustCompile(`^\d{7,9}$`)
-				if !fpsIDRegex.MatchString(fpsID) {
+				if !reDigits7to9.MatchString(fpsID) {
 					return fmt.Errorf("--fps-id must be 7-9 digits")
 				}
 			}

@@ -225,7 +225,11 @@ func NewListCommand[T any](cfg ListConfig[T], getClient func(context.Context) (*
 			// Use OutputListWithColors for consistent sort/limit handling
 			// Wrap RowFunc to match OutputList's signature
 			rowFn := func(item any) []string {
-				return cfg.RowFunc(item.(T))
+				t, ok := item.(T)
+				if !ok {
+					return []string{fmt.Sprintf("<%T>", item)}
+				}
+				return cfg.RowFunc(t)
 			}
 
 			if err := f.OutputListWithColors(result.Items, cfg.Headers, cfg.ColumnTypes, rowFn); err != nil {

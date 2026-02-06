@@ -1,8 +1,12 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"testing"
+	"time"
 )
 
 func TestCardDetails_MaskedPAN(t *testing.T) {
@@ -196,6 +200,139 @@ func TestCardholder_UnmarshalJSON(t *testing.T) {
 			}
 			if ch.Email != tt.wantEmail {
 				t.Errorf("Email = %q, want %q", ch.Email, tt.wantEmail)
+			}
+		})
+	}
+}
+
+// newTestClient creates a Client pointing at the given httptest server,
+// pre-loaded with a valid token so requests skip authentication.
+func newTestClient(serverURL string) *Client {
+	return &Client{
+		baseURL:    serverURL,
+		clientID:   "test-id",
+		apiKey:     "test-key",
+		httpClient: http.DefaultClient,
+		token: &TokenCache{
+			Token:     "test-token",
+			ExpiresAt: time.Now().Add(10 * time.Minute),
+		},
+		circuitBreaker: &circuitBreaker{},
+	}
+}
+
+func TestListCards_paginationOffset(t *testing.T) {
+	tests := []struct {
+		name        string
+		cliPage     int
+		wantAPIPage string
+	}{
+		{"CLI page 1 sends page_num=0", 1, "0"},
+		{"CLI page 2 sends page_num=1", 2, "1"},
+		{"CLI page 0 clamps to page_num=0", 0, "0"},
+		{"CLI page -1 clamps to page_num=0", -1, "0"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var gotPageNum string
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path == "/api/v1/authentication/login" {
+					w.Header().Set("Content-Type", "application/json")
+					_, _ = w.Write([]byte(`{"token":"t","expires_at":"2099-01-01T00:00:00Z"}`))
+					return
+				}
+				gotPageNum = r.URL.Query().Get("page_num")
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = w.Write([]byte(`{"items":[],"has_more":false}`))
+			}))
+			defer server.Close()
+
+			c := newTestClient(server.URL)
+			_, err := c.ListCards(context.Background(), "", "", tt.cliPage, 20)
+			if err != nil {
+				t.Fatalf("ListCards() error: %v", err)
+			}
+			if gotPageNum != tt.wantAPIPage {
+				t.Errorf("page_num = %q, want %q", gotPageNum, tt.wantAPIPage)
+			}
+		})
+	}
+}
+
+func TestListCardholders_paginationOffset(t *testing.T) {
+	tests := []struct {
+		name        string
+		cliPage     int
+		wantAPIPage string
+	}{
+		{"CLI page 1 sends page_num=0", 1, "0"},
+		{"CLI page 2 sends page_num=1", 2, "1"},
+		{"CLI page 0 clamps to page_num=0", 0, "0"},
+		{"CLI page -1 clamps to page_num=0", -1, "0"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var gotPageNum string
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path == "/api/v1/authentication/login" {
+					w.Header().Set("Content-Type", "application/json")
+					_, _ = w.Write([]byte(`{"token":"t","expires_at":"2099-01-01T00:00:00Z"}`))
+					return
+				}
+				gotPageNum = r.URL.Query().Get("page_num")
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = w.Write([]byte(`{"items":[],"has_more":false}`))
+			}))
+			defer server.Close()
+
+			c := newTestClient(server.URL)
+			_, err := c.ListCardholders(context.Background(), tt.cliPage, 20)
+			if err != nil {
+				t.Fatalf("ListCardholders() error: %v", err)
+			}
+			if gotPageNum != tt.wantAPIPage {
+				t.Errorf("page_num = %q, want %q", gotPageNum, tt.wantAPIPage)
+			}
+		})
+	}
+}
+
+func TestListTransactions_paginationOffset(t *testing.T) {
+	tests := []struct {
+		name        string
+		cliPage     int
+		wantAPIPage string
+	}{
+		{"CLI page 1 sends page_num=0", 1, "0"},
+		{"CLI page 2 sends page_num=1", 2, "1"},
+		{"CLI page 0 clamps to page_num=0", 0, "0"},
+		{"CLI page -1 clamps to page_num=0", -1, "0"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var gotPageNum string
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path == "/api/v1/authentication/login" {
+					w.Header().Set("Content-Type", "application/json")
+					_, _ = w.Write([]byte(`{"token":"t","expires_at":"2099-01-01T00:00:00Z"}`))
+					return
+				}
+				gotPageNum = r.URL.Query().Get("page_num")
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = w.Write([]byte(`{"items":[],"has_more":false}`))
+			}))
+			defer server.Close()
+
+			c := newTestClient(server.URL)
+			_, err := c.ListTransactions(context.Background(), "", "", "", tt.cliPage, 20)
+			if err != nil {
+				t.Fatalf("ListTransactions() error: %v", err)
+			}
+			if gotPageNum != tt.wantAPIPage {
+				t.Errorf("page_num = %q, want %q", gotPageNum, tt.wantAPIPage)
 			}
 		})
 	}

@@ -43,6 +43,37 @@ func TestPreviewWrite(t *testing.T) {
 	}
 }
 
+func TestPreviewWriteSortsDetails(t *testing.T) {
+	p := &Preview{
+		Operation: "create",
+		Resource:  "transfer",
+		Details: map[string]interface{}{
+			"Zebra":       "z-value",
+			"Amount":      "500.00 USD",
+			"Currency":    "USD",
+			"Beneficiary": "Alice",
+		},
+	}
+
+	var buf bytes.Buffer
+	p.Write(&buf)
+	output := buf.String()
+
+	// Verify keys appear in sorted order
+	amountIdx := strings.Index(output, "  Amount:")
+	beneficiaryIdx := strings.Index(output, "  Beneficiary:")
+	currencyIdx := strings.Index(output, "  Currency:")
+	zebraIdx := strings.Index(output, "  Zebra:")
+
+	if amountIdx == -1 || beneficiaryIdx == -1 || currencyIdx == -1 || zebraIdx == -1 {
+		t.Fatalf("expected all detail keys in output, got:\n%s", output)
+	}
+
+	if amountIdx >= beneficiaryIdx || beneficiaryIdx >= currencyIdx || currencyIdx >= zebraIdx {
+		t.Errorf("expected details in sorted order (Amount < Beneficiary < Currency < Zebra), got:\n%s", output)
+	}
+}
+
 func TestFormatAmount(t *testing.T) {
 	result := FormatAmount(1000.50, "usd")
 	if result != "1000.50 USD" {

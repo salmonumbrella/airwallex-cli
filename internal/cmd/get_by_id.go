@@ -114,12 +114,12 @@ func fetchByID(ctx context.Context, client *api.Client, id string) (any, string,
 		return item, fmt.Sprintf("airwallex fx conversions get %s", id), err
 
 	// Issuing.
-	case strings.HasPrefix(id, "card_"):
-		item, err := client.GetCard(ctx, id)
-		return item, fmt.Sprintf("airwallex cards get %s", id), err
 	case strings.HasPrefix(id, "card_holder_") || strings.HasPrefix(id, "cardholder_"):
 		item, err := client.GetCardholder(ctx, id)
 		return item, fmt.Sprintf("airwallex cardholders get %s", id), err
+	case strings.HasPrefix(id, "card_"):
+		item, err := client.GetCard(ctx, id)
+		return item, fmt.Sprintf("airwallex cards get %s", id), err
 	case strings.HasPrefix(id, "txn_"):
 		item, err := client.GetTransaction(ctx, id)
 		return item, fmt.Sprintf("airwallex transactions get %s", id), err
