@@ -2,13 +2,17 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
 
 	"github.com/spf13/cobra"
 
+	"github.com/salmonumbrella/airwallex-cli/internal/api"
 	"github.com/salmonumbrella/airwallex-cli/internal/debug"
+	"github.com/salmonumbrella/airwallex-cli/internal/exitcode"
 	"github.com/salmonumbrella/airwallex-cli/internal/iocontext"
 	"github.com/salmonumbrella/airwallex-cli/internal/outfmt"
 	"github.com/salmonumbrella/airwallex-cli/internal/ui"
@@ -22,6 +26,9 @@ type rootFlags struct {
 	Query     string
 	QueryFile string
 	Template  string // Go template for custom output
+	JSON      bool   // shorthand for --output json
+	NoColor   bool   // shorthand for --color never
+	Agent     bool   // agent mode: stable JSON, no colors, no prompts, structured errors
 	// Agent-friendly flags
 	Yes         bool   // skip confirmation prompts
 	OutputLimit int    // limit number of results in output (0 = no limit)
@@ -49,6 +56,33 @@ func NewRootCmd() *cobra.Command {
 		Version:      Version,
 		SilenceUsage: true,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			// Agent mode defaults: stable JSON output, no colors, and no interactive prompts.
+			// Respect explicit user choices.
+			if flags.Agent {
+				if !cmd.Flags().Changed("output") && !flags.JSON && flags.Template == "" {
+					flags.Output = "json"
+				}
+				if !cmd.Flags().Changed("color") && !flags.NoColor {
+					flags.Color = "never"
+				}
+				if !cmd.Flags().Changed("yes") && !cmd.Flags().Changed("force") {
+					flags.Yes = true
+				}
+				// Prevent Cobra from printing unstructured errors.
+				cmd.SilenceErrors = true
+				if r := cmd.Root(); r != nil {
+					r.SilenceErrors = true
+				}
+			}
+
+			// Desire-path shorthands. Respect explicit --output/--color if set.
+			if flags.JSON && !cmd.Flags().Changed("output") {
+				flags.Output = "json"
+			}
+			if flags.NoColor && !cmd.Flags().Changed("color") {
+				flags.Color = "never"
+			}
+
 			// Validate flag combinations
 			if flags.Desc && flags.SortBy == "" {
 				return fmt.Errorf("--desc requires --sort-by to be specified")
@@ -95,11 +129,19 @@ func NewRootCmd() *cobra.Command {
 
 	cmd.PersistentFlags().StringVar(&flags.Account, "account", os.Getenv("AWX_ACCOUNT"), "Account name (or AWX_ACCOUNT env)")
 	cmd.PersistentFlags().StringVar(&flags.Output, "output", getEnvOrDefault("AWX_OUTPUT", "text"), "Output format: text|json")
+	cmd.PersistentFlags().BoolVar(&flags.JSON, "json", false, "Shorthand for --output json")
 	cmd.PersistentFlags().StringVar(&flags.Color, "color", getEnvOrDefault("AWX_COLOR", "auto"), "Color output: auto|always|never")
+	cmd.PersistentFlags().BoolVar(&flags.NoColor, "no-color", false, "Shorthand for --color never")
+	cmd.PersistentFlags().BoolVar(&flags.Agent, "agent", os.Getenv("AWX_AGENT") != "", "Agent mode: stable JSON, no color, no prompts (or AWX_AGENT env)")
 	cmd.PersistentFlags().BoolVar(&flags.Debug, "debug", false, "Enable debug output (shows API requests/responses)")
 	cmd.PersistentFlags().StringVar(&flags.Query, "query", "", "JQ filter expression for JSON output")
 	cmd.PersistentFlags().StringVar(&flags.QueryFile, "query-file", "", "Read JQ filter expression from file (- for stdin)")
-	cmd.PersistentFlags().StringVar(&flags.Template, "format", "", "Go template for custom output (e.g., '{{.ID}}: {{.Status}}')")
+	// Prefer --template (keep --format for backwards compatibility, but hide it to avoid
+	// ambiguity with subcommands that use --format for file formats).
+	cmd.PersistentFlags().StringVar(&flags.Template, "template", "", "Go template for custom output (e.g., '{{.ID}}: {{.Status}}')")
+	cmd.PersistentFlags().StringVar(&flags.Template, "format", "", "DEPRECATED: use --template")
+	_ = cmd.PersistentFlags().MarkDeprecated("format", "use --template instead")
+	_ = cmd.PersistentFlags().MarkHidden("format")
 
 	// Agent-friendly flags
 	cmd.PersistentFlags().BoolVarP(&flags.Yes, "yes", "y", false, "Skip confirmation prompts")
@@ -112,6 +154,12 @@ func NewRootCmd() *cobra.Command {
 	cmd.AddCommand(newAuthCmd())
 	cmd.AddCommand(newBalancesCmd())
 	cmd.AddCommand(newIssuingCmd())
+	// Desire paths: top-level shortcuts to commonly used issuing commands.
+	cmd.AddCommand(newCardsCmd())
+	cmd.AddCommand(newCardholdersCmd())
+	cmd.AddCommand(newTransactionsCmd())
+	cmd.AddCommand(newAuthorizationsCmd())
+	cmd.AddCommand(newDisputesCmd())
 	cmd.AddCommand(newTransfersCmd())
 	cmd.AddCommand(newBeneficiariesCmd())
 	cmd.AddCommand(newAccountsCmd())
@@ -127,6 +175,12 @@ func NewRootCmd() *cobra.Command {
 	cmd.AddCommand(newWebhooksCmd())
 	cmd.AddCommand(newPayersCmd())
 	cmd.AddCommand(newBillingCmd())
+	// Desire path: direct resource access by ID.
+	cmd.AddCommand(newGetByIDCmd(getClient))
+	// Desire paths: verb-first routers.
+	cmd.AddCommand(newListRouterCmd())
+	cmd.AddCommand(newCreateRouterCmd())
+	cmd.AddCommand(newCancelRouterCmd())
 
 	return cmd
 }
@@ -184,6 +238,74 @@ func Execute(args []string) error {
 
 func ExecuteContext(ctx context.Context, args []string) error {
 	cmd := NewRootCmd()
+	agent := isAgentInvocation(args)
+	if agent {
+		// Avoid Cobra printing raw errors (including flag parse errors) and emit JSON instead.
+		cmd.SilenceErrors = true
+		cmd.SilenceUsage = true
+	}
 	cmd.SetArgs(args)
-	return cmd.ExecuteContext(ctx)
+	err := cmd.ExecuteContext(ctx)
+	if err != nil && agent {
+		writeAgentError(ctx, err)
+	}
+	return err
+}
+
+func isAgentInvocation(args []string) bool {
+	// Env opt-in for embedded agent runtimes.
+	if os.Getenv("AWX_AGENT") != "" {
+		return true
+	}
+	for _, a := range args {
+		// Treat explicit false as an override.
+		if a == "--agent=false" {
+			return false
+		}
+		if a == "--agent" || a == "--agent=true" {
+			return true
+		}
+	}
+	return false
+}
+
+func writeAgentError(ctx context.Context, err error) {
+	type errObj struct {
+		Message    string `json:"message"`
+		ExitCode   int    `json:"exit_code"`
+		HTTPStatus int    `json:"http_status,omitempty"`
+		Request    string `json:"request,omitempty"`
+		APIError   string `json:"api_error,omitempty"`
+		APISource  string `json:"api_source,omitempty"`
+	}
+
+	out := struct {
+		Error errObj `json:"error"`
+	}{
+		Error: errObj{
+			Message:  err.Error(),
+			ExitCode: exitcode.FromError(err),
+		},
+	}
+
+	// Best-effort enrichment: keep it stable, small, and machine-readable.
+	var ctxErr *api.ContextualError
+	if errors.As(err, &ctxErr) && ctxErr != nil {
+		out.Error.HTTPStatus = ctxErr.StatusCode
+		out.Error.Request = fmt.Sprintf("%s %s", ctxErr.Method, ctxErr.URL)
+	}
+
+	var apiErr *api.APIError
+	if errors.As(err, &apiErr) && apiErr != nil {
+		out.Error.APIError = apiErr.Code
+		out.Error.APISource = apiErr.Source
+	} else if ctxErr != nil && errors.As(ctxErr.Err, &apiErr) && apiErr != nil {
+		out.Error.APIError = apiErr.Code
+		out.Error.APISource = apiErr.Source
+	}
+
+	io := iocontext.GetIO(ctx)
+	enc := json.NewEncoder(io.ErrOut)
+	enc.SetEscapeHTML(false)
+	_ = enc.Encode(out)
 }
