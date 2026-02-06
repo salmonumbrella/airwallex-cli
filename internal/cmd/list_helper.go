@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 
 	"github.com/salmonumbrella/airwallex-cli/internal/api"
 	"github.com/salmonumbrella/airwallex-cli/internal/outfmt"
@@ -158,23 +160,64 @@ func NewListCommand[T any](cfg ListConfig[T], getClient func(context.Context) (*
 
 			// For JSON output, include pagination metadata
 			if outfmt.IsJSON(cmd.Context()) {
+				// Add per-item self links where possible so agents can directly follow up
+				// without reconstructing command paths.
+				itemsOut := make([]any, 0, len(result.Items))
+				itemGetPath := deriveSiblingGetPath(cmd)
+				for _, it := range result.Items {
+					links := map[string]string{}
+					if cfg.IDFunc != nil && itemGetPath != "" {
+						id := cfg.IDFunc(it)
+						if id != "" {
+							links["self"] = buildItemGetLink(itemGetPath, args, id)
+						}
+					}
+					if len(links) > 0 {
+						itemsOut = append(itemsOut, outfmt.AnnotatedOutput{Data: it, Links: links})
+					} else {
+						itemsOut = append(itemsOut, it)
+					}
+				}
+
 				if itemsOnly {
-					return f.Output(result.Items)
+					return f.Output(itemsOut)
 				}
 				output := map[string]interface{}{
-					"items":    result.Items,
+					"items":    itemsOut,
 					"has_more": result.HasMore,
 				}
+				selfOverride := ""
+				switch mode {
+				case PaginationCursor:
+					if after != "" || cmd.Flags().Changed("after") {
+						selfOverride = "after"
+					}
+				case PaginationPage:
+					if page != 1 || cmd.Flags().Changed("page") {
+						selfOverride = "page"
+					}
+				}
+				links := map[string]string{"self": buildCommandLink(cmd, mode, page, pageSize, after, limit, selfOverride)}
 				if result.HasMore && len(result.Items) > 0 {
 					switch mode {
 					case PaginationCursor:
 						if cfg.IDFunc != nil {
 							lastID := cfg.IDFunc(result.Items[len(result.Items)-1])
 							output["next_cursor"] = lastID
+							links["next"] = buildCommandLink(cmd, mode, page, pageSize, lastID, limit, "after")
 						}
 					case PaginationPage:
 						output["next_page"] = page + 1
+						links["next"] = buildCommandLink(cmd, mode, page+1, pageSize, after, limit, "page")
 					}
+				}
+				if mode == PaginationPage && page > 1 {
+					links["prev"] = buildCommandLink(cmd, mode, page-1, pageSize, after, limit, "page")
+				}
+				// Only emit links that are actionable (avoid empty self if this command
+				// isn't rooted under "airwallex" in tests/embedding).
+				if len(links) > 0 && cmd.Root() != nil && cmd.Root().Use != "" {
+					return f.OutputAnnotated(output, links)
 				}
 				return f.Output(output)
 			}
@@ -230,4 +273,133 @@ func NewListCommand[T any](cfg ListConfig[T], getClient func(context.Context) (*
 	cmd.Flags().BoolVar(&itemsOnly, "results-only", false, "Alias for --items-only")
 
 	return cmd
+}
+
+func buildCommandLink(cmd *cobra.Command, mode PaginationMode, page, pageSize int, after string, limit int, override string) string {
+	omit := map[string]bool{
+		"help":         true,
+		"items-only":   true,
+		"results-only": true,
+		// Pagination flags (we re-add them via overrides).
+		"page":      true,
+		"page-size": true,
+		"after":     true,
+		"limit":     true,
+	}
+
+	overrides := map[string]string{
+		// Ensure consistent machine-readable output for follow-up calls.
+		"output": "json",
+	}
+	switch mode {
+	case PaginationCursor:
+		if override == "after" {
+			overrides["after"] = after
+		}
+		// Keep the current limit if the user set it; otherwise omit.
+		// (If we include it unconditionally, we'd end up hard-coding defaults.)
+		if cmd.Flags().Changed("limit") {
+			overrides["limit"] = fmt.Sprintf("%d", limit)
+		}
+	case PaginationPage:
+		if override == "page" {
+			overrides["page"] = fmt.Sprintf("%d", page)
+		}
+		if cmd.Flags().Changed("page-size") {
+			overrides["page-size"] = fmt.Sprintf("%d", pageSize)
+		}
+	default:
+		// Unknown mode: don't include pagination overrides.
+	}
+
+	return renderCommand(cmd, omit, overrides)
+}
+
+func renderCommand(cmd *cobra.Command, omit map[string]bool, overrides map[string]string) string {
+	base := strings.TrimSpace(cmd.CommandPath())
+	if base == "" {
+		// Fallback for commands constructed outside a root; still useful as a hint.
+		base = cmd.Use
+	}
+
+	parts := []string{base}
+
+	seen := map[string]bool{}
+	appendChangedFlags := func(fs *pflag.FlagSet) {
+		if fs == nil {
+			return
+		}
+		fs.VisitAll(func(f *pflag.Flag) {
+			if f == nil || seen[f.Name] || omit[f.Name] || overrides[f.Name] != "" {
+				return
+			}
+			seen[f.Name] = true
+			if !f.Changed {
+				return
+			}
+
+			val := f.Value.String()
+			// Booleans: emit --flag or --flag=false
+			if f.Value.Type() == "bool" {
+				if val == "true" {
+					parts = append(parts, "--"+f.Name)
+				} else {
+					parts = append(parts, "--"+f.Name+"="+val)
+				}
+				return
+			}
+
+			parts = append(parts, "--"+f.Name, shellQuote(val))
+		})
+	}
+
+	// Include both local flags (filters) and inherited flags (global output knobs like --query).
+	appendChangedFlags(cmd.Flags())
+	appendChangedFlags(cmd.InheritedFlags())
+
+	// Apply overrides last.
+	for k, v := range overrides {
+		if v == "" {
+			continue
+		}
+		switch v {
+		case "true":
+			parts = append(parts, "--"+k)
+		case "false":
+			parts = append(parts, "--"+k+"=false")
+		default:
+			parts = append(parts, "--"+k, shellQuote(v))
+		}
+	}
+
+	return strings.Join(parts, " ")
+}
+
+func shellQuote(s string) string {
+	// Single-quote for POSIX shells; escape embedded single-quotes.
+	if s == "" {
+		return "''"
+	}
+	needs := strings.ContainsAny(s, " \t\r\n'\"\\$`")
+	if !needs {
+		return s
+	}
+	return "'" + strings.ReplaceAll(s, "'", `'"'"'`) + "'"
+}
+
+func deriveSiblingGetPath(cmd *cobra.Command) string {
+	path := strings.TrimSpace(cmd.CommandPath())
+	if !strings.HasSuffix(path, " list") {
+		return ""
+	}
+	return strings.TrimSuffix(path, " list") + " get"
+}
+
+func buildItemGetLink(getPath string, parentArgs []string, id string) string {
+	parts := []string{getPath}
+	for _, a := range parentArgs {
+		parts = append(parts, shellQuote(NormalizeIDArg(a)))
+	}
+	parts = append(parts, shellQuote(id), "--output", "json")
+	return strings.Join(parts, " ")
 }

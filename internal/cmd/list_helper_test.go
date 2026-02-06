@@ -1,13 +1,16 @@
 package cmd
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"testing"
 
 	"github.com/spf13/cobra"
 
 	"github.com/salmonumbrella/airwallex-cli/internal/api"
+	"github.com/salmonumbrella/airwallex-cli/internal/iocontext"
 	"github.com/salmonumbrella/airwallex-cli/internal/outfmt"
 )
 
@@ -464,6 +467,75 @@ func TestNewListCommand_JSONItemsOnlyEmpty(t *testing.T) {
 
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestNewListCommand_JSONLinksAndItemLinks(t *testing.T) {
+	cfg := ListConfig[testItem]{
+		Use:          "list",
+		Short:        "Test list command",
+		Headers:      []string{"ID", "NAME"},
+		EmptyMessage: "No items",
+		RowFunc: func(item testItem) []string {
+			return []string{item.ID, item.Name}
+		},
+		IDFunc: func(item testItem) string { return item.ID },
+		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[testItem], error) {
+			return ListResult[testItem]{
+				Items:   []testItem{{ID: "tfr_123", Name: "One"}},
+				HasMore: true,
+			}, nil
+		},
+	}
+	listCmd := NewListCommand(cfg, func(ctx context.Context) (*api.Client, error) { return &api.Client{}, nil })
+
+	// Build a command path that ends with " list" so per-item links can be derived.
+	root := &cobra.Command{Use: "airwallex"}
+	res := &cobra.Command{Use: "transfers"}
+	res.AddCommand(listCmd)
+	root.AddCommand(res)
+
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+	ctx := outfmt.WithFormat(context.Background(), "json")
+	ctx = iocontext.WithIO(ctx, &iocontext.IO{Out: &out, ErrOut: &errOut, In: bytes.NewBuffer(nil)})
+
+	root.SetContext(ctx)
+	root.SetArgs([]string{"transfers", "list", "--page", "2"})
+
+	if err := root.Execute(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	var decoded map[string]any
+	if err := json.Unmarshal(out.Bytes(), &decoded); err != nil {
+		t.Fatalf("failed to decode JSON: %v", err)
+	}
+
+	links, ok := decoded["_links"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected _links object in output, got: %T", decoded["_links"])
+	}
+	self, _ := links["self"].(string)
+	if self == "" {
+		t.Fatalf("expected _links.self to be set, got: %v", links["self"])
+	}
+
+	items, ok := decoded["items"].([]any)
+	if !ok || len(items) != 1 {
+		t.Fatalf("expected items array length 1, got: %T len=%d", decoded["items"], len(items))
+	}
+	item0, ok := items[0].(map[string]any)
+	if !ok {
+		t.Fatalf("expected first item to be an object, got: %T", items[0])
+	}
+	itemLinks, ok := item0["_links"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected items[0]._links object, got: %T", item0["_links"])
+	}
+	itemSelf, _ := itemLinks["self"].(string)
+	if itemSelf == "" {
+		t.Fatalf("expected items[0]._links.self to be set, got: %v", itemLinks["self"])
 	}
 }
 
