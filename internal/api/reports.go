@@ -38,8 +38,8 @@ type FinancialReport struct {
 	FileFormat       string   `json:"file_format"`
 	FromDate         string   `json:"from_date"`
 	ToDate           string   `json:"to_date"`
-	Currencies       []string `json:"currencies,omitempty"`
-	TransactionTypes []string `json:"transaction_types,omitempty"`
+	Currencies       []string `json:"currencies"`
+	TransactionTypes []string `json:"transaction_types"`
 	ReportVersion    string   `json:"report_version,omitempty"`
 	CreatedAt        string   `json:"created_at"`
 	ReportExpiresAt  string   `json:"report_expires_at,omitempty"`

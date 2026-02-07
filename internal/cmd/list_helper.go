@@ -176,11 +176,13 @@ func NewListCommand[T any](cfg ListConfig[T], getClient func(context.Context) (*
 			// Handle empty results
 			if len(result.Items) == 0 {
 				if outfmt.IsJSON(cmd.Context()) {
+					// Ensure empty slice serializes as [] not null
+					empty := make([]T, 0)
 					if itemsOnly {
-						return f.Output(result.Items)
+						return f.Output(empty)
 					}
 					return f.Output(map[string]interface{}{
-						"items":    result.Items,
+						"items":    empty,
 						"has_more": result.HasMore,
 					})
 				}

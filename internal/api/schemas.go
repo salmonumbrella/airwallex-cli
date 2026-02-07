@@ -10,7 +10,7 @@ import (
 type SchemaFieldRule struct {
 	Type      string   `json:"type,omitempty"`
 	Pattern   string   `json:"pattern,omitempty"`
-	Enum      []string `json:"enum,omitempty"`
+	Enum      []string `json:"enum"`
 	MinLength int      `json:"minLength,omitempty"`
 	MaxLength int      `json:"maxLength,omitempty"`
 }

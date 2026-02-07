@@ -59,30 +59,32 @@ func GetTemplate(ctx context.Context) string {
 }
 
 func WriteJSON(w io.Writer, v interface{}) error {
+	// Round-trip through JSON to normalize nil slices to [] instead of null.
+	// Go's json.Marshal produces null for nil slices, which breaks jq filters
+	// like .items[] with "cannot iterate over: null".
+	data, err := normalizeJSON(v)
+	if err != nil {
+		return err
+	}
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")
-	return enc.Encode(v)
+	return enc.Encode(data)
 }
 
 // WriteJSONFiltered writes JSON with optional filtering
 func WriteJSONFiltered(w io.Writer, v interface{}, query string) error {
-	if query == "" {
-		enc := json.NewEncoder(w)
-		enc.SetIndent("", "  ")
-		return enc.Encode(v)
-	}
-
 	// Convert typed struct to generic interface{} for gojq compatibility.
 	// gojq cannot traverse Go structs directly - it needs map[string]interface{}.
-	jsonBytes, err := json.Marshal(v)
+	// Also normalizes nil slices to [] to prevent jq "cannot iterate over: null".
+	data, err := normalizeJSON(v)
 	if err != nil {
 		return err
 	}
-	var data interface{}
-	dec := json.NewDecoder(bytes.NewReader(jsonBytes))
-	dec.UseNumber()
-	if err := dec.Decode(&data); err != nil {
-		return err
+
+	if query == "" {
+		enc := json.NewEncoder(w)
+		enc.SetIndent("", "  ")
+		return enc.Encode(data)
 	}
 
 	result, err := filter.Apply(data, query)
@@ -93,6 +95,57 @@ func WriteJSONFiltered(w io.Writer, v interface{}, query string) error {
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")
 	return enc.Encode(result)
+}
+
+// normalizeJSON marshals v to JSON and re-decodes it, converting null values
+// for known collection keys into empty arrays []. This prevents jq filters
+// like .items[] from failing with "cannot iterate over: null".
+func normalizeJSON(v interface{}) (interface{}, error) {
+	jsonBytes, err := json.Marshal(v)
+	if err != nil {
+		return nil, err
+	}
+	var data interface{}
+	dec := json.NewDecoder(bytes.NewReader(jsonBytes))
+	dec.UseNumber()
+	if err := dec.Decode(&data); err != nil {
+		return nil, err
+	}
+	NullsToEmpty(data)
+	return data, nil
+}
+
+// NullsToEmpty recursively walks a decoded JSON value and replaces null values
+// inside objects with empty arrays [] when the key name matches a known
+// collection field. This prevents jq filters from failing with
+// "cannot iterate over: null" when Go nil slices serialize as null.
+func NullsToEmpty(v interface{}) {
+	switch val := v.(type) {
+	case map[string]interface{}:
+		for k, child := range val {
+			if child == nil && looksLikeSliceKey(k) {
+				val[k] = []interface{}{}
+			} else {
+				NullsToEmpty(child)
+			}
+		}
+	case []interface{}:
+		for _, child := range val {
+			NullsToEmpty(child)
+		}
+	}
+}
+
+// looksLikeSliceKey returns true if a JSON key name likely represents an
+// array/slice field. Uses known collection field names from the Airwallex API.
+func looksLikeSliceKey(key string) bool {
+	switch key {
+	case "items", "rates", "events", "errors", "fields", "limits",
+		"balances", "currencies", "transaction_types", "transfer_methods",
+		"enum":
+		return true
+	}
+	return false
 }
 
 // Yes flag context functions
