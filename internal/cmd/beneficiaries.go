@@ -293,6 +293,7 @@ Examples:
 			}
 
 			entityType := flagValues["entity-type"]
+			entityType = normalizeEnumValue(entityType, []string{"COMPANY", "PERSONAL"})
 			bankCountry := flagValues["bank-country"]
 			companyName := flagValues["company-name"]
 			firstName := flagValues["first-name"]

@@ -126,6 +126,7 @@ Examples:
 			return t.TransferID
 		},
 		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[api.Transfer], error) {
+			status = normalizeEnumValue(status, []string{"PAID", "PENDING", "FAILED", "CANCELLED", "REFUNDED"})
 			// Note: API uses page-based pagination internally
 			// We pass limit as page_size, page 0 for cursor-based iteration
 			result, err := client.ListTransfers(ctx, status, 0, opts.Limit)

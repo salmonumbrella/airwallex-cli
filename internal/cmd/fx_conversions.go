@@ -44,6 +44,7 @@ func newFXConversionsListCmd() *cobra.Command {
 		},
 		MoreHint: "# More results available",
 		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[api.Conversion], error) {
+			status = normalizeEnumValue(status, []string{"PENDING", "COMPLETED", "FAILED"})
 			if err := validateDateRangeFlags(fromDate, toDate, "--from", "--to", true); err != nil {
 				return ListResult[api.Conversion]{}, err
 			}

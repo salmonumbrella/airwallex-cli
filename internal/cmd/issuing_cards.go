@@ -47,6 +47,7 @@ func newCardsListCmd() *cobra.Command {
 		},
 		IDFunc: func(c api.Card) string { return c.CardID },
 		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[api.Card], error) {
+			status = normalizeEnumValue(status, []string{"ACTIVE", "INACTIVE", "CLOSED"})
 			cards, err := client.ListCards(ctx, status, cardholderID, opts.Page, normalizePageSize(opts.Limit))
 			if err != nil {
 				return ListResult[api.Card]{}, err
@@ -144,6 +145,9 @@ Program types: PREPAID, DEBIT, CREDIT, DEFERRED_DEBIT`,
 			},
 		),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			formFactor = normalizeEnumValue(formFactor, []string{"VIRTUAL", "PHYSICAL"})
+			limitInterval = normalizeEnumValue(limitInterval, []string{"PER_TRANSACTION", "DAILY", "WEEKLY", "MONTHLY", "QUARTERLY", "YEARLY", "ALL_TIME"})
+
 			u := ui.FromContext(cmd.Context())
 			client, err := getClient(cmd.Context())
 			if err != nil {
@@ -292,6 +296,8 @@ func newCardsUpdateCmd() *cobra.Command {
 		Short:   "Update card (nickname, status)",
 		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			status = normalizeEnumValue(status, []string{"ACTIVE", "INACTIVE", "CLOSED"})
+
 			u := ui.FromContext(cmd.Context())
 			client, err := getClient(cmd.Context())
 			if err != nil {

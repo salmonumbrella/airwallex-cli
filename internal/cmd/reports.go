@@ -127,6 +127,8 @@ Examples:
   airwallex reports settlement --from-date 2024-01-01 --to-date 2024-01-31 \
     --format EXCEL --output settlement.xlsx --wait`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			fileFormat = normalizeEnumValue(fileFormat, []string{"CSV", "EXCEL", "PDF"})
+
 			// Validate date inputs
 			if err := validateDate(fromDate); err != nil {
 				return fmt.Errorf("--from-date: %w", err)
@@ -370,6 +372,8 @@ Examples:
   airwallex reports balance-activity --from-date 2024-01-01 --to-date 2024-03-31 \
     --format EXCEL --transaction-types PAYOUT,DEPOSIT --output activity.xlsx --wait`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			fileFormat = normalizeEnumValue(fileFormat, []string{"CSV", "EXCEL", "PDF"})
+
 			// Validate date inputs
 			if err := validateDate(fromDate); err != nil {
 				return fmt.Errorf("--from-date: %w", err)
@@ -492,6 +496,8 @@ Examples:
   airwallex reports transaction-recon --from-date 2024-01-01 --to-date 2024-01-31 \
     --format EXCEL --transaction-types PAYOUT --output recon.xlsx --wait`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			fileFormat = normalizeEnumValue(fileFormat, []string{"CSV", "EXCEL", "PDF"})
+
 			// Validate date inputs
 			if err := validateDate(fromDate); err != nil {
 				return fmt.Errorf("--from-date: %w", err)

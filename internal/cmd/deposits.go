@@ -48,6 +48,7 @@ Examples:
 		},
 		IDFunc: func(d api.Deposit) string { return d.ID },
 		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[api.Deposit], error) {
+			status = normalizeEnumValue(status, []string{"PENDING", "SETTLED", "FAILED"})
 			if err := validateDateRangeFlags(fromDate, toDate, "--from", "--to", true); err != nil {
 				return ListResult[api.Deposit]{}, err
 			}

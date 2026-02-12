@@ -54,6 +54,7 @@ func newAuthorizationsListCmd() *cobra.Command {
 		},
 		MoreHint: "# More results available",
 		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[api.Authorization], error) {
+			status = normalizeEnumValue(status, []string{"APPROVED", "DECLINED", "PENDING", "REVERSED"})
 			fromRFC3339, toRFC3339, err := parseDateRangeRFC3339(from, to, "--from", "--to", false)
 			if err != nil {
 				return ListResult[api.Authorization]{}, err
