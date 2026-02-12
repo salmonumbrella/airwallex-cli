@@ -172,6 +172,7 @@ func NewRootCmd() *cobra.Command {
 	flagAlias(cmd.PersistentFlags(), "no-color", "nc")
 	flagAlias(cmd.PersistentFlags(), "output-limit", "ol")
 	flagAlias(cmd.PersistentFlags(), "sort-by", "sb")
+	flagAlias(cmd.PersistentFlags(), "account", "acc")
 	flagAlias(cmd.PersistentFlags(), "query", "jq")
 
 	cmd.AddCommand(newAPICmd())
