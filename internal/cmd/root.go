@@ -83,6 +83,12 @@ func NewRootCmd() *cobra.Command {
 				flags.Color = "never"
 			}
 
+			// Auto-enable JSON output when --query/--jq/--query-file is set.
+			// JQ filtering only makes sense with JSON output.
+			if (flagOrAliasChanged(cmd, "query") || flagOrAliasChanged(cmd, "query-file")) && !flagOrAliasChanged(cmd, "output") && !flags.JSON {
+				flags.Output = "json"
+			}
+
 			// Validate flag combinations
 			if flags.Desc && flags.SortBy == "" {
 				return fmt.Errorf("--desc requires --sort-by to be specified")
@@ -158,6 +164,7 @@ func NewRootCmd() *cobra.Command {
 	flagAlias(cmd.PersistentFlags(), "no-color", "nc")
 	flagAlias(cmd.PersistentFlags(), "output-limit", "ol")
 	flagAlias(cmd.PersistentFlags(), "sort-by", "sb")
+	flagAlias(cmd.PersistentFlags(), "query", "jq")
 
 	cmd.AddCommand(newAPICmd())
 	cmd.AddCommand(newAuthCmd())
