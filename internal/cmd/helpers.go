@@ -299,6 +299,33 @@ func normalizePageSize(pageSize int) int {
 	return pageSize
 }
 
+// normalizeEnumValue expands an abbreviated flag value to its canonical form.
+// It does case-insensitive prefix matching against the known values.
+// Returns the input unchanged if no match or ambiguous match.
+func normalizeEnumValue(input string, validValues []string) string {
+	if input == "" {
+		return input
+	}
+	upper := strings.ToUpper(input)
+	for _, v := range validValues {
+		if strings.ToUpper(v) == upper {
+			return v
+		}
+	}
+	var match string
+	count := 0
+	for _, v := range validValues {
+		if strings.HasPrefix(strings.ToUpper(v), upper) {
+			match = v
+			count++
+		}
+	}
+	if count == 1 {
+		return match
+	}
+	return input
+}
+
 // flagAlias registers a hidden alias for an existing flag.
 // Both flags share the same underlying Value, so setting either one sets both.
 func flagAlias(fs *pflag.FlagSet, name, alias string) {

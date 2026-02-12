@@ -415,6 +415,47 @@ func TestConfirmOrYes_PromptsToStderr(t *testing.T) {
 	}
 }
 
+func TestNormalizeEnumValue(t *testing.T) {
+	transferStatuses := []string{"PAID", "PENDING", "FAILED", "CANCELLED", "REFUNDED"}
+	cardStatuses := []string{"ACTIVE", "INACTIVE", "CLOSED"}
+	depositStatuses := []string{"PENDING", "SETTLED", "FAILED"}
+
+	tests := []struct {
+		name   string
+		input  string
+		values []string
+		want   string
+	}{
+		{"exact PAID", "PAID", transferStatuses, "PAID"},
+		{"exact paid lowercase", "paid", transferStatuses, "PAID"},
+		{"exact Paid mixed", "Paid", transferStatuses, "PAID"},
+		{"pa -> PAID", "pa", transferStatuses, "PAID"},
+		{"pai -> PAID", "pai", transferStatuses, "PAID"},
+		{"fa -> FAILED", "fa", transferStatuses, "FAILED"},
+		{"f -> FAILED", "f", transferStatuses, "FAILED"},
+		{"c -> CANCELLED", "c", transferStatuses, "CANCELLED"},
+		{"r -> REFUNDED", "r", transferStatuses, "REFUNDED"},
+		{"p -> ambiguous", "p", transferStatuses, "p"},
+		{"pe -> PENDING", "pe", transferStatuses, "PENDING"},
+		{"a -> ACTIVE", "a", cardStatuses, "ACTIVE"},
+		{"in -> INACTIVE", "in", cardStatuses, "INACTIVE"},
+		{"cl -> CLOSED", "cl", cardStatuses, "CLOSED"},
+		{"s -> SETTLED", "s", depositStatuses, "SETTLED"},
+		{"se -> SETTLED", "se", depositStatuses, "SETTLED"},
+		{"xyz -> xyz", "xyz", transferStatuses, "xyz"},
+		{"empty", "", transferStatuses, ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := normalizeEnumValue(tt.input, tt.values)
+			if got != tt.want {
+				t.Errorf("normalizeEnumValue(%q, %v) = %q, want %q", tt.input, tt.values, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestNormalizePageSize(t *testing.T) {
 	tests := []struct {
 		name     string
