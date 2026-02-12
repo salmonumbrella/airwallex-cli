@@ -285,7 +285,6 @@ func TestVersionCommand_WithArgs(t *testing.T) {
 	// Execute with args (version command accepts args, they're just ignored)
 	rootCmd.SetArgs([]string{"version", "extra", "args"})
 	err := rootCmd.Execute()
-
 	// Version command doesn't validate args, so this should succeed
 	// The args parameter is simply unused in the RunE function
 	if err != nil {

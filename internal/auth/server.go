@@ -169,6 +169,7 @@ type SetupResult struct {
 type SetupServer struct {
 	result        chan SetupResult
 	shutdown      chan struct{}
+	shutdownOnce  sync.Once
 	stopCleanup   chan struct{}
 	pendingResult *SetupResult
 	pendingMu     sync.Mutex
@@ -303,9 +304,11 @@ func (s *SetupServer) validateCredentials(ctx context.Context, accountName, clie
 		return fmt.Errorf("failed to create client: %v", err)
 	}
 
-	if _, err := client.Get(ctx, "/api/v1/balances/current"); err != nil {
+	resp, err := client.Get(ctx, "/api/v1/balances/current")
+	if err != nil {
 		return fmt.Errorf("connection failed: %v", err)
 	}
+	_ = resp.Body.Close()
 
 	return nil
 }
@@ -551,7 +554,7 @@ func (s *SetupServer) handleComplete(w http.ResponseWriter, r *http.Request) {
 		s.result <- *s.pendingResult
 	}
 	s.pendingMu.Unlock()
-	close(s.shutdown)
+	s.shutdownOnce.Do(func() { close(s.shutdown) })
 	writeJSON(w, http.StatusOK, map[string]any{"success": true})
 }
 

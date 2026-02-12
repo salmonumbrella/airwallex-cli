@@ -130,11 +130,12 @@ func NewListCommand[T any](cfg ListConfig[T], getClient func(context.Context) (*
 				opts.Limit = pageSize
 			}
 
-			// When --all is used with page-based pagination, fetch all pages
-			// by using max page size and iterating until has_more is false.
-			if fetchAll && mode == PaginationPage {
+			// When --all is used, fetch all pages using max page size.
+			if fetchAll {
 				opts.Limit = 100 // max page size
-				opts.Page = 1
+				if mode == PaginationPage {
+					opts.Page = 1
+				}
 			}
 
 			var result ListResult[T]
@@ -151,11 +152,21 @@ func NewListCommand[T any](cfg ListConfig[T], getClient func(context.Context) (*
 			}
 
 			// Auto-paginate when --all is set
-			if fetchAll && mode == PaginationPage && result.HasMore {
+			if fetchAll && result.HasMore {
 				allItems := make([]T, 0, len(result.Items)*2)
 				allItems = append(allItems, result.Items...)
 				for result.HasMore {
-					opts.Page++
+					switch mode {
+					case PaginationPage:
+						opts.Page++
+					case PaginationCursor:
+						if cfg.IDFunc != nil && len(result.Items) > 0 {
+							opts.Cursor = cfg.IDFunc(result.Items[len(result.Items)-1])
+						} else {
+							result.HasMore = false
+							continue
+						}
+					}
 					switch {
 					case cfg.FetchWithArgs != nil:
 						result, err = cfg.FetchWithArgs(cmd.Context(), client, opts, args)

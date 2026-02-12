@@ -20,7 +20,6 @@ func TestWait_SuccessOnFirstPoll(t *testing.T) {
 		calls++
 		return "COMPLETED", nil
 	})
-
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
@@ -48,7 +47,6 @@ func TestWait_SuccessAfterPolling(t *testing.T) {
 		}
 		return "COMPLETED", nil
 	})
-
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}

@@ -85,7 +85,7 @@ func (c *Cache) Set(key string, schema *api.Schema) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	if err := os.MkdirAll(c.dir, 0700); err != nil {
+	if err := os.MkdirAll(c.dir, 0o700); err != nil {
 		return err
 	}
 
@@ -99,7 +99,7 @@ func (c *Cache) Set(key string, schema *api.Schema) error {
 		return err
 	}
 
-	return os.WriteFile(c.path(key), data, 0600)
+	return os.WriteFile(c.path(key), data, 0o600)
 }
 
 // Clear removes all cached schemas

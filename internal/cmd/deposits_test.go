@@ -84,7 +84,6 @@ func TestDepositsListCommand(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			depositsCmd := newDepositsCmd()
 			rootCmd := &cobra.Command{Use: "root"}
 			rootCmd.AddCommand(depositsCmd)
@@ -159,7 +158,6 @@ func TestDepositsGetCommand(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			depositsCmd := newDepositsCmd()
 			rootCmd := &cobra.Command{Use: "root"}
 			rootCmd.AddCommand(depositsCmd)

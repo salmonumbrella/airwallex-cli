@@ -254,7 +254,7 @@ func WrapError(method, url string, statusCode int, err error) error {
 // NormalizeAPIError maps API errors to typed errors when possible.
 func NormalizeAPIError(statusCode int, apiErr *APIError) error {
 	if apiErr == nil {
-		return apiErr
+		return nil
 	}
 	if statusCode == http.StatusUnauthorized || statusCode == http.StatusForbidden {
 		return &AuthError{Reason: apiErr.Message}

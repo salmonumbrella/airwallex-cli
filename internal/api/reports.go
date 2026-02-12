@@ -174,15 +174,15 @@ func (c *Client) DownloadFinancialReport(ctx context.Context, reportID string) (
 
 // WaitForReport polls until report is complete or failed (helper method)
 func (c *Client) WaitForReport(ctx context.Context, reportID string, timeout time.Duration) (*FinancialReport, error) {
-	ctx, cancel := withDefaultTimeout(ctx)
-	defer cancel()
-
 	if err := ValidateResourceID(reportID, "report"); err != nil {
 		return nil, err
 	}
+
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
 	deadline := time.Now().Add(timeout)
 	attempt := 0
-	maxAttempts := int(timeout / (2 * time.Second))
 
 	for time.Now().Before(deadline) {
 		report, err := c.GetFinancialReport(ctx, reportID)
@@ -213,12 +213,12 @@ func (c *Client) WaitForReport(ctx context.Context, reportID string, timeout tim
 			}
 		}
 
-		time.Sleep(delay)
-		attempt++
-
-		if attempt > maxAttempts {
-			break
+		select {
+		case <-time.After(delay):
+		case <-ctx.Done():
+			return nil, fmt.Errorf("timeout waiting for report to complete")
 		}
+		attempt++
 	}
 
 	return nil, fmt.Errorf("timeout waiting for report to complete")

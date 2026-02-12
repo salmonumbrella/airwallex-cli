@@ -34,6 +34,9 @@ func Apply(data interface{}, expression string) (interface{}, error) {
 	}
 
 	// Return single result unwrapped, multiple as array
+	if len(results) == 0 {
+		return []interface{}{}, nil
+	}
 	if len(results) == 1 {
 		return results[0], nil
 	}

@@ -47,7 +47,9 @@ func TestCache_Expiry(t *testing.T) {
 	schema := &api.Schema{Fields: []api.SchemaField{{Key: "test"}}}
 	key := CacheKey("US", "COMPANY", "LOCAL")
 
-	cache.Set(key, schema)
+	if err := cache.Set(key, schema); err != nil {
+		t.Fatalf("set failed: %v", err)
+	}
 	time.Sleep(10 * time.Millisecond)
 
 	if _, ok := cache.Get(key); ok {
@@ -68,8 +70,12 @@ func TestCache_Clear(t *testing.T) {
 	cache := New(tmpDir, 24*time.Hour)
 
 	schema := &api.Schema{Fields: []api.SchemaField{{Key: "test"}}}
-	cache.Set(CacheKey("US", "COMPANY", "LOCAL"), schema)
-	cache.Set(CacheKey("GB", "PERSONAL", "SWIFT"), schema)
+	if err := cache.Set(CacheKey("US", "COMPANY", "LOCAL"), schema); err != nil {
+		t.Fatalf("set failed: %v", err)
+	}
+	if err := cache.Set(CacheKey("GB", "PERSONAL", "SWIFT"), schema); err != nil {
+		t.Fatalf("set failed: %v", err)
+	}
 
 	if err := cache.Clear(); err != nil {
 		t.Fatalf("clear failed: %v", err)
@@ -111,7 +117,7 @@ func TestCache_Prune(t *testing.T) {
 
 	// 3. Corrupt JSON file written directly to disk
 	corruptPath := filepath.Join(tmpDir, "CORRUPT_ENTRY.json")
-	if err := os.WriteFile(corruptPath, []byte("not-valid-json{{{"), 0600); err != nil {
+	if err := os.WriteFile(corruptPath, []byte("not-valid-json{{{"), 0o600); err != nil {
 		t.Fatalf("write corrupt file: %v", err)
 	}
 
@@ -178,7 +184,7 @@ func TestCache_GetCorruptFile(t *testing.T) {
 	corruptPath := filepath.Join(tmpDir, key+".json")
 
 	// Write garbage data to the cache file path
-	if err := os.WriteFile(corruptPath, []byte("{{{not json!!!"), 0600); err != nil {
+	if err := os.WriteFile(corruptPath, []byte("{{{not json!!!"), 0o600); err != nil {
 		t.Fatalf("write corrupt file: %v", err)
 	}
 

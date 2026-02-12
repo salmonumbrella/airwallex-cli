@@ -13,7 +13,7 @@ func TestReadItems_JSONArray(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "test.json")
 	content := `[{"name": "test1"}, {"name": "test2"}]`
-	if err := os.WriteFile(path, []byte(content), 0600); err != nil {
+	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
 		t.Fatal(err)
 	}
 
@@ -33,7 +33,7 @@ func TestReadItems_NDJSON(t *testing.T) {
 	content := `{"name": "test1"}
 {"name": "test2"}
 {"name": "test3"}`
-	if err := os.WriteFile(path, []byte(content), 0600); err != nil {
+	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
 		t.Fatal(err)
 	}
 
