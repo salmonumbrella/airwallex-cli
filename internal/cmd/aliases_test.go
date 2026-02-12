@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 // findSubcmd walks a command path to find a nested subcommand.
@@ -311,6 +312,63 @@ func TestPerCommandFlagShortcodes(t *testing.T) {
 			}
 			if f.Shorthand != tt.shorthand {
 				t.Errorf("flag --%s shorthand = %q, want %q", tt.flag, f.Shorthand, tt.shorthand)
+			}
+		})
+	}
+}
+
+func TestMultiLetterFlagAliases(t *testing.T) {
+	root := NewRootCmd()
+
+	tests := []struct {
+		name  string
+		path  []string
+		flag  string
+		alias string
+	}{
+		// Global persistent
+		{"global --output/--out", nil, "output", "out"},
+		{"global --query/--qr", nil, "query", "qr"},
+		{"global --template/--tmpl", nil, "template", "tmpl"},
+
+		// Per-command
+		{"transfers create --beneficiary-id/--bid", []string{"transfers", "create"}, "beneficiary-id", "bid"},
+		{"transfers create --transfer-currency/--tc", []string{"transfers", "create"}, "transfer-currency", "tc"},
+		{"transfers create --source-currency/--sc", []string{"transfers", "create"}, "source-currency", "sc"},
+		{"transfers create --dry-run/--dr", []string{"transfers", "create"}, "dry-run", "dr"},
+		{"cards list --cardholder-id/--chid", []string{"cards", "list"}, "cardholder-id", "chid"},
+		{"transactions list --card-id/--cid", []string{"transactions", "list"}, "card-id", "cid"},
+		{"webhooks create --events/--ev", []string{"webhooks", "create"}, "events", "ev"},
+		{"beneficiaries create --entity-type/--et", []string{"beneficiaries", "create"}, "entity-type", "et"},
+		{"fx conversions create --sell-currency/--sell", []string{"fx", "conversions", "create"}, "sell-currency", "sell"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cmd := root
+			if len(tt.path) > 0 {
+				cmd = findSubcmd(root, tt.path)
+				if cmd == nil {
+					t.Fatalf("command path %v not found", tt.path)
+				}
+			}
+
+			var fs *pflag.FlagSet
+			if len(tt.path) == 0 {
+				fs = root.PersistentFlags()
+			} else {
+				fs = cmd.Flags()
+			}
+			alias := fs.Lookup(tt.alias)
+			if alias == nil {
+				t.Fatalf("alias --%s not found for flag --%s", tt.alias, tt.flag)
+			}
+			if !alias.Hidden {
+				t.Errorf("alias --%s should be hidden", tt.alias)
+			}
+			ann, ok := alias.Annotations["alias-of"]
+			if !ok || len(ann) == 0 || ann[0] != tt.flag {
+				t.Errorf("alias --%s should have alias-of=%q annotation, got %v", tt.alias, tt.flag, ann)
 			}
 		})
 	}
