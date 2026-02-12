@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -47,10 +48,17 @@ func rootFlagsFromContext(ctx context.Context) (*rootFlags, bool) {
 	return f, ok
 }
 
+func binaryName() string {
+	if len(os.Args) > 0 {
+		return filepath.Base(os.Args[0])
+	}
+	return "airwallex"
+}
+
 func NewRootCmd() *cobra.Command {
 	flags := &rootFlags{}
 	cmd := &cobra.Command{
-		Use:          "airwallex",
+		Use:          binaryName(),
 		Short:        "Airwallex CLI for cards, transfers, and more",
 		Long:         "A command-line interface for the Airwallex API.",
 		Version:      Version,

@@ -18,6 +18,7 @@ LDFLAGS := -ldflags "-X github.com/salmonumbrella/airwallex-cli/internal/cmd.Ver
 
 build:
 	go build $(LDFLAGS) -o ./bin/airwallex ./cmd/airwallex
+	go build $(LDFLAGS) -o ./bin/awx ./cmd/awx
 
 tools:
 	@mkdir -p $(TOOLS_DIR)
