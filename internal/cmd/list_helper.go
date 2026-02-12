@@ -41,6 +41,7 @@ const (
 type ListConfig[T any] struct {
 	// Command metadata
 	Use     string
+	Aliases []string
 	Short   string
 	Long    string
 	Example string
@@ -82,6 +83,7 @@ func NewListCommand[T any](cfg ListConfig[T], getClient func(context.Context) (*
 
 	cmd := &cobra.Command{
 		Use:     cfg.Use,
+		Aliases: cfg.Aliases,
 		Short:   cfg.Short,
 		Long:    cfg.Long,
 		Example: cfg.Example,
@@ -308,16 +310,16 @@ func NewListCommand[T any](cfg ListConfig[T], getClient func(context.Context) (*
 	}
 	switch mode {
 	case PaginationCursor:
-		cmd.Flags().IntVar(&limit, "limit", 20, "Max items to return (1-100)")
+		cmd.Flags().IntVarP(&limit, "limit", "l", 20, "Max items to return (1-100)")
 		cmd.Flags().StringVar(&after, "after", "", "Cursor for next page (from previous result)")
 	case PaginationPage:
-		cmd.Flags().IntVar(&page, "page", 1, "Page number (1+)")
-		cmd.Flags().IntVar(&pageSize, "page-size", 20, "Page size (1-100)")
+		cmd.Flags().IntVarP(&page, "page", "p", 1, "Page number (1+)")
+		cmd.Flags().IntVarP(&pageSize, "page-size", "n", 20, "Page size (1-100)")
 	default:
 		panic(fmt.Sprintf("unsupported pagination mode %q", mode))
 	}
-	cmd.Flags().BoolVar(&fetchAll, "all", false, "Fetch all pages (auto-paginate)")
-	cmd.Flags().BoolVar(&itemsOnly, "items-only", false, "Output items array only (JSON mode)")
+	cmd.Flags().BoolVarP(&fetchAll, "all", "a", false, "Fetch all pages (auto-paginate)")
+	cmd.Flags().BoolVarP(&itemsOnly, "items-only", "i", false, "Output items array only (JSON mode)")
 	cmd.Flags().BoolVar(&itemsOnly, "results-only", false, "Alias for --items-only")
 
 	return cmd

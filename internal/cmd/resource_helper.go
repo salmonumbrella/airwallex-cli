@@ -12,6 +12,7 @@ import (
 // GetConfig defines how a get command behaves.
 type GetConfig[T any] struct {
 	Use        string
+	Aliases    []string
 	Short      string
 	Long       string
 	Example    string
@@ -23,6 +24,7 @@ type GetConfig[T any] struct {
 func NewGetCommand[T any](cfg GetConfig[T], getClient func(context.Context) (*api.Client, error)) *cobra.Command {
 	return &cobra.Command{
 		Use:     cfg.Use,
+		Aliases: cfg.Aliases,
 		Short:   cfg.Short,
 		Long:    cfg.Long,
 		Example: cfg.Example,
