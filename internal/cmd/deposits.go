@@ -67,6 +67,7 @@ Examples:
 	cmd.Flags().StringVarP(&status, "status", "s", "", "Filter by status (PENDING, SETTLED, FAILED)")
 	cmd.Flags().StringVarP(&fromDate, "from", "f", "", "From date (YYYY-MM-DD)")
 	cmd.Flags().StringVar(&toDate, "to", "", "To date (YYYY-MM-DD)")
+	flagAlias(cmd.Flags(), "from", "fr")
 	return cmd
 }
 

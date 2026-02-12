@@ -96,6 +96,8 @@ Examples:
 	cmd.Flags().StringVar(&cardID, "card-id", "", "Filter by card ID")
 	cmd.Flags().StringVarP(&from, "from", "f", "", "From date (YYYY-MM-DD)")
 	cmd.Flags().StringVar(&to, "to", "", "To date (YYYY-MM-DD)")
+	flagAlias(cmd.Flags(), "card-id", "cid")
+	flagAlias(cmd.Flags(), "from", "fr")
 	return cmd
 }
 

@@ -399,6 +399,15 @@ Interac e-Transfer notes:
 	mustMarkRequired(cmd, "source-currency")
 	mustMarkRequired(cmd, "reference")
 	mustMarkRequired(cmd, "reason")
+	flagAlias(cmd.Flags(), "beneficiary-id", "bid")
+	flagAlias(cmd.Flags(), "transfer-amount", "ta")
+	flagAlias(cmd.Flags(), "transfer-currency", "tc")
+	flagAlias(cmd.Flags(), "source-amount", "sa")
+	flagAlias(cmd.Flags(), "source-currency", "sc")
+	flagAlias(cmd.Flags(), "clearing-system", "cs")
+	flagAlias(cmd.Flags(), "security-question", "sq")
+	flagAlias(cmd.Flags(), "security-answer", "ans")
+	flagAlias(cmd.Flags(), "dry-run", "dr")
 	return cmd
 }
 
@@ -501,6 +510,8 @@ Examples:
 
 	cmd.Flags().StringVarP(&fromFile, "from-file", "F", "", "JSON file with transfers (- for stdin)")
 	cmd.Flags().BoolVar(&continueOnError, "continue-on-error", false, "Continue processing on errors")
+	flagAlias(cmd.Flags(), "from-file", "ff")
+	flagAlias(cmd.Flags(), "continue-on-error", "ce")
 
 	return cmd
 }

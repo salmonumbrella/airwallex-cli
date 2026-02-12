@@ -212,6 +212,9 @@ Examples:
 
 	mustMarkRequired(cmd, "from-date")
 	mustMarkRequired(cmd, "to-date")
+	flagAlias(cmd.Flags(), "from-date", "fd")
+	flagAlias(cmd.Flags(), "to-date", "td")
+	flagAlias(cmd.Flags(), "format", "fmt")
 
 	return cmd
 }
@@ -335,6 +338,9 @@ Note: Multi-currency requests return a ZIP file containing individual PDF statem
 	mustMarkRequired(cmd, "from-date")
 	mustMarkRequired(cmd, "to-date")
 	mustMarkRequired(cmd, "currencies")
+	flagAlias(cmd.Flags(), "from-date", "fd")
+	flagAlias(cmd.Flags(), "to-date", "td")
+	flagAlias(cmd.Flags(), "currencies", "cur")
 
 	return cmd
 }
@@ -453,6 +459,10 @@ Examples:
 
 	mustMarkRequired(cmd, "from-date")
 	mustMarkRequired(cmd, "to-date")
+	flagAlias(cmd.Flags(), "from-date", "fd")
+	flagAlias(cmd.Flags(), "to-date", "td")
+	flagAlias(cmd.Flags(), "format", "fmt")
+	flagAlias(cmd.Flags(), "transaction-types", "tt")
 
 	return cmd
 }
@@ -570,6 +580,10 @@ Examples:
 
 	mustMarkRequired(cmd, "from-date")
 	mustMarkRequired(cmd, "to-date")
+	flagAlias(cmd.Flags(), "from-date", "fd")
+	flagAlias(cmd.Flags(), "to-date", "td")
+	flagAlias(cmd.Flags(), "format", "fmt")
+	flagAlias(cmd.Flags(), "transaction-types", "tt")
 
 	return cmd
 }

@@ -233,6 +233,7 @@ Common events:
 	cmd.Flags().StringArrayVarP(&events, "events", "e", nil, "Events to subscribe to (comma-separated or repeated)")
 	mustMarkRequired(cmd, "url")
 	mustMarkRequired(cmd, "events")
+	flagAlias(cmd.Flags(), "events", "ev")
 	return cmd
 }
 

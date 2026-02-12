@@ -89,6 +89,10 @@ func newAuthorizationsListCmd() *cobra.Command {
 	cmd.Flags().StringVar(&retrievalRef, "retrieval-ref", "", "Filter by retrieval reference")
 	cmd.Flags().StringVar(&from, "from", "", "From date (YYYY-MM-DD)")
 	cmd.Flags().StringVar(&to, "to", "", "To date (YYYY-MM-DD)")
+	flagAlias(cmd.Flags(), "card-id", "cid")
+	flagAlias(cmd.Flags(), "billing-currency", "bc")
+	flagAlias(cmd.Flags(), "lifecycle-id", "lid")
+	flagAlias(cmd.Flags(), "retrieval-ref", "rr")
 	return cmd
 }
 

@@ -924,6 +924,18 @@ Examples:
 
 	mustMarkRequired(cmd, "entity-type")
 	mustMarkRequired(cmd, "bank-country")
+	flagAlias(cmd.Flags(), "entity-type", "et")
+	flagAlias(cmd.Flags(), "bank-country", "bk")
+	flagAlias(cmd.Flags(), "account-name", "an")
+	flagAlias(cmd.Flags(), "account-number", "acn")
+	flagAlias(cmd.Flags(), "account-currency", "ac")
+	flagAlias(cmd.Flags(), "company-name", "cn")
+	flagAlias(cmd.Flags(), "swift-code", "sw")
+	flagAlias(cmd.Flags(), "routing-number", "rn")
+	flagAlias(cmd.Flags(), "payment-method", "pm")
+	flagAlias(cmd.Flags(), "clearing-system", "cs")
+	flagAlias(cmd.Flags(), "institution-number", "inst")
+	flagAlias(cmd.Flags(), "transit-number", "tn")
 	return cmd
 }
 

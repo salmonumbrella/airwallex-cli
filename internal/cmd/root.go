@@ -150,6 +150,15 @@ func NewRootCmd() *cobra.Command {
 	cmd.PersistentFlags().StringVar(&flags.SortBy, "sort-by", "", "Field name to sort results by")
 	cmd.PersistentFlags().BoolVar(&flags.Desc, "desc", false, "Sort descending (requires --sort-by)")
 
+	// Multi-letter hidden flag aliases.
+	flagAlias(cmd.PersistentFlags(), "output", "out")
+	flagAlias(cmd.PersistentFlags(), "query", "qr")
+	flagAlias(cmd.PersistentFlags(), "query-file", "qf")
+	flagAlias(cmd.PersistentFlags(), "template", "tmpl")
+	flagAlias(cmd.PersistentFlags(), "no-color", "nc")
+	flagAlias(cmd.PersistentFlags(), "output-limit", "ol")
+	flagAlias(cmd.PersistentFlags(), "sort-by", "sb")
+
 	cmd.AddCommand(newAPICmd())
 	cmd.AddCommand(newAuthCmd())
 	cmd.AddCommand(newBalancesCmd())

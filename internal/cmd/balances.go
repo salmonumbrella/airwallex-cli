@@ -159,6 +159,7 @@ Examples:
 	cmd.Flags().StringVarP(&currency, "currency", "c", "", "Filter by currency (e.g., CAD, USD)")
 	cmd.Flags().StringVarP(&from, "from", "f", "", "Start date (YYYY-MM-DD)")
 	cmd.Flags().StringVar(&to, "to", "", "End date (YYYY-MM-DD)")
+	flagAlias(cmd.Flags(), "currency", "cur")
 
 	return cmd
 }

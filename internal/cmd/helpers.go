@@ -311,10 +311,11 @@ func flagAlias(fs *pflag.FlagSet, name, alias string) {
 	a.Shorthand = ""
 	a.Usage = ""
 	a.Hidden = true
-	if a.Annotations == nil {
-		a.Annotations = map[string][]string{}
+	// Build a fresh annotations map so we don't inherit cobra's
+	// "required" annotation from the original flag.
+	a.Annotations = map[string][]string{
+		"alias-of": {name},
 	}
-	a.Annotations["alias-of"] = []string{name}
 	fs.AddFlag(&a)
 }
 

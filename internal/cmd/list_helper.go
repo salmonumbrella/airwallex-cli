@@ -312,15 +312,19 @@ func NewListCommand[T any](cfg ListConfig[T], getClient func(context.Context) (*
 	case PaginationCursor:
 		cmd.Flags().IntVarP(&limit, "limit", "l", 20, "Max items to return (1-100)")
 		cmd.Flags().StringVar(&after, "after", "", "Cursor for next page (from previous result)")
+		flagAlias(cmd.Flags(), "after", "af")
 	case PaginationPage:
 		cmd.Flags().IntVarP(&page, "page", "p", 1, "Page number (1+)")
 		cmd.Flags().IntVarP(&pageSize, "page-size", "n", 20, "Page size (1-100)")
+		flagAlias(cmd.Flags(), "page-size", "ps")
 	default:
 		panic(fmt.Sprintf("unsupported pagination mode %q", mode))
 	}
 	cmd.Flags().BoolVarP(&fetchAll, "all", "a", false, "Fetch all pages (auto-paginate)")
 	cmd.Flags().BoolVarP(&itemsOnly, "items-only", "i", false, "Output items array only (JSON mode)")
 	cmd.Flags().BoolVar(&itemsOnly, "results-only", false, "Alias for --items-only")
+	flagAlias(cmd.Flags(), "items-only", "io")
+	flagAlias(cmd.Flags(), "results-only", "ro")
 
 	return cmd
 }

@@ -157,5 +157,7 @@ Examples:
 	cmd.Flags().StringVar(&expiresIn, "expires-in", "", "Expiration period (e.g., 7d, 24h)")
 	mustMarkRequired(cmd, "amount")
 	mustMarkRequired(cmd, "currency")
+	flagAlias(cmd.Flags(), "description", "desc")
+	flagAlias(cmd.Flags(), "expires-in", "exp")
 	return cmd
 }

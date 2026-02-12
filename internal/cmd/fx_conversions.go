@@ -62,6 +62,7 @@ func newFXConversionsListCmd() *cobra.Command {
 	cmd.Flags().StringVarP(&status, "status", "s", "", "Filter by status")
 	cmd.Flags().StringVarP(&fromDate, "from", "f", "", "From date (YYYY-MM-DD)")
 	cmd.Flags().StringVar(&toDate, "to", "", "To date (YYYY-MM-DD)")
+	flagAlias(cmd.Flags(), "from", "fr")
 	return cmd
 }
 
@@ -189,5 +190,10 @@ Examples:
 	cmd.Flags().StringVar(&buyCurrency, "buy-currency", "", "Currency to buy")
 	cmd.Flags().Float64Var(&sellAmount, "sell-amount", 0, "Amount to sell")
 	cmd.Flags().Float64Var(&buyAmount, "buy-amount", 0, "Amount to buy")
+	flagAlias(cmd.Flags(), "sell-currency", "sell")
+	flagAlias(cmd.Flags(), "buy-currency", "buy")
+	flagAlias(cmd.Flags(), "sell-amount", "sa")
+	flagAlias(cmd.Flags(), "buy-amount", "ba")
+	flagAlias(cmd.Flags(), "quote-id", "qid")
 	return cmd
 }

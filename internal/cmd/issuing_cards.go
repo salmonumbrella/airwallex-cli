@@ -60,6 +60,7 @@ func newCardsListCmd() *cobra.Command {
 
 	cmd.Flags().StringVarP(&status, "status", "s", "", "Filter by status (ACTIVE, INACTIVE, CLOSED)")
 	cmd.Flags().StringVar(&cardholderID, "cardholder-id", "", "Filter by cardholder")
+	flagAlias(cmd.Flags(), "cardholder-id", "chid")
 	return cmd
 }
 
@@ -169,7 +170,7 @@ Program types: PREPAID, DEBIT, CREDIT, DEFERRED_DEBIT`,
 			program := map[string]interface{}{
 				"purpose": programPurpose,
 			}
-			if cmd.Flags().Changed("program-type") {
+			if flagOrAliasChanged(cmd, "program-type") {
 				program["type"] = programType
 			}
 			req["program"] = program
@@ -271,6 +272,13 @@ Program types: PREPAID, DEBIT, CREDIT, DEFERRED_DEBIT`,
 	cmd.Flags().StringSliceVar(&additionalCardholders, "additional-cardholders", nil, "Additional cardholder IDs for company cards (max 3)")
 	mustMarkRequired(cmd, "cardholder-id")
 	mustMarkRequired(cmd, "limit")
+	flagAlias(cmd.Flags(), "cardholder-id", "chid")
+	flagAlias(cmd.Flags(), "form-factor", "ff")
+	flagAlias(cmd.Flags(), "limit-interval", "li")
+	flagAlias(cmd.Flags(), "limit-currency", "lc")
+	flagAlias(cmd.Flags(), "program-purpose", "pp")
+	flagAlias(cmd.Flags(), "program-type", "pt")
+	flagAlias(cmd.Flags(), "additional-cardholders", "ach")
 	return cmd
 }
 
@@ -291,7 +299,7 @@ func newCardsUpdateCmd() *cobra.Command {
 			}
 
 			update := make(map[string]interface{})
-			if cmd.Flags().Changed("nickname") {
+			if flagOrAliasChanged(cmd, "nickname") {
 				update["nick_name"] = nickname
 			}
 			if cmd.Flags().Changed("status") {
@@ -320,6 +328,7 @@ func newCardsUpdateCmd() *cobra.Command {
 
 	cmd.Flags().StringVarP(&nickname, "nickname", "N", "", "Card nickname")
 	cmd.Flags().StringVar(&status, "status", "", "Card status (ACTIVE, INACTIVE, CLOSED)")
+	flagAlias(cmd.Flags(), "nickname", "nn")
 	return cmd
 }
 
@@ -394,6 +403,7 @@ func newCardsDetailsCmd() *cobra.Command {
 	}
 
 	cmd.Flags().BoolVar(&showPAN, "show-pan", false, "Show full card number (PCI-sensitive)")
+	flagAlias(cmd.Flags(), "show-pan", "pan")
 	return cmd
 }
 
