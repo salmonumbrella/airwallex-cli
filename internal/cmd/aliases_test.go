@@ -1,6 +1,9 @@
 package cmd
 
 import (
+	"bytes"
+	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/spf13/cobra"
@@ -368,6 +371,7 @@ func TestMultiLetterFlagAliases(t *testing.T) {
 		{"webhooks create --events/--ev", []string{"webhooks", "create"}, "events", "ev"},
 		{"beneficiaries create --entity-type/--et", []string{"beneficiaries", "create"}, "entity-type", "et"},
 		{"fx conversions create --sell-currency/--sell", []string{"fx", "conversions", "create"}, "sell-currency", "sell"},
+		{"global --query/--jq", nil, "query", "jq"},
 	}
 
 	for _, tt := range tests {
@@ -396,6 +400,34 @@ func TestMultiLetterFlagAliases(t *testing.T) {
 			ann, ok := alias.Annotations["alias-of"]
 			if !ok || len(ann) == 0 || ann[0] != tt.flag {
 				t.Errorf("alias --%s should have alias-of=%q annotation, got %v", tt.alias, tt.flag, ann)
+			}
+		})
+	}
+}
+
+func TestJQAutoEnablesJSON(t *testing.T) {
+	tests := []struct {
+		name     string
+		args     []string
+		wantJSON bool
+	}{
+		{"--jq enables JSON", []string{"--jq", ".items[0]", "version"}, true},
+		{"--query enables JSON", []string{"--query", ".items[0]", "version"}, true},
+		{"no query keeps text", []string{"version"}, false},
+		{"explicit --output text overrides", []string{"--query", ".x", "--output", "text", "version"}, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var buf bytes.Buffer
+			root := NewRootCmd()
+			root.SetOut(&buf)
+			root.SetArgs(tt.args)
+			_ = root.Execute()
+
+			output := buf.String()
+			gotJSON := json.Valid([]byte(strings.TrimSpace(output)))
+			if gotJSON != tt.wantJSON {
+				t.Errorf("JSON output = %v, want %v; output: %s", gotJSON, tt.wantJSON, output)
 			}
 		})
 	}
