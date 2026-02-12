@@ -1,6 +1,6 @@
 # 🏦 Airwallex CLI — Banking in your terminal.
 
-Airwallex in your terminal. Manage cards, send payouts, convert currencies, manage transfers, FX, beneficiaries, deposits, and webhooks 
+Airwallex in your terminal. Manage cards, send payouts, convert currencies, manage transfers, FX, beneficiaries, deposits, and webhooks. Available as both `airwallex` and `awx`.
 
 ## Features
 
@@ -24,6 +24,8 @@ Airwallex in your terminal. Manage cards, send payouts, convert currencies, mana
 ```bash
 brew install salmonumbrella/tap/airwallex-cli
 ```
+
+This installs both `airwallex` and `awx` (shorter alias).
 
 ## Quick Start
 
@@ -572,8 +574,8 @@ All commands support these flags:
 - `--no-color` - Shorthand for `--color never`
 - `--agent` - Agent mode: stable JSON, no color, no prompts, structured errors (or `AWX_AGENT` env)
 - `--debug`, `-d` - Enable debug output (shows API requests/responses)
-- `--query`, `-q` `<expr>` - JQ filter expression for JSON output
-- `--query-file <path>` - Read JQ filter expression from file (use `-` for stdin)
+- `--query`, `-q`, `--jq` `<expr>` - JQ filter expression (auto-enables JSON output)
+- `--query-file <path>` - Read JQ filter expression from file (use `-` for stdin, auto-enables JSON output)
 - `--template`, `-t` `<tmpl>` - Go template for custom output (e.g., `{{.id}}: {{.status}}`)
 - `--items-only`, `-i` - Output items array only for list commands (JSON mode)
 - `--results-only` - Alias for `--items-only`
@@ -633,27 +635,24 @@ Subcommands also have aliases:
 ### Shorthand Examples
 
 ```bash
-# These are equivalent:
-airwallex transfers list --status PAID
-airwallex tr ls -s PAID
+# These are all equivalent:
+airwallex transfers list --status PAID --output json --query '.items[0]'
+awx tr ls -s pa --jq '.items[0]'
 
-airwallex beneficiaries list --page-size 50 --output json
-airwallex ben ls -n 50 -o json
+airwallex beneficiaries create --entity-type COMPANY --bank-country CA
+awx ben cr --et c --bk CA
 
-airwallex issuing cards list --status ACTIVE
-airwallex is cd ls -s ACTIVE
+airwallex cards list --cardholder-id chld_xxx --status ACTIVE
+awx cd ls --chid chld_xxx -s a
 
-airwallex deposits list --from 2024-01-01 --status SETTLED
-airwallex dep ls -f 2024-01-01 -s SETTLED
+airwallex reports balance-activity --from-date 2024-01-01 --to-date 2024-01-31 --format CSV
+awx rp activity --fd 2024-01-01 --td 2024-01-31 --fmt c
 
 airwallex webhooks create --url https://example.com --events transfer.completed
-airwallex wh cr -u https://example.com -e transfer.completed
+awx wh cr -u https://example.com --ev transfer.completed
 
-airwallex fx conversions list --status COMPLETED
-airwallex fx cv ls -s COMPLETED
-
-airwallex balances history --currency CAD --from 2024-01-01
-airwallex b hist -c CAD -f 2024-01-01
+airwallex fx conversions create --sell-currency USD --buy-currency EUR --sell-amount 1000
+awx fx cr --sell USD --buy EUR --sa 1000
 ```
 
 ## Flag Shortcodes
@@ -697,6 +696,49 @@ airwallex b hist -c CAD -f 2024-01-01
 | `--data` | `-D` | disputes create/update, payers create/update/validate |
 | `--amount` | `-A` | payment-links create |
 | `--description` | `-D` | payment-links create |
+
+### Multi-letter Flag Aliases
+
+Hidden aliases that don't appear in `--help` but work for agents and power users:
+
+| Flag | Alias | Available on |
+|------|-------|-------------|
+| `--output` | `--out` | global |
+| `--query` | `--qr`, `--jq` | global |
+| `--query-file` | `--qf` | global |
+| `--template` | `--tmpl` | global |
+| `--no-color` | `--nc` | global |
+| `--output-limit` | `--ol` | global |
+| `--sort-by` | `--sb` | global |
+| `--page-size` | `--ps` | list commands |
+| `--items-only` | `--io` | list commands |
+| `--results-only` | `--ro` | list commands |
+| `--beneficiary-id` | `--bid` | transfers create |
+| `--transfer-currency` | `--tc` | transfers create |
+| `--source-currency` | `--sc` | transfers create |
+| `--dry-run` | `--dr` | transfers create |
+| `--cardholder-id` | `--chid` | cards list/create |
+| `--card-id` | `--cid` | transactions/authorizations list |
+| `--from-date` | `--fd` | reports |
+| `--to-date` | `--td` | reports |
+| `--events` | `--ev` | webhooks create |
+| `--entity-type` | `--et` | beneficiaries create |
+
+### Value Shorthands
+
+Enum flag values accept unambiguous prefixes (case-insensitive):
+
+| Flag | Short | Full |
+|------|-------|------|
+| `--status` | `pa` | `PAID` |
+| `--status` | `pe` | `PENDING` |
+| `--status` | `f` | `FAILED` |
+| `--status` | `a` | `ACTIVE` |
+| `--status` | `s` | `SETTLED` |
+| `--format` | `c` | `CSV` |
+| `--format` | `e` | `EXCEL` |
+| `--entity-type` | `c` | `COMPANY` |
+| `--entity-type` | `p` | `PERSONAL` |
 
 ## Shell Completions
 
