@@ -566,16 +566,16 @@ airwallex beneficiaries list --output json --query \
 All commands support these flags:
 
 - `--account <name>` - Account to use (overrides AWX_ACCOUNT)
-- `--output <format>` - Output format: `text` or `json` (default: text)
-- `--json` - Shorthand for `--output json`
+- `--output`, `-o` `<format>` - Output format: `text` or `json` (default: text)
+- `--json`, `-j` - Shorthand for `--output json`
 - `--color <mode>` - Color mode: `auto`, `always`, or `never` (default: auto)
 - `--no-color` - Shorthand for `--color never`
 - `--agent` - Agent mode: stable JSON, no color, no prompts, structured errors (or `AWX_AGENT` env)
-- `--debug` - Enable debug output (shows API requests/responses)
-- `--query <expr>` - JQ filter expression for JSON output
+- `--debug`, `-d` - Enable debug output (shows API requests/responses)
+- `--query`, `-q` `<expr>` - JQ filter expression for JSON output
 - `--query-file <path>` - Read JQ filter expression from file (use `-` for stdin)
-- `--template <tmpl>` - Go template for custom output (e.g., `{{.id}}: {{.status}}`)
-- `--items-only` - Output items array only for list commands (JSON mode)
+- `--template`, `-t` `<tmpl>` - Go template for custom output (e.g., `{{.id}}: {{.status}}`)
+- `--items-only`, `-i` - Output items array only for list commands (JSON mode)
 - `--results-only` - Alias for `--items-only`
 - `--yes`, `-y` - Skip confirmation prompts (useful for scripts and automation)
 - `--force` - Alias for `--yes`
@@ -584,6 +584,119 @@ All commands support these flags:
 - `--desc` - Sort descending (requires `--sort-by`)
 - `--help` - Show help for any command
 - `--version` - Show version information (via `airwallex version`)
+
+## Command Aliases
+
+Every command has short aliases for fast typing:
+
+| Command | Aliases |
+|---------|---------|
+| `accounts` | `account`, `acc`, `ac` |
+| `api` | `ap` |
+| `auth` | `au` |
+| `balances` | `balance`, `bal`, `b` |
+| `beneficiaries` | `beneficiary`, `benef`, `ben` |
+| `billing` | `bill`, `bi` |
+| `cards` | `card`, `cd` |
+| `cardholders` | `cardholder`, `ch` |
+| `deposits` | `deposit`, `dep` |
+| `disputes` | `dispute`, `di` |
+| `fx` | *(already short)* |
+| `issuing` | `iss`, `is` |
+| `linked-accounts` | `la` |
+| `payers` | `payer`, `py` |
+| `payment-links` | `pl` |
+| `reports` | `report`, `rp` |
+| `schemas` | `schema`, `sc` |
+| `transfers` | `transfer`, `tfr`, `tr`, `payout` |
+| `transactions` | `transaction`, `tx` |
+| `webhooks` | `webhook`, `wh` |
+
+Subcommands also have aliases:
+
+| Subcommand | Aliases |
+|------------|---------|
+| `list` | `ls`, `l` |
+| `get` | `g` |
+| `create` | `cr` |
+| `update` | `up`, `u` |
+| `delete` | `del`, `rm` |
+| `validate` | `val`, `v` |
+| `cancel` | `x` |
+| `history` | `hist`, `h` |
+| `batch-create` | `bc` |
+| `confirmation` | `conf` |
+| `activate` | `act` |
+| `details` | `det` |
+| `limits` | `lim` |
+
+### Shorthand Examples
+
+```bash
+# These are equivalent:
+airwallex transfers list --status PAID
+airwallex tr ls -s PAID
+
+airwallex beneficiaries list --page-size 50 --output json
+airwallex ben ls -n 50 -o json
+
+airwallex issuing cards list --status ACTIVE
+airwallex is cd ls -s ACTIVE
+
+airwallex deposits list --from 2024-01-01 --status SETTLED
+airwallex dep ls -f 2024-01-01 -s SETTLED
+
+airwallex webhooks create --url https://example.com --events transfer.completed
+airwallex wh cr -u https://example.com -e transfer.completed
+
+airwallex fx conversions list --status COMPLETED
+airwallex fx cv ls -s COMPLETED
+
+airwallex balances history --currency CAD --from 2024-01-01
+airwallex b hist -c CAD -f 2024-01-01
+```
+
+## Flag Shortcodes
+
+### Global Flag Shortcodes
+
+| Flag | Shortcode |
+|------|-----------|
+| `--output` | `-o` |
+| `--json` | `-j` |
+| `--debug` | `-d` |
+| `--query` | `-q` |
+| `--template` | `-t` |
+| `--yes` | `-y` |
+
+### List Command Flag Shortcodes
+
+| Flag | Shortcode |
+|------|-----------|
+| `--page` | `-p` |
+| `--page-size` | `-n` |
+| `--all` | `-a` |
+| `--items-only` | `-i` |
+| `--limit` | `-l` |
+
+### Per-Command Flag Shortcodes
+
+| Flag | Shortcode | Available on |
+|------|-----------|-------------|
+| `--status` | `-s` | transfers, deposits, cards, conversions, authorizations, disputes |
+| `--from` | `-f` | deposits, balances, transactions, conversions |
+| `--currency` | `-c` | balances history, payment-links create |
+| `--beneficiary-id` | `-b` | transfers create |
+| `--method` | `-m` | transfers create |
+| `--reference` | `-r` | transfers create |
+| `--wait` | `-w` | transfers create |
+| `--url` | `-u` | webhooks create |
+| `--events` | `-e` | webhooks create |
+| `--nickname` | `-N` | cards update |
+| `--from-file` | `-F` | transfers batch-create, payload commands |
+| `--data` | `-D` | disputes create/update, payers create/update/validate |
+| `--amount` | `-A` | payment-links create |
+| `--description` | `-D` | payment-links create |
 
 ## Shell Completions
 
