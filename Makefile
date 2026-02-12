@@ -17,7 +17,6 @@ BUILD_DATE ?= $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
 LDFLAGS := -ldflags "-X github.com/salmonumbrella/airwallex-cli/internal/cmd.Version=$(VERSION) -X github.com/salmonumbrella/airwallex-cli/internal/cmd.Commit=$(COMMIT) -X github.com/salmonumbrella/airwallex-cli/internal/cmd.BuildDate=$(BUILD_DATE)"
 
 build:
-	go build $(LDFLAGS) -o ./bin/airwallex ./cmd/airwallex
 	go build $(LDFLAGS) -o ./bin/awx ./cmd/awx
 
 tools:

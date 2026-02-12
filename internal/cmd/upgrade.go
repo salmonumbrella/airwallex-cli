@@ -21,7 +21,7 @@ On macOS with Homebrew:
   brew upgrade airwallex-cli
 
 On other systems:
-  go install github.com/salmonumbrella/airwallex-cli/cmd/airwallex@latest`,
+  go install github.com/salmonumbrella/airwallex-cli/cmd/awx@latest`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			u := ui.FromContext(cmd.Context())
 
@@ -56,7 +56,7 @@ On other systems:
 
 			// Fallback: show manual instructions
 			u.Info("To upgrade manually, run:")
-			_, _ = fmt.Fprintln(cmd.OutOrStdout(), "  go install github.com/salmonumbrella/airwallex-cli/cmd/airwallex@latest")
+			_, _ = fmt.Fprintln(cmd.OutOrStdout(), "  go install github.com/salmonumbrella/airwallex-cli/cmd/awx@latest")
 			_, _ = fmt.Fprintln(cmd.OutOrStdout(), "")
 			_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Or download from:")
 			_, _ = fmt.Fprintln(cmd.OutOrStdout(), "  "+result.UpdateURL)

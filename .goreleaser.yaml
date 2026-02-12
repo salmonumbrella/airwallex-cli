@@ -4,22 +4,6 @@ project_name: airwallex-cli
 
 builds:
   # macOS builds - require CGO for keychain access (99designs/keyring uses go-keychain)
-  - id: airwallex-darwin
-    main: ./cmd/airwallex
-    binary: airwallex
-    env:
-      - CGO_ENABLED=1
-    goos:
-      - darwin
-    goarch:
-      - amd64
-      - arm64
-    ldflags:
-      - -s -w
-      - -X github.com/salmonumbrella/airwallex-cli/internal/cmd.Version={{.Version}}
-      - -X github.com/salmonumbrella/airwallex-cli/internal/cmd.Commit={{.ShortCommit}}
-      - -X github.com/salmonumbrella/airwallex-cli/internal/cmd.BuildDate={{.Date}}
-
   - id: awx-darwin
     main: ./cmd/awx
     binary: awx
@@ -37,23 +21,6 @@ builds:
       - -X github.com/salmonumbrella/airwallex-cli/internal/cmd.BuildDate={{.Date}}
 
   # Linux and Windows builds - no CGO needed
-  - id: airwallex-other
-    main: ./cmd/airwallex
-    binary: airwallex
-    env:
-      - CGO_ENABLED=0
-    goos:
-      - linux
-      - windows
-    goarch:
-      - amd64
-      - arm64
-    ldflags:
-      - -s -w
-      - -X github.com/salmonumbrella/airwallex-cli/internal/cmd.Version={{.Version}}
-      - -X github.com/salmonumbrella/airwallex-cli/internal/cmd.Commit={{.ShortCommit}}
-      - -X github.com/salmonumbrella/airwallex-cli/internal/cmd.BuildDate={{.Date}}
-
   - id: awx-other
     main: ./cmd/awx
     binary: awx
@@ -161,8 +128,6 @@ brews:
     description: "CLI for Airwallex to manage transfers, beneficiaries, and balances"
     license: "MIT"
     install: |
-      bin.install "airwallex"
       bin.install "awx"
     test: |
-      system "#{bin}/airwallex", "--help"
       system "#{bin}/awx", "--help"
