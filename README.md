@@ -255,6 +255,25 @@ airwallex schemas beneficiary --bank-country US --entity-type COMPANY
 airwallex schemas transfer --source-currency USD --dest-currency EUR
 ```
 
+### Raw API
+
+```bash
+# GET financial transactions with explicit -q flags
+airwallex api get /api/v1/financial_transactions \
+  -q from_created_at=2025-06-01T00:00:00+0000 \
+  -q to_created_at=2025-06-30T23:59:59+0000 \
+  -q page_size=100
+
+# Query shorthand: extra key=value args are treated as query params
+airwallex api get /api/v1/financial_transactions \
+  from_created_at=2025-06-01T00:00:00+0000 \
+  to_created_at=2025-06-30T23:59:59+0000 \
+  page_size=100
+```
+
+For `/api/v1/financial_transactions`, use `from_created_at` and `to_created_at`.
+If `from_posted_at`/`to_posted_at` are provided, the CLI remaps them to the created_at filters.
+
 ### Payment Links
 
 ```bash

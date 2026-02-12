@@ -110,9 +110,9 @@ func TestAPICommand_AcceptsMethodAsPositionalArg(t *testing.T) {
 		t.Error("0 args should be rejected")
 	}
 
-	// 3 args should be rejected
-	if err := cmd.Args(cmd, []string{"get", "/api/v1/balances", "extra"}); err == nil {
-		t.Error("3 args should be rejected")
+	// Additional args are now parsed by RunE as query shorthand/validation.
+	if err := cmd.Args(cmd, []string{"get", "/api/v1/balances", "page_size=10"}); err != nil {
+		t.Errorf("3 args should be accepted for query shorthand: %v", err)
 	}
 }
 
@@ -178,5 +178,69 @@ func TestAPICommand_QueryParamEncoding(t *testing.T) {
 				t.Errorf("got %q, want %q", encoded, tt.expected)
 			}
 		})
+	}
+}
+
+func TestParseAPIInvocation_QueryShorthand(t *testing.T) {
+	cmd := newAPICmd()
+	method, endpoint, q, err := parseAPIInvocation(cmd, []string{
+		"get",
+		"/api/v1/financial_transactions",
+		"from_created_at=2025-06-01T00:00:00+0000",
+		"to_created_at=2025-06-30T23:59:59+0000",
+		"page_size=100",
+	}, "GET", nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if method != "GET" {
+		t.Fatalf("method = %q, want GET", method)
+	}
+	if endpoint != "/api/v1/financial_transactions" {
+		t.Fatalf("endpoint = %q, want /api/v1/financial_transactions", endpoint)
+	}
+	if len(q) != 3 {
+		t.Fatalf("expected 3 query params, got %d (%v)", len(q), q)
+	}
+}
+
+func TestParseAPIInvocation_UnknownMethod(t *testing.T) {
+	cmd := newAPICmd()
+	_, _, _, err := parseAPIInvocation(cmd, []string{"fetch", "/api/v1/balances/current"}, "GET", nil)
+	if err == nil {
+		t.Fatal("expected error for unknown method")
+	}
+	if !strings.Contains(err.Error(), "unknown HTTP method") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestParseAPIInvocation_InvalidExtraArg(t *testing.T) {
+	cmd := newAPICmd()
+	_, _, _, err := parseAPIInvocation(cmd, []string{"/api/v1/balances/current", "oops"}, "GET", nil)
+	if err == nil {
+		t.Fatal("expected error for invalid extra argument")
+	}
+	if !strings.Contains(err.Error(), "If this is a query parameter") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestRemapFinancialTransactionsQueryParams(t *testing.T) {
+	q, remapped := remapFinancialTransactionsQueryParams("/api/v1/financial_transactions", []string{
+		"from_posted_at=2025-06-01T00:00:00+0000",
+		"to_posted_at=2025-06-30T23:59:59+0000",
+		"page_size=100",
+	})
+	if !remapped {
+		t.Fatal("expected remapped=true")
+	}
+
+	got := strings.Join(q, ",")
+	if !strings.Contains(got, "from_created_at=2025-06-01T00:00:00+0000") {
+		t.Fatalf("missing from_created_at remap in %v", q)
+	}
+	if !strings.Contains(got, "to_created_at=2025-06-30T23:59:59+0000") {
+		t.Fatalf("missing to_created_at remap in %v", q)
 	}
 }

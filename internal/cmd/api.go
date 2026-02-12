@@ -46,6 +46,9 @@ Examples:
   # GET with query parameters
   airwallex api /api/v1/transfers -q status=COMPLETED -q page_size=10
 
+  # GET with query shorthand (extra key=value args are treated as -q)
+  airwallex api get /api/v1/financial_transactions from_created_at=2025-06-01T00:00:00+0000 to_created_at=2025-06-30T23:59:59+0000 page_size=100
+
   # POST with inline JSON
   airwallex api post /api/v1/beneficiaries -d '{"beneficiary": {...}}'
 
@@ -57,23 +60,14 @@ Examples:
 
   # Include response headers
   airwallex api /api/v1/balances/current -i`,
-		Args: cobra.RangeArgs(1, 2),
+		Args: cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			var endpoint string
-			if len(args) == 2 && isHTTPMethod(args[0]) {
-				// "api get /api/v1/..." — use first arg as method (unless -X was explicit)
-				if !cmd.Flags().Changed("method") {
-					method = strings.ToUpper(args[0])
-				}
-				endpoint = args[1]
-			} else if len(args) == 2 {
-				return fmt.Errorf("unknown HTTP method %q; expected get, post, put, patch, delete, head, or options", args[0])
-			} else {
-				endpoint = args[0]
+			resolvedMethod, endpoint, resolvedQueryParams, err := parseAPIInvocation(cmd, args, method, queryParams)
+			if err != nil {
+				return err
 			}
-			if !strings.HasPrefix(endpoint, "/") {
-				endpoint = "/" + endpoint
-			}
+			method = resolvedMethod
+			queryParams = resolvedQueryParams
 
 			client, err := getClient(cmd.Context())
 			if err != nil {
@@ -198,6 +192,141 @@ Examples:
 func isJSONResponse(resp *http.Response) bool {
 	ct := resp.Header.Get("Content-Type")
 	return strings.Contains(ct, "application/json")
+}
+
+func parseAPIInvocation(cmd *cobra.Command, args []string, method string, queryParams []string) (string, string, []string, error) {
+	resolvedMethod := method
+	var endpoint string
+	var extraArgs []string
+
+	switch {
+	case len(args) >= 2 && isHTTPMethod(args[0]):
+		// "api get /api/v1/..." — use first arg as method (unless -X was explicit)
+		if !cmd.Flags().Changed("method") {
+			resolvedMethod = strings.ToUpper(args[0])
+		}
+		endpoint = args[1]
+		extraArgs = args[2:]
+	case len(args) >= 2 && !looksLikeEndpoint(args[0]) && !strings.Contains(args[1], "="):
+		return "", "", nil, fmt.Errorf("unknown HTTP method %q; expected get, post, put, patch, delete, head, or options", args[0])
+	default:
+		endpoint = args[0]
+		extraArgs = args[1:]
+	}
+
+	if !strings.HasPrefix(endpoint, "/") {
+		endpoint = "/" + endpoint
+	}
+
+	resolvedQueryParams, err := appendQueryShorthand(queryParams, extraArgs)
+	if err != nil {
+		return "", "", nil, err
+	}
+
+	resolvedQueryParams, remapped := remapFinancialTransactionsQueryParams(endpoint, resolvedQueryParams)
+	if remapped {
+		errOut := cmd.ErrOrStderr()
+		_, _ = fmt.Fprintln(errOut, "warning: remapped from_posted_at/to_posted_at to from_created_at/to_created_at for /api/v1/financial_transactions")
+	}
+
+	return resolvedMethod, endpoint, resolvedQueryParams, nil
+}
+
+func looksLikeEndpoint(arg string) bool {
+	return strings.HasPrefix(arg, "/") || strings.Contains(arg, "/")
+}
+
+func appendQueryShorthand(queryParams []string, extraArgs []string) ([]string, error) {
+	merged := make([]string, 0, len(queryParams)+len(extraArgs))
+	merged = append(merged, queryParams...)
+
+	for _, raw := range extraArgs {
+		arg := strings.TrimSpace(raw)
+		if arg == "" {
+			continue
+		}
+		arg = strings.TrimPrefix(arg, "?")
+		if arg == "" {
+			continue
+		}
+
+		if strings.Contains(arg, "&") {
+			parts := strings.Split(arg, "&")
+			for _, part := range parts {
+				part = strings.TrimSpace(part)
+				if part == "" {
+					continue
+				}
+				if !strings.Contains(part, "=") {
+					return nil, fmt.Errorf("unexpected argument %q. If this is a query parameter, pass -q key=value", raw)
+				}
+				merged = append(merged, part)
+			}
+			continue
+		}
+
+		if !strings.Contains(arg, "=") {
+			return nil, fmt.Errorf("unexpected argument %q. If this is a query parameter, pass -q key=value", raw)
+		}
+		merged = append(merged, arg)
+	}
+
+	return merged, nil
+}
+
+func remapFinancialTransactionsQueryParams(endpoint string, queryParams []string) ([]string, bool) {
+	if !isFinancialTransactionsEndpoint(endpoint) {
+		return queryParams, false
+	}
+
+	hasFromCreated := false
+	hasToCreated := false
+	for _, qp := range queryParams {
+		key, _ := splitQueryParam(qp)
+		switch key {
+		case "from_created_at":
+			hasFromCreated = true
+		case "to_created_at":
+			hasToCreated = true
+		}
+	}
+
+	remapped := false
+	out := make([]string, 0, len(queryParams))
+	for _, qp := range queryParams {
+		key, value := splitQueryParam(qp)
+		switch key {
+		case "from_posted_at":
+			remapped = true
+			if hasFromCreated {
+				continue
+			}
+			out = append(out, "from_created_at="+value)
+		case "to_posted_at":
+			remapped = true
+			if hasToCreated {
+				continue
+			}
+			out = append(out, "to_created_at="+value)
+		default:
+			out = append(out, qp)
+		}
+	}
+
+	return out, remapped
+}
+
+func splitQueryParam(qp string) (string, string) {
+	parts := strings.SplitN(qp, "=", 2)
+	if len(parts) == 1 {
+		return parts[0], ""
+	}
+	return parts[0], parts[1]
+}
+
+func isFinancialTransactionsEndpoint(endpoint string) bool {
+	normalized := strings.TrimSuffix(strings.ToLower(endpoint), "/")
+	return normalized == "/api/v1/financial_transactions"
 }
 
 func isHTTPMethod(s string) bool {
