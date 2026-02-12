@@ -22,7 +22,7 @@ import (
 func newTransfersCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "transfers",
-		Aliases: []string{"transfer", "payout", "payouts"},
+		Aliases: []string{"transfer", "tfr", "tr", "payout", "payouts"},
 		Short:   "Transfer/payout operations",
 	}
 	cmd.AddCommand(newTransfersListCmd())
@@ -63,8 +63,9 @@ func newTransfersListCmd() *cobra.Command {
 	var status string
 
 	cmd := NewListCommand(ListConfig[api.Transfer]{
-		Use:   "list",
-		Short: "List transfers",
+		Use:     "list",
+		Aliases: []string{"ls", "l"},
+		Short:   "List transfers",
 		Long: `List payment transfers with optional filters.
 
 Use --output json with --query for advanced filtering using jq syntax.
@@ -138,14 +139,15 @@ Examples:
 		},
 	}, getClient)
 
-	cmd.Flags().StringVar(&status, "status", "", "Filter by status")
+	cmd.Flags().StringVarP(&status, "status", "s", "", "Filter by status")
 	return cmd
 }
 
 func newTransfersGetCmd() *cobra.Command {
 	return NewGetCommand(GetConfig[*api.Transfer]{
-		Use:   "get <transferId>",
-		Short: "Get transfer details",
+		Use:     "get <transferId>",
+		Aliases: []string{"g"},
+		Short:   "Get transfer details",
 		Fetch: func(ctx context.Context, client *api.Client, id string) (*api.Transfer, error) {
 			return client.GetTransfer(ctx, id)
 		},
@@ -184,8 +186,9 @@ func newTransfersCreateCmd() *cobra.Command {
 	var waitTimeout int
 
 	cmd := &cobra.Command{
-		Use:   "create",
-		Short: "Create a new transfer",
+		Use:     "create",
+		Aliases: []string{"cr"},
+		Short:   "Create a new transfer",
 		Long: `Create a new transfer/payout.
 
 Examples:
@@ -377,19 +380,19 @@ Interac e-Transfer notes:
 		},
 	}
 
-	cmd.Flags().StringVar(&beneficiaryID, "beneficiary-id", "", "Beneficiary ID (required)")
+	cmd.Flags().StringVarP(&beneficiaryID, "beneficiary-id", "b", "", "Beneficiary ID (required)")
 	cmd.Flags().Float64Var(&transferAmount, "transfer-amount", 0, "Amount beneficiary receives")
 	cmd.Flags().StringVar(&transferCurrency, "transfer-currency", "", "Currency of transfer amount (required)")
 	cmd.Flags().Float64Var(&sourceAmount, "source-amount", 0, "Amount to send from wallet")
 	cmd.Flags().StringVar(&sourceCurrency, "source-currency", "", "Source currency (required)")
-	cmd.Flags().StringVar(&transferMethod, "method", "LOCAL", "LOCAL, SWIFT, or a clearing system (INTERAC, ACH, FEDWIRE, etc.)")
+	cmd.Flags().StringVarP(&transferMethod, "method", "m", "LOCAL", "LOCAL, SWIFT, or a clearing system (INTERAC, ACH, FEDWIRE, etc.)")
 	cmd.Flags().StringVar(&localClearingSystem, "clearing-system", "", "Clearing system (CA: EFT/INTERAC, US: ACH/FEDWIRE)")
-	cmd.Flags().StringVar(&reference, "reference", "", "Reference text (required)")
+	cmd.Flags().StringVarP(&reference, "reference", "r", "", "Reference text (required)")
 	cmd.Flags().StringVar(&reason, "reason", "", "Transfer reason (required)")
 	cmd.Flags().StringVar(&securityQuestion, "security-question", "", "Interac security question (1-40 chars)")
 	cmd.Flags().StringVar(&securityAnswer, "security-answer", "", "Interac security answer (3-25 alphanumeric)")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Preview the transfer without executing")
-	cmd.Flags().BoolVar(&wait, "wait", false, "Wait for transfer to complete")
+	cmd.Flags().BoolVarP(&wait, "wait", "w", false, "Wait for transfer to complete")
 	cmd.Flags().IntVar(&waitTimeout, "timeout", 300, "Timeout in seconds when waiting")
 	mustMarkRequired(cmd, "beneficiary-id")
 	mustMarkRequired(cmd, "transfer-currency")
@@ -404,8 +407,9 @@ func newTransfersBatchCreateCmd() *cobra.Command {
 	var continueOnError bool
 
 	cmd := &cobra.Command{
-		Use:   "batch-create",
-		Short: "Create multiple transfers from file or stdin",
+		Use:     "batch-create",
+		Aliases: []string{"bc"},
+		Short:   "Create multiple transfers from file or stdin",
 		Long: `Create multiple transfers from a JSON file or stdin.
 
 Input format (JSON array or newline-delimited JSON):
@@ -495,7 +499,7 @@ Examples:
 		},
 	}
 
-	cmd.Flags().StringVar(&fromFile, "from-file", "", "JSON file with transfers (- for stdin)")
+	cmd.Flags().StringVarP(&fromFile, "from-file", "F", "", "JSON file with transfers (- for stdin)")
 	cmd.Flags().BoolVar(&continueOnError, "continue-on-error", false, "Continue processing on errors")
 
 	return cmd
@@ -503,9 +507,10 @@ Examples:
 
 func newTransfersCancelCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "cancel <transferId>",
-		Short: "Cancel a transfer",
-		Args:  cobra.ExactArgs(1),
+		Use:     "cancel <transferId>",
+		Aliases: []string{"x"},
+		Short:   "Cancel a transfer",
+		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			u := ui.FromContext(cmd.Context())
 			transferID := NormalizeIDArg(args[0])
@@ -548,8 +553,9 @@ func newTransfersConfirmationCmd() *cobra.Command {
 	var output string
 
 	cmd := &cobra.Command{
-		Use:   "confirmation <transferId>",
-		Short: "Download transfer confirmation letter as PDF",
+		Use:     "confirmation <transferId>",
+		Aliases: []string{"conf"},
+		Short:   "Download transfer confirmation letter as PDF",
 		Long: `Download a PDF confirmation letter for a completed transfer.
 
 Examples:

@@ -15,6 +15,7 @@ import (
 // PayloadCommandConfig defines a JSON payload command with standard --data/--from-file flags.
 type PayloadCommandConfig[T any] struct {
 	Use     string
+	Aliases []string
 	Short   string
 	Long    string
 	Example string
@@ -33,6 +34,7 @@ func NewPayloadCommand[T any](cfg PayloadCommandConfig[T], getClient func(contex
 
 	cmd := &cobra.Command{
 		Use:     cfg.Use,
+		Aliases: cfg.Aliases,
 		Short:   cfg.Short,
 		Long:    cfg.Long,
 		Example: cfg.Example,
@@ -75,8 +77,8 @@ func NewPayloadCommand[T any](cfg PayloadCommandConfig[T], getClient func(contex
 		},
 	}
 
-	cmd.Flags().StringVar(&data, "data", "", "Inline JSON payload")
-	cmd.Flags().StringVar(&fromFile, "from-file", "", "Path to JSON payload file (- for stdin)")
+	cmd.Flags().StringVarP(&data, "data", "D", "", "Inline JSON payload")
+	cmd.Flags().StringVarP(&fromFile, "from-file", "F", "", "Path to JSON payload file (- for stdin)")
 
 	return cmd
 }

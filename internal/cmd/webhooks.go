@@ -105,6 +105,7 @@ Common events:
 func newWebhooksListCmd() *cobra.Command {
 	return NewListCommand(ListConfig[api.Webhook]{
 		Use:          "list",
+		Aliases:      []string{"ls", "l"},
 		Short:        "List webhook subscriptions",
 		Headers:      []string{"ID", "URL", "EVENTS", "STATUS"},
 		EmptyMessage: "No webhooks found",
@@ -131,8 +132,9 @@ func newWebhooksListCmd() *cobra.Command {
 
 func newWebhooksGetCmd() *cobra.Command {
 	return NewGetCommand(GetConfig[*api.Webhook]{
-		Use:   "get <webhookId>",
-		Short: "Get webhook details",
+		Use:     "get <webhookId>",
+		Aliases: []string{"g"},
+		Short:   "Get webhook details",
 		Fetch: func(ctx context.Context, client *api.Client, id string) (*api.Webhook, error) {
 			return client.GetWebhook(ctx, id)
 		},
@@ -154,8 +156,9 @@ func newWebhooksCreateCmd() *cobra.Command {
 	var events []string
 
 	cmd := &cobra.Command{
-		Use:   "create",
-		Short: "Create a webhook subscription",
+		Use:     "create",
+		Aliases: []string{"cr"},
+		Short:   "Create a webhook subscription",
 		Long: `Create a new webhook subscription to receive event notifications.
 
 Examples:
@@ -226,8 +229,8 @@ Common events:
 		},
 	}
 
-	cmd.Flags().StringVar(&webhookURL, "url", "", "Webhook URL (required)")
-	cmd.Flags().StringArrayVar(&events, "events", nil, "Events to subscribe to (comma-separated or repeated)")
+	cmd.Flags().StringVarP(&webhookURL, "url", "u", "", "Webhook URL (required)")
+	cmd.Flags().StringArrayVarP(&events, "events", "e", nil, "Events to subscribe to (comma-separated or repeated)")
 	mustMarkRequired(cmd, "url")
 	mustMarkRequired(cmd, "events")
 	return cmd
@@ -235,9 +238,10 @@ Common events:
 
 func newWebhooksDeleteCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "delete <webhookId>",
-		Short: "Delete a webhook subscription",
-		Args:  cobra.ExactArgs(1),
+		Use:     "delete <webhookId>",
+		Aliases: []string{"del", "rm"},
+		Short:   "Delete a webhook subscription",
+		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			u := ui.FromContext(cmd.Context())
 			webhookID := NormalizeIDArg(args[0])

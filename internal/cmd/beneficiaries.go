@@ -58,8 +58,9 @@ func newBeneficiariesCmd() *cobra.Command {
 
 func newBeneficiariesListCmd() *cobra.Command {
 	return NewListCommand(ListConfig[api.Beneficiary]{
-		Use:   "list",
-		Short: "List beneficiaries",
+		Use:     "list",
+		Aliases: []string{"ls", "l"},
+		Short:   "List beneficiaries",
 		Long: `List beneficiaries for payouts.
 
 Use --output json with --query for advanced filtering using jq syntax.
@@ -109,8 +110,9 @@ Examples:
 
 func newBeneficiariesGetCmd() *cobra.Command {
 	return NewGetCommand(GetConfig[*api.Beneficiary]{
-		Use:   "get <beneficiaryId>",
-		Short: "Get beneficiary details",
+		Use:     "get <beneficiaryId>",
+		Aliases: []string{"g"},
+		Short:   "Get beneficiary details",
 		Fetch: func(ctx context.Context, client *api.Client, id string) (*api.Beneficiary, error) {
 			return client.GetBeneficiary(ctx, id)
 		},
@@ -149,8 +151,9 @@ func newBeneficiariesCreateCmd() *cobra.Command {
 	mappingKeys := sortedMappingKeys(mappings)
 
 	cmd := &cobra.Command{
-		Use:   "create",
-		Short: "Create a new beneficiary",
+		Use:     "create",
+		Aliases: []string{"cr"},
+		Short:   "Create a new beneficiary",
 		Long: `Create a new beneficiary for payouts.
 
 Examples:
@@ -939,9 +942,10 @@ func newBeneficiariesUpdateCmd() *cobra.Command {
 	}
 
 	cmd := &cobra.Command{
-		Use:   "update <beneficiaryId>",
-		Short: "Update beneficiary (nickname, names, address)",
-		Args:  cobra.ExactArgs(1),
+		Use:     "update <beneficiaryId>",
+		Aliases: []string{"up", "u"},
+		Short:   "Update beneficiary (nickname, names, address)",
+		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			u := ui.FromContext(cmd.Context())
 			client, err := getClient(cmd.Context())
@@ -1024,9 +1028,10 @@ func newBeneficiariesUpdateCmd() *cobra.Command {
 
 func newBeneficiariesDeleteCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "delete <beneficiaryId>",
-		Short: "Delete a beneficiary",
-		Args:  cobra.ExactArgs(1),
+		Use:     "delete <beneficiaryId>",
+		Aliases: []string{"del", "rm"},
+		Short:   "Delete a beneficiary",
+		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			u := ui.FromContext(cmd.Context())
 			beneficiaryID := NormalizeIDArg(args[0])
@@ -1064,8 +1069,9 @@ func newBeneficiariesValidateCmd() *cobra.Command {
 	var bankCountry string
 
 	cmd := &cobra.Command{
-		Use:   "validate",
-		Short: "Validate beneficiary details",
+		Use:     "validate",
+		Aliases: []string{"val", "v"},
+		Short:   "Validate beneficiary details",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			u := ui.FromContext(cmd.Context())
 			client, err := getClient(cmd.Context())

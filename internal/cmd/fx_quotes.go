@@ -15,8 +15,9 @@ import (
 
 func newFXQuotesCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "quotes",
-		Short: "Manage FX quotes",
+		Use:     "quotes",
+		Aliases: []string{"quote", "q"},
+		Short:   "Manage FX quotes",
 	}
 	cmd.AddCommand(newFXQuotesCreateCmd())
 	cmd.AddCommand(newFXQuotesGetCmd())
@@ -29,8 +30,9 @@ func newFXQuotesCreateCmd() *cobra.Command {
 	var validity string
 
 	cmd := &cobra.Command{
-		Use:   "create",
-		Short: "Create a quote to lock in an exchange rate",
+		Use:     "create",
+		Aliases: []string{"cr"},
+		Short:   "Create a quote to lock in an exchange rate",
 		Long: `Create an FX quote to lock in an exchange rate for a period of time.
 
 Examples:
@@ -156,8 +158,9 @@ Validity periods: 1m, 5m, 15m, 30m, 1h, 2h, 4h, 12h, 24h`,
 
 func newFXQuotesGetCmd() *cobra.Command {
 	return NewGetCommand(GetConfig[*api.Quote]{
-		Use:   "get <quoteId>",
-		Short: "Get quote details",
+		Use:     "get <quoteId>",
+		Aliases: []string{"g"},
+		Short:   "Get quote details",
 		Fetch: func(ctx context.Context, client *api.Client, id string) (*api.Quote, error) {
 			return client.GetQuote(ctx, id)
 		},

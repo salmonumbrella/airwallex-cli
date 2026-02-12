@@ -13,8 +13,9 @@ func newFXRatesCmd() *cobra.Command {
 	var sellCurrency, buyCurrency string
 
 	cmd := &cobra.Command{
-		Use:   "rates",
-		Short: "Get current exchange rates",
+		Use:     "rates",
+		Aliases: []string{"rate", "r"},
+		Short:   "Get current exchange rates",
 		Long: `Get current exchange rate between a currency pair.
 
 Both --sell and --buy currencies are required.

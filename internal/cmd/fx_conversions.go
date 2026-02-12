@@ -15,8 +15,9 @@ import (
 
 func newFXConversionsCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "conversions",
-		Short: "Manage currency conversions",
+		Use:     "conversions",
+		Aliases: []string{"conversion", "conv", "cv"},
+		Short:   "Manage currency conversions",
 	}
 	cmd.AddCommand(newFXConversionsListCmd())
 	cmd.AddCommand(newFXConversionsGetCmd())
@@ -28,6 +29,7 @@ func newFXConversionsListCmd() *cobra.Command {
 	var status, fromDate, toDate string
 	cmd := NewListCommand(ListConfig[api.Conversion]{
 		Use:          "list",
+		Aliases:      []string{"ls", "l"},
 		Short:        "List conversions",
 		Headers:      []string{"CONVERSION_ID", "SELL", "BUY", "RATE", "STATUS"},
 		EmptyMessage: "No conversions found",
@@ -57,16 +59,17 @@ func newFXConversionsListCmd() *cobra.Command {
 		},
 	}, getClient)
 
-	cmd.Flags().StringVar(&status, "status", "", "Filter by status")
-	cmd.Flags().StringVar(&fromDate, "from", "", "From date (YYYY-MM-DD)")
+	cmd.Flags().StringVarP(&status, "status", "s", "", "Filter by status")
+	cmd.Flags().StringVarP(&fromDate, "from", "f", "", "From date (YYYY-MM-DD)")
 	cmd.Flags().StringVar(&toDate, "to", "", "To date (YYYY-MM-DD)")
 	return cmd
 }
 
 func newFXConversionsGetCmd() *cobra.Command {
 	return NewGetCommand(GetConfig[*api.Conversion]{
-		Use:   "get <conversionId>",
-		Short: "Get conversion details",
+		Use:     "get <conversionId>",
+		Aliases: []string{"g"},
+		Short:   "Get conversion details",
 		Fetch: func(ctx context.Context, client *api.Client, id string) (*api.Conversion, error) {
 			return client.GetConversion(ctx, id)
 		},
@@ -95,8 +98,9 @@ func newFXConversionsCreateCmd() *cobra.Command {
 	var quoteID string
 
 	cmd := &cobra.Command{
-		Use:   "create",
-		Short: "Execute a currency conversion",
+		Use:     "create",
+		Aliases: []string{"cr"},
+		Short:   "Execute a currency conversion",
 		Long: `Execute a currency conversion, optionally using a locked quote.
 
 Examples:
