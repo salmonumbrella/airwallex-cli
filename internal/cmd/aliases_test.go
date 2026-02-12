@@ -317,6 +317,33 @@ func TestPerCommandFlagShortcodes(t *testing.T) {
 	}
 }
 
+func TestValueShorthands(t *testing.T) {
+	tests := []struct {
+		name   string
+		input  string
+		values []string
+		want   string
+	}{
+		{"transfer pa->PAID", "pa", []string{"PAID", "PENDING", "FAILED", "CANCELLED", "REFUNDED"}, "PAID"},
+		{"transfer pe->PENDING", "pe", []string{"PAID", "PENDING", "FAILED", "CANCELLED", "REFUNDED"}, "PENDING"},
+		{"card a->ACTIVE", "a", []string{"ACTIVE", "INACTIVE", "CLOSED"}, "ACTIVE"},
+		{"card in->INACTIVE", "in", []string{"ACTIVE", "INACTIVE", "CLOSED"}, "INACTIVE"},
+		{"report c->CSV", "c", []string{"CSV", "EXCEL", "PDF"}, "CSV"},
+		{"report e->EXCEL", "e", []string{"CSV", "EXCEL", "PDF"}, "EXCEL"},
+		{"entity c->COMPANY", "c", []string{"COMPANY", "PERSONAL"}, "COMPANY"},
+		{"entity p->PERSONAL", "p", []string{"COMPANY", "PERSONAL"}, "PERSONAL"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := normalizeEnumValue(tt.input, tt.values)
+			if got != tt.want {
+				t.Errorf("normalizeEnumValue(%q) = %q, want %q", tt.input, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestMultiLetterFlagAliases(t *testing.T) {
 	root := NewRootCmd()
 
