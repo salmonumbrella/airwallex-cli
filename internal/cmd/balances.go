@@ -13,8 +13,9 @@ import (
 
 func newBalancesCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "balances",
-		Short: "Balance operations",
+		Use:     "balances",
+		Aliases: []string{"balance", "bal", "b"},
+		Short:   "Balance operations",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Default behavior: show current balances
 			client, err := getClient(cmd.Context())
@@ -68,8 +69,9 @@ func newBalancesHistoryCmd() *cobra.Command {
 	var to string
 
 	cmd := NewListCommand(ListConfig[api.BalanceHistoryItem]{
-		Use:   "history",
-		Short: "Show balance transaction history",
+		Use:     "history",
+		Aliases: []string{"hist", "h"},
+		Short:   "Show balance transaction history",
 		Long: `Show balance transaction history.
 
 Date range is limited to 7 days maximum per query.
@@ -154,8 +156,8 @@ Examples:
 		},
 	}, getClient)
 
-	cmd.Flags().StringVar(&currency, "currency", "", "Filter by currency (e.g., CAD, USD)")
-	cmd.Flags().StringVar(&from, "from", "", "Start date (YYYY-MM-DD)")
+	cmd.Flags().StringVarP(&currency, "currency", "c", "", "Filter by currency (e.g., CAD, USD)")
+	cmd.Flags().StringVarP(&from, "from", "f", "", "Start date (YYYY-MM-DD)")
 	cmd.Flags().StringVar(&to, "to", "", "End date (YYYY-MM-DD)")
 
 	return cmd

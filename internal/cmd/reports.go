@@ -15,8 +15,9 @@ import (
 
 func newReportsCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "reports",
-		Short: "Financial report operations",
+		Use:     "reports",
+		Aliases: []string{"report", "rp"},
+		Short:   "Financial report operations",
 		Long: `Generate, list, and download financial reports.
 
 Report types:
@@ -37,6 +38,7 @@ Report types:
 func newReportsListCmd() *cobra.Command {
 	cmd := NewListCommand(ListConfig[api.FinancialReport]{
 		Use:          "list",
+		Aliases:      []string{"ls", "l"},
 		Short:        "List all financial reports",
 		Headers:      []string{"ID", "TYPE", "STATUS", "DATE_RANGE", "FORMAT", "EXPIRES_AT"},
 		EmptyMessage: "No reports found",
@@ -65,8 +67,9 @@ func newReportsListCmd() *cobra.Command {
 
 func newReportsGetCmd() *cobra.Command {
 	return NewGetCommand(GetConfig[*api.FinancialReport]{
-		Use:   "get <reportId>",
-		Short: "Get report details",
+		Use:     "get <reportId>",
+		Aliases: []string{"g"},
+		Short:   "Get report details",
 		Fetch: func(ctx context.Context, client *api.Client, id string) (*api.FinancialReport, error) {
 			return client.GetFinancialReport(ctx, id)
 		},
@@ -108,8 +111,9 @@ func newReportsSettlementCmd() *cobra.Command {
 	var timeout int
 
 	cmd := &cobra.Command{
-		Use:   "settlement",
-		Short: "Generate settlement report",
+		Use:     "settlement",
+		Aliases: []string{"settle"},
+		Short:   "Generate settlement report",
 		Long: `Generate settlement reports for payment settlement batches.
 
 Available formats: CSV, EXCEL
@@ -220,8 +224,9 @@ func newReportsAccountStatementCmd() *cobra.Command {
 	var timeout int
 
 	cmd := &cobra.Command{
-		Use:   "account-statement",
-		Short: "Generate account statement (PDF)",
+		Use:     "account-statement",
+		Aliases: []string{"stmt"},
+		Short:   "Generate account statement (PDF)",
 		Long: `Generate official PDF account statements for specified currencies.
 
 Examples:
@@ -343,8 +348,9 @@ func newReportsBalanceActivityCmd() *cobra.Command {
 	var timeout int
 
 	cmd := &cobra.Command{
-		Use:   "balance-activity",
-		Short: "Generate balance activity report",
+		Use:     "balance-activity",
+		Aliases: []string{"activity"},
+		Short:   "Generate balance activity report",
 		Long: `Generate detailed balance activity reports showing all settled transactions.
 
 Available formats: CSV, EXCEL, PDF
@@ -460,8 +466,9 @@ func newReportsTransactionReconCmd() *cobra.Command {
 	var timeout int
 
 	cmd := &cobra.Command{
-		Use:   "transaction-recon",
-		Short: "Generate transaction reconciliation report",
+		Use:     "transaction-recon",
+		Aliases: []string{"recon"},
+		Short:   "Generate transaction reconciliation report",
 		Long: `Generate transaction reconciliation reports for accounting and audit.
 
 Available formats: CSV, EXCEL

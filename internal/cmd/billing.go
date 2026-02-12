@@ -15,8 +15,9 @@ import (
 
 func newBillingCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "billing",
-		Short: "Billing operations",
+		Use:     "billing",
+		Aliases: []string{"bill", "bi"},
+		Short:   "Billing operations",
 	}
 	cmd.AddCommand(newBillingCustomersCmd())
 	cmd.AddCommand(newBillingProductsCmd())
@@ -67,8 +68,9 @@ func parseOptionalBool(value string) (*bool, error) {
 
 func newBillingCustomersCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "customers",
-		Short: "Billing customer management",
+		Use:     "customers",
+		Aliases: []string{"cust", "cu"},
+		Short:   "Billing customer management",
 	}
 	cmd.AddCommand(newBillingCustomersListCmd())
 	cmd.AddCommand(newBillingCustomersGetCmd())
@@ -84,6 +86,7 @@ func newBillingCustomersListCmd() *cobra.Command {
 
 	cmd := NewListCommand(ListConfig[api.BillingCustomer]{
 		Use:          "list",
+		Aliases:      []string{"ls", "l"},
 		Short:        "List billing customers",
 		Headers:      []string{"CUSTOMER_ID", "NAME", "EMAIL", "MERCHANT_ID"},
 		EmptyMessage: "No billing customers found",
@@ -124,8 +127,9 @@ func newBillingCustomersListCmd() *cobra.Command {
 
 func newBillingCustomersGetCmd() *cobra.Command {
 	return NewGetCommand(GetConfig[*api.BillingCustomer]{
-		Use:   "get <customerId>",
-		Short: "Get billing customer",
+		Use:     "get <customerId>",
+		Aliases: []string{"g"},
+		Short:   "Get billing customer",
 		Fetch: func(ctx context.Context, client *api.Client, id string) (*api.BillingCustomer, error) {
 			return client.GetBillingCustomer(ctx, id)
 		},
@@ -145,8 +149,9 @@ func newBillingCustomersGetCmd() *cobra.Command {
 
 func newBillingCustomersCreateCmd() *cobra.Command {
 	return NewPayloadCommand(PayloadCommandConfig[*api.BillingCustomer]{
-		Use:   "create",
-		Short: "Create a billing customer",
+		Use:     "create",
+		Aliases: []string{"cr"},
+		Short:   "Create a billing customer",
 		Long: `Create a billing customer using a JSON payload.
 
 Examples:
@@ -163,8 +168,9 @@ Examples:
 
 func newBillingCustomersUpdateCmd() *cobra.Command {
 	return NewPayloadCommand(PayloadCommandConfig[*api.BillingCustomer]{
-		Use:   "update <customerId>",
-		Short: "Update a billing customer",
+		Use:     "update <customerId>",
+		Aliases: []string{"up", "u"},
+		Short:   "Update a billing customer",
 		Long: `Update a billing customer using a JSON payload.
 
 Examples:
@@ -182,8 +188,9 @@ Examples:
 
 func newBillingProductsCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "products",
-		Short: "Billing product management",
+		Use:     "products",
+		Aliases: []string{"prod", "pr"},
+		Short:   "Billing product management",
 	}
 	cmd.AddCommand(newBillingProductsListCmd())
 	cmd.AddCommand(newBillingProductsGetCmd())
@@ -197,6 +204,7 @@ func newBillingProductsListCmd() *cobra.Command {
 
 	cmd := NewListCommand(ListConfig[api.BillingProduct]{
 		Use:          "list",
+		Aliases:      []string{"ls", "l"},
 		Short:        "List billing products",
 		Headers:      []string{"PRODUCT_ID", "NAME", "ACTIVE"},
 		EmptyMessage: "No products found",
@@ -233,8 +241,9 @@ func newBillingProductsListCmd() *cobra.Command {
 
 func newBillingProductsGetCmd() *cobra.Command {
 	return NewGetCommand(GetConfig[*api.BillingProduct]{
-		Use:   "get <productId>",
-		Short: "Get billing product",
+		Use:     "get <productId>",
+		Aliases: []string{"g"},
+		Short:   "Get billing product",
 		Fetch: func(ctx context.Context, client *api.Client, id string) (*api.BillingProduct, error) {
 			return client.GetBillingProduct(ctx, id)
 		},
@@ -253,8 +262,9 @@ func newBillingProductsGetCmd() *cobra.Command {
 
 func newBillingProductsCreateCmd() *cobra.Command {
 	return NewPayloadCommand(PayloadCommandConfig[*api.BillingProduct]{
-		Use:   "create",
-		Short: "Create a billing product",
+		Use:     "create",
+		Aliases: []string{"cr"},
+		Short:   "Create a billing product",
 		Long: `Create a billing product using a JSON payload.
 
 Examples:
@@ -271,8 +281,9 @@ Examples:
 
 func newBillingProductsUpdateCmd() *cobra.Command {
 	return NewPayloadCommand(PayloadCommandConfig[*api.BillingProduct]{
-		Use:   "update <productId>",
-		Short: "Update a billing product",
+		Use:     "update <productId>",
+		Aliases: []string{"up", "u"},
+		Short:   "Update a billing product",
 		Long: `Update a billing product using a JSON payload.
 
 Examples:
@@ -290,8 +301,9 @@ Examples:
 
 func newBillingPricesCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "prices",
-		Short: "Billing price management",
+		Use:     "prices",
+		Aliases: []string{"price", "pc"},
+		Short:   "Billing price management",
 	}
 	cmd.AddCommand(newBillingPricesListCmd())
 	cmd.AddCommand(newBillingPricesGetCmd())
@@ -309,6 +321,7 @@ func newBillingPricesListCmd() *cobra.Command {
 
 	cmd := NewListCommand(ListConfig[api.BillingPrice]{
 		Use:          "list",
+		Aliases:      []string{"ls", "l"},
 		Short:        "List billing prices",
 		Headers:      []string{"PRICE_ID", "PRODUCT_ID", "AMOUNT", "CURRENCY", "ACTIVE"},
 		EmptyMessage: "No prices found",
@@ -364,8 +377,9 @@ func newBillingPricesListCmd() *cobra.Command {
 
 func newBillingPricesGetCmd() *cobra.Command {
 	return NewGetCommand(GetConfig[*api.BillingPrice]{
-		Use:   "get <priceId>",
-		Short: "Get billing price",
+		Use:     "get <priceId>",
+		Aliases: []string{"g"},
+		Short:   "Get billing price",
 		Fetch: func(ctx context.Context, client *api.Client, id string) (*api.BillingPrice, error) {
 			return client.GetBillingPrice(ctx, id)
 		},
@@ -392,8 +406,9 @@ func newBillingPricesGetCmd() *cobra.Command {
 
 func newBillingPricesCreateCmd() *cobra.Command {
 	return NewPayloadCommand(PayloadCommandConfig[*api.BillingPrice]{
-		Use:   "create",
-		Short: "Create a billing price",
+		Use:     "create",
+		Aliases: []string{"cr"},
+		Short:   "Create a billing price",
 		Long: `Create a billing price using a JSON payload.
 
 Examples:
@@ -410,8 +425,9 @@ Examples:
 
 func newBillingPricesUpdateCmd() *cobra.Command {
 	return NewPayloadCommand(PayloadCommandConfig[*api.BillingPrice]{
-		Use:   "update <priceId>",
-		Short: "Update a billing price",
+		Use:     "update <priceId>",
+		Aliases: []string{"up", "u"},
+		Short:   "Update a billing price",
 		Long: `Update a billing price using a JSON payload.
 
 Examples:
@@ -429,8 +445,9 @@ Examples:
 
 func newBillingInvoicesCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "invoices",
-		Short: "Billing invoice management",
+		Use:     "invoices",
+		Aliases: []string{"inv"},
+		Short:   "Billing invoice management",
 	}
 	cmd.AddCommand(newBillingInvoicesListCmd())
 	cmd.AddCommand(newBillingInvoicesGetCmd())
@@ -449,6 +466,7 @@ func newBillingInvoicesListCmd() *cobra.Command {
 
 	cmd := NewListCommand(ListConfig[api.BillingInvoice]{
 		Use:          "list",
+		Aliases:      []string{"ls", "l"},
 		Short:        "List billing invoices",
 		Headers:      []string{"INVOICE_ID", "STATUS", "TOTAL", "CURRENCY", "CUSTOMER_ID"},
 		EmptyMessage: "No invoices found",
@@ -497,8 +515,9 @@ func newBillingInvoicesListCmd() *cobra.Command {
 
 func newBillingInvoicesGetCmd() *cobra.Command {
 	return NewGetCommand(GetConfig[*api.BillingInvoice]{
-		Use:   "get <invoiceId>",
-		Short: "Get billing invoice",
+		Use:     "get <invoiceId>",
+		Aliases: []string{"g"},
+		Short:   "Get billing invoice",
 		Fetch: func(ctx context.Context, client *api.Client, id string) (*api.BillingInvoice, error) {
 			return client.GetBillingInvoice(ctx, id)
 		},
@@ -524,8 +543,9 @@ func newBillingInvoicesGetCmd() *cobra.Command {
 
 func newBillingInvoicesCreateCmd() *cobra.Command {
 	return NewPayloadCommand(PayloadCommandConfig[*api.BillingInvoice]{
-		Use:   "create",
-		Short: "Create a billing invoice",
+		Use:     "create",
+		Aliases: []string{"cr"},
+		Short:   "Create a billing invoice",
 		Long: `Create a billing invoice using a JSON payload.
 
 Examples:
@@ -591,8 +611,9 @@ Examples:
 
 func newBillingInvoiceItemsCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "items",
-		Short: "Invoice items",
+		Use:     "items",
+		Aliases: []string{"item", "it"},
+		Short:   "Invoice items",
 	}
 	cmd.AddCommand(newBillingInvoiceItemsListCmd())
 	cmd.AddCommand(newBillingInvoiceItemsGetCmd())
@@ -602,6 +623,7 @@ func newBillingInvoiceItemsCmd() *cobra.Command {
 func newBillingInvoiceItemsListCmd() *cobra.Command {
 	cmd := NewListCommand(ListConfig[api.BillingInvoiceItem]{
 		Use:          "list <invoiceId>",
+		Aliases:      []string{"ls", "l"},
 		Short:        "List invoice items",
 		Headers:      []string{"ITEM_ID", "INVOICE_ID", "AMOUNT", "CURRENCY", "QTY"},
 		EmptyMessage: "No invoice items found",
@@ -635,9 +657,10 @@ func newBillingInvoiceItemsListCmd() *cobra.Command {
 
 func newBillingInvoiceItemsGetCmd() *cobra.Command {
 	return &cobra.Command{
-		Use:   "get <invoiceId> <itemId>",
-		Short: "Get invoice item",
-		Args:  cobra.ExactArgs(2),
+		Use:     "get <invoiceId> <itemId>",
+		Aliases: []string{"g"},
+		Short:   "Get invoice item",
+		Args:    cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := getClient(cmd.Context())
 			if err != nil {
@@ -670,8 +693,9 @@ func newBillingInvoiceItemsGetCmd() *cobra.Command {
 
 func newBillingSubscriptionsCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "subscriptions",
-		Short: "Billing subscription management",
+		Use:     "subscriptions",
+		Aliases: []string{"sub", "su"},
+		Short:   "Billing subscription management",
 	}
 	cmd.AddCommand(newBillingSubscriptionsListCmd())
 	cmd.AddCommand(newBillingSubscriptionsGetCmd())
@@ -692,6 +716,7 @@ func newBillingSubscriptionsListCmd() *cobra.Command {
 
 	cmd := NewListCommand(ListConfig[api.BillingSubscription]{
 		Use:          "list",
+		Aliases:      []string{"ls", "l"},
 		Short:        "List billing subscriptions",
 		Headers:      []string{"SUBSCRIPTION_ID", "CUSTOMER_ID", "STATUS", "CURRENT_PERIOD_END"},
 		EmptyMessage: "No subscriptions found",
@@ -738,8 +763,9 @@ func newBillingSubscriptionsListCmd() *cobra.Command {
 
 func newBillingSubscriptionsGetCmd() *cobra.Command {
 	return NewGetCommand(GetConfig[*api.BillingSubscription]{
-		Use:   "get <subscriptionId>",
-		Short: "Get billing subscription",
+		Use:     "get <subscriptionId>",
+		Aliases: []string{"g"},
+		Short:   "Get billing subscription",
 		Fetch: func(ctx context.Context, client *api.Client, id string) (*api.BillingSubscription, error) {
 			return client.GetBillingSubscription(ctx, id)
 		},
@@ -761,8 +787,9 @@ func newBillingSubscriptionsGetCmd() *cobra.Command {
 
 func newBillingSubscriptionsCreateCmd() *cobra.Command {
 	return NewPayloadCommand(PayloadCommandConfig[*api.BillingSubscription]{
-		Use:   "create",
-		Short: "Create a billing subscription",
+		Use:     "create",
+		Aliases: []string{"cr"},
+		Short:   "Create a billing subscription",
 		Long: `Create a billing subscription using a JSON payload.
 
 Examples:
@@ -779,8 +806,9 @@ Examples:
 
 func newBillingSubscriptionsUpdateCmd() *cobra.Command {
 	return NewPayloadCommand(PayloadCommandConfig[*api.BillingSubscription]{
-		Use:   "update <subscriptionId>",
-		Short: "Update a billing subscription",
+		Use:     "update <subscriptionId>",
+		Aliases: []string{"up", "u"},
+		Short:   "Update a billing subscription",
 		Long: `Update a billing subscription using a JSON payload.
 
 Examples:
@@ -798,8 +826,9 @@ Examples:
 
 func newBillingSubscriptionsCancelCmd() *cobra.Command {
 	return NewPayloadCommand(PayloadCommandConfig[*api.BillingSubscription]{
-		Use:   "cancel <subscriptionId>",
-		Short: "Cancel a billing subscription",
+		Use:     "cancel <subscriptionId>",
+		Aliases: []string{"x"},
+		Short:   "Cancel a billing subscription",
 		Long: `Cancel a billing subscription.
 
 Examples:
@@ -818,8 +847,9 @@ Examples:
 
 func newBillingSubscriptionItemsCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "items",
-		Short: "Subscription items",
+		Use:     "items",
+		Aliases: []string{"item", "it"},
+		Short:   "Subscription items",
 	}
 	cmd.AddCommand(newBillingSubscriptionItemsListCmd())
 	cmd.AddCommand(newBillingSubscriptionItemsGetCmd())
@@ -829,6 +859,7 @@ func newBillingSubscriptionItemsCmd() *cobra.Command {
 func newBillingSubscriptionItemsListCmd() *cobra.Command {
 	cmd := NewListCommand(ListConfig[api.BillingSubscriptionItem]{
 		Use:          "list <subscriptionId>",
+		Aliases:      []string{"ls", "l"},
 		Short:        "List subscription items",
 		Headers:      []string{"ITEM_ID", "SUBSCRIPTION_ID", "PRICE_ID", "QTY"},
 		EmptyMessage: "No subscription items found",
@@ -862,9 +893,10 @@ func newBillingSubscriptionItemsListCmd() *cobra.Command {
 
 func newBillingSubscriptionItemsGetCmd() *cobra.Command {
 	return &cobra.Command{
-		Use:   "get <subscriptionId> <itemId>",
-		Short: "Get subscription item",
-		Args:  cobra.ExactArgs(2),
+		Use:     "get <subscriptionId> <itemId>",
+		Aliases: []string{"g"},
+		Short:   "Get subscription item",
+		Args:    cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := getClient(cmd.Context())
 			if err != nil {

@@ -24,8 +24,9 @@ func newDepositsCmd() *cobra.Command {
 func newDepositsListCmd() *cobra.Command {
 	var status, fromDate, toDate string
 	cmd := NewListCommand(ListConfig[api.Deposit]{
-		Use:   "list",
-		Short: "List deposits",
+		Use:     "list",
+		Aliases: []string{"ls", "l"},
+		Short:   "List deposits",
 		Long: `List inbound deposits with optional filters.
 
 Examples:
@@ -63,16 +64,17 @@ Examples:
 		},
 	}, getClient)
 
-	cmd.Flags().StringVar(&status, "status", "", "Filter by status (PENDING, SETTLED, FAILED)")
-	cmd.Flags().StringVar(&fromDate, "from", "", "From date (YYYY-MM-DD)")
+	cmd.Flags().StringVarP(&status, "status", "s", "", "Filter by status (PENDING, SETTLED, FAILED)")
+	cmd.Flags().StringVarP(&fromDate, "from", "f", "", "From date (YYYY-MM-DD)")
 	cmd.Flags().StringVar(&toDate, "to", "", "To date (YYYY-MM-DD)")
 	return cmd
 }
 
 func newDepositsGetCmd() *cobra.Command {
 	return NewGetCommand(GetConfig[*api.Deposit]{
-		Use:   "get <depositId>",
-		Short: "Get deposit details",
+		Use:     "get <depositId>",
+		Aliases: []string{"g"},
+		Short:   "Get deposit details",
 		Fetch: func(ctx context.Context, client *api.Client, id string) (*api.Deposit, error) {
 			return client.GetDeposit(ctx, id)
 		},

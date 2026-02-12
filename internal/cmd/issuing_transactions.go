@@ -11,8 +11,9 @@ import (
 
 func newTransactionsCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "transactions",
-		Short: "Transaction management",
+		Use:     "transactions",
+		Aliases: []string{"transaction", "tx"},
+		Short:   "Transaction management",
 	}
 	cmd.AddCommand(newTransactionsListCmd())
 	cmd.AddCommand(newTransactionsGetCmd())
@@ -24,8 +25,9 @@ func newTransactionsListCmd() *cobra.Command {
 	var from string
 	var to string
 	cmd := NewListCommand(ListConfig[api.Transaction]{
-		Use:   "list",
-		Short: "List transactions",
+		Use:     "list",
+		Aliases: []string{"ls", "l"},
+		Short:   "List transactions",
 		Long: `List card transactions with optional filters.
 
 Use --output json with --query for advanced filtering using jq syntax.
@@ -92,15 +94,16 @@ Examples:
 	}, getClient)
 
 	cmd.Flags().StringVar(&cardID, "card-id", "", "Filter by card ID")
-	cmd.Flags().StringVar(&from, "from", "", "From date (YYYY-MM-DD)")
+	cmd.Flags().StringVarP(&from, "from", "f", "", "From date (YYYY-MM-DD)")
 	cmd.Flags().StringVar(&to, "to", "", "To date (YYYY-MM-DD)")
 	return cmd
 }
 
 func newTransactionsGetCmd() *cobra.Command {
 	return NewGetCommand(GetConfig[*api.Transaction]{
-		Use:   "get <transactionId>",
-		Short: "Get transaction details",
+		Use:     "get <transactionId>",
+		Aliases: []string{"g"},
+		Short:   "Get transaction details",
 		Fetch: func(ctx context.Context, client *api.Client, id string) (*api.Transaction, error) {
 			return client.GetTransaction(ctx, id)
 		},

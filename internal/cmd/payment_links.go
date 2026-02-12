@@ -28,6 +28,7 @@ func newPaymentLinksCmd() *cobra.Command {
 func newPaymentLinksListCmd() *cobra.Command {
 	cmd := NewListCommand(ListConfig[api.PaymentLink]{
 		Use:          "list",
+		Aliases:      []string{"ls", "l"},
 		Short:        "List payment links",
 		Headers:      []string{"ID", "AMOUNT", "CURRENCY", "STATUS", "DESCRIPTION"},
 		EmptyMessage: "No payment links found",
@@ -55,8 +56,9 @@ func newPaymentLinksListCmd() *cobra.Command {
 
 func newPaymentLinksGetCmd() *cobra.Command {
 	return NewGetCommand(GetConfig[*api.PaymentLink]{
-		Use:   "get <linkId>",
-		Short: "Get payment link details",
+		Use:     "get <linkId>",
+		Aliases: []string{"g"},
+		Short:   "Get payment link details",
 		Fetch: func(ctx context.Context, client *api.Client, id string) (*api.PaymentLink, error) {
 			return client.GetPaymentLink(ctx, id)
 		},
@@ -87,8 +89,9 @@ func newPaymentLinksCreateCmd() *cobra.Command {
 	var reusable bool
 
 	cmd := &cobra.Command{
-		Use:   "create",
-		Short: "Create a payment link",
+		Use:     "create",
+		Aliases: []string{"cr"},
+		Short:   "Create a payment link",
 		Long: `Create a new payment link for collecting payments.
 
 Examples:
@@ -146,10 +149,10 @@ Examples:
 		},
 	}
 
-	cmd.Flags().Float64Var(&amount, "amount", 0, "Amount to collect (required)")
-	cmd.Flags().StringVar(&currency, "currency", "", "Currency (required)")
+	cmd.Flags().Float64VarP(&amount, "amount", "A", 0, "Amount to collect (required)")
+	cmd.Flags().StringVarP(&currency, "currency", "c", "", "Currency (required)")
 	cmd.Flags().StringVar(&title, "title", "", "Title for the payment link (defaults to description or auto-generated)")
-	cmd.Flags().StringVar(&description, "description", "", "Description")
+	cmd.Flags().StringVarP(&description, "description", "D", "", "Description")
 	cmd.Flags().BoolVar(&reusable, "reusable", false, "Allow the link to be used multiple times")
 	cmd.Flags().StringVar(&expiresIn, "expires-in", "", "Expiration period (e.g., 7d, 24h)")
 	mustMarkRequired(cmd, "amount")

@@ -11,8 +11,9 @@ import (
 
 func newAccountsCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "accounts",
-		Short: "Global account management",
+		Use:     "accounts",
+		Aliases: []string{"account", "acc", "ac"},
+		Short:   "Global account management",
 	}
 	cmd.AddCommand(newAccountsListCmd())
 	cmd.AddCommand(newAccountsGetCmd())
@@ -22,6 +23,7 @@ func newAccountsCmd() *cobra.Command {
 func newAccountsListCmd() *cobra.Command {
 	return NewListCommand(ListConfig[api.GlobalAccount]{
 		Use:          "list",
+		Aliases:      []string{"ls", "l"},
 		Short:        "List global accounts",
 		Headers:      []string{"ACCOUNT_ID", "NAME", "CURRENCY", "COUNTRY", "STATUS"},
 		EmptyMessage: "No global accounts found",
@@ -51,8 +53,9 @@ func newAccountsListCmd() *cobra.Command {
 
 func newAccountsGetCmd() *cobra.Command {
 	return NewGetCommand(GetConfig[*api.GlobalAccount]{
-		Use:   "get <accountId>",
-		Short: "Get global account details",
+		Use:     "get <accountId>",
+		Aliases: []string{"g"},
+		Short:   "Get global account details",
 		Fetch: func(ctx context.Context, client *api.Client, id string) (*api.GlobalAccount, error) {
 			return client.GetGlobalAccount(ctx, id)
 		},

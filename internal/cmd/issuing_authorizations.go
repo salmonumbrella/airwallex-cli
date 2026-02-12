@@ -11,8 +11,9 @@ import (
 
 func newAuthorizationsCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "authorizations",
-		Short: "Authorization retrieval",
+		Use:     "authorizations",
+		Aliases: []string{"authorization", "az"},
+		Short:   "Authorization retrieval",
 	}
 	cmd.AddCommand(newAuthorizationsListCmd())
 	cmd.AddCommand(newAuthorizationsGetCmd())
@@ -40,6 +41,7 @@ func newAuthorizationsListCmd() *cobra.Command {
 	var to string
 	cmd := NewListCommand(ListConfig[api.Authorization]{
 		Use:          "list",
+		Aliases:      []string{"ls", "l"},
 		Short:        "List authorizations",
 		Headers:      []string{"AUTH_ID", "TRANSACTION_ID", "CARD_ID", "STATUS", "AMOUNT", "CURRENCY", "MERCHANT"},
 		EmptyMessage: "No authorizations found",
@@ -79,7 +81,7 @@ func newAuthorizationsListCmd() *cobra.Command {
 		},
 	}, getClient)
 
-	cmd.Flags().StringVar(&status, "status", "", "Filter by status")
+	cmd.Flags().StringVarP(&status, "status", "s", "", "Filter by status")
 	cmd.Flags().StringVar(&cardID, "card-id", "", "Filter by card ID")
 	cmd.Flags().StringVar(&billingCurrency, "billing-currency", "", "Filter by billing currency")
 	cmd.Flags().StringVar(&digitalWalletTokenID, "digital-wallet-token-id", "", "Filter by digital wallet token ID")
@@ -92,8 +94,9 @@ func newAuthorizationsListCmd() *cobra.Command {
 
 func newAuthorizationsGetCmd() *cobra.Command {
 	return NewGetCommand(GetConfig[*api.Authorization]{
-		Use:   "get <transactionId>",
-		Short: "Get authorization details",
+		Use:     "get <transactionId>",
+		Aliases: []string{"g"},
+		Short:   "Get authorization details",
 		Fetch: func(ctx context.Context, client *api.Client, id string) (*api.Authorization, error) {
 			return client.GetAuthorization(ctx, id)
 		},

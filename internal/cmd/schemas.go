@@ -24,9 +24,10 @@ func schemaKeyToFlag(key, path string) string {
 
 func newSchemasCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "schemas",
-		Short: "API schema discovery",
-		Long:  "Discover required fields for beneficiaries and transfers by country and payment method.",
+		Use:     "schemas",
+		Aliases: []string{"schema", "sc"},
+		Short:   "API schema discovery",
+		Long:    "Discover required fields for beneficiaries and transfers by country and payment method.",
 	}
 	cmd.AddCommand(newSchemasBeneficiaryCmd())
 	cmd.AddCommand(newSchemasTransferCmd())
@@ -37,8 +38,9 @@ func newSchemasBeneficiaryCmd() *cobra.Command {
 	var bankCountry, entityType, paymentMethod string
 
 	cmd := &cobra.Command{
-		Use:   "beneficiary",
-		Short: "Get required fields for creating a beneficiary",
+		Use:     "beneficiary",
+		Aliases: []string{"ben", "b"},
+		Short:   "Get required fields for creating a beneficiary",
 		Long: `Discover which fields are required to create a beneficiary for a specific country and entity type.
 
 Examples:
@@ -95,8 +97,9 @@ func newSchemasTransferCmd() *cobra.Command {
 	var sourceCurrency, destCurrency, paymentMethod string
 
 	cmd := &cobra.Command{
-		Use:   "transfer",
-		Short: "Get required fields for creating a transfer",
+		Use:     "transfer",
+		Aliases: []string{"xfer", "t"},
+		Short:   "Get required fields for creating a transfer",
 		Long: `Discover which fields are required to create a transfer for a specific currency pair.
 
 Examples:

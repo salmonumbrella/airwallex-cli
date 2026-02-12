@@ -14,8 +14,9 @@ import (
 
 func newDisputesCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "disputes",
-		Short: "Transaction dispute management",
+		Use:     "disputes",
+		Aliases: []string{"dispute", "di"},
+		Short:   "Transaction dispute management",
 	}
 	cmd.AddCommand(newDisputesListCmd())
 	cmd.AddCommand(newDisputesGetCmd())
@@ -47,6 +48,7 @@ func newDisputesListCmd() *cobra.Command {
 
 	cmd := NewListCommand(ListConfig[api.TransactionDispute]{
 		Use:          "list",
+		Aliases:      []string{"ls", "l"},
 		Short:        "List disputes",
 		Headers:      []string{"DISPUTE_ID", "TRANSACTION_ID", "STATUS", "AMOUNT", "CURRENCY"},
 		EmptyMessage: "No disputes found",
@@ -94,7 +96,7 @@ func newDisputesListCmd() *cobra.Command {
 		},
 	}, getClient)
 
-	cmd.Flags().StringVar(&status, "status", "", "Filter by status")
+	cmd.Flags().StringVarP(&status, "status", "s", "", "Filter by status")
 	cmd.Flags().StringVar(&detailedStatus, "detailed-status", "", "Filter by detailed status")
 	cmd.Flags().StringVar(&reason, "reason", "", "Filter by reason")
 	cmd.Flags().StringVar(&reference, "reference", "", "Filter by reference")
@@ -109,8 +111,9 @@ func newDisputesListCmd() *cobra.Command {
 
 func newDisputesGetCmd() *cobra.Command {
 	return NewGetCommand(GetConfig[*api.TransactionDispute]{
-		Use:   "get <disputeId>",
-		Short: "Get dispute details",
+		Use:     "get <disputeId>",
+		Aliases: []string{"g"},
+		Short:   "Get dispute details",
 		Fetch: func(ctx context.Context, client *api.Client, id string) (*api.TransactionDispute, error) {
 			return client.GetTransactionDispute(ctx, id)
 		},
@@ -132,8 +135,9 @@ func newDisputesGetCmd() *cobra.Command {
 
 func newDisputesCreateCmd() *cobra.Command {
 	return NewPayloadCommand(PayloadCommandConfig[*api.TransactionDispute]{
-		Use:   "create",
-		Short: "Create a dispute",
+		Use:     "create",
+		Aliases: []string{"cr"},
+		Short:   "Create a dispute",
 		Long: `Create a dispute using a JSON payload.
 
 Examples:
@@ -150,8 +154,9 @@ Examples:
 
 func newDisputesUpdateCmd() *cobra.Command {
 	return NewPayloadCommand(PayloadCommandConfig[*api.TransactionDispute]{
-		Use:   "update <disputeId>",
-		Short: "Update a dispute",
+		Use:     "update <disputeId>",
+		Aliases: []string{"up", "u"},
+		Short:   "Update a dispute",
 		Long: `Update a dispute using a JSON payload.
 
 Examples:
@@ -169,9 +174,10 @@ Examples:
 
 func newDisputesSubmitCmd() *cobra.Command {
 	return &cobra.Command{
-		Use:   "submit <disputeId>",
-		Short: "Submit a dispute",
-		Args:  cobra.ExactArgs(1),
+		Use:     "submit <disputeId>",
+		Aliases: []string{"sub"},
+		Short:   "Submit a dispute",
+		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			u := ui.FromContext(cmd.Context())
 			client, err := getClient(cmd.Context())
@@ -197,9 +203,10 @@ func newDisputesSubmitCmd() *cobra.Command {
 
 func newDisputesCancelCmd() *cobra.Command {
 	return &cobra.Command{
-		Use:   "cancel <disputeId>",
-		Short: "Cancel a dispute",
-		Args:  cobra.ExactArgs(1),
+		Use:     "cancel <disputeId>",
+		Aliases: []string{"x"},
+		Short:   "Cancel a dispute",
+		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			u := ui.FromContext(cmd.Context())
 			client, err := getClient(cmd.Context())

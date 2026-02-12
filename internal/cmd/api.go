@@ -26,8 +26,9 @@ func newAPICmd() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "api [method] <endpoint>",
-		Short: "Make raw API requests",
+		Use:     "api [method] <endpoint>",
+		Aliases: []string{"ap"},
+		Short:   "Make raw API requests",
 		Long: `Make authenticated requests to any Airwallex API endpoint.
 
 The endpoint should start with / (e.g., /api/v1/balances/current).

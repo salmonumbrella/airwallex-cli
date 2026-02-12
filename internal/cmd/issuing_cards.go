@@ -15,8 +15,9 @@ import (
 
 func newCardsCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "cards",
-		Short: "Card management",
+		Use:     "cards",
+		Aliases: []string{"card", "cd"},
+		Short:   "Card management",
 	}
 	cmd.AddCommand(newCardsListCmd())
 	cmd.AddCommand(newCardsGetCmd())
@@ -33,6 +34,7 @@ func newCardsListCmd() *cobra.Command {
 	var cardholderID string
 	cmd := NewListCommand(ListConfig[api.Card]{
 		Use:          "list",
+		Aliases:      []string{"ls", "l"},
 		Short:        "List cards",
 		Headers:      []string{"CARD_ID", "STATUS", "NICKNAME", "LAST4", "FORM_FACTOR", "CARDHOLDER"},
 		EmptyMessage: "No cards found",
@@ -56,15 +58,16 @@ func newCardsListCmd() *cobra.Command {
 		},
 	}, getClient)
 
-	cmd.Flags().StringVar(&status, "status", "", "Filter by status (ACTIVE, INACTIVE, CLOSED)")
+	cmd.Flags().StringVarP(&status, "status", "s", "", "Filter by status (ACTIVE, INACTIVE, CLOSED)")
 	cmd.Flags().StringVar(&cardholderID, "cardholder-id", "", "Filter by cardholder")
 	return cmd
 }
 
 func newCardsGetCmd() *cobra.Command {
 	return NewGetCommand(GetConfig[*api.Card]{
-		Use:   "get <cardId>",
-		Short: "Get card details",
+		Use:     "get <cardId>",
+		Aliases: []string{"g"},
+		Short:   "Get card details",
 		Fetch: func(ctx context.Context, client *api.Client, id string) (*api.Card, error) {
 			return client.GetCard(ctx, id)
 		},
@@ -98,8 +101,9 @@ func newCardsCreateCmd() *cobra.Command {
 	var additionalCardholders []string
 
 	cmd := &cobra.Command{
-		Use:   "create <nickname>",
-		Short: "Create a new card",
+		Use:     "create <nickname>",
+		Aliases: []string{"cr"},
+		Short:   "Create a new card",
 		Long: `Create a new card with spending limits.
 
 IMPORTANT: The --limit flag is required. Airwallex requires all cards to have
@@ -275,9 +279,10 @@ func newCardsUpdateCmd() *cobra.Command {
 	var status string
 
 	cmd := &cobra.Command{
-		Use:   "update <cardId>",
-		Short: "Update card (nickname, status)",
-		Args:  cobra.ExactArgs(1),
+		Use:     "update <cardId>",
+		Aliases: []string{"up", "u"},
+		Short:   "Update card (nickname, status)",
+		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			u := ui.FromContext(cmd.Context())
 			client, err := getClient(cmd.Context())
@@ -313,16 +318,17 @@ func newCardsUpdateCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&nickname, "nickname", "", "Card nickname")
+	cmd.Flags().StringVarP(&nickname, "nickname", "N", "", "Card nickname")
 	cmd.Flags().StringVar(&status, "status", "", "Card status (ACTIVE, INACTIVE, CLOSED)")
 	return cmd
 }
 
 func newCardsActivateCmd() *cobra.Command {
 	return &cobra.Command{
-		Use:   "activate <cardId>",
-		Short: "Activate a physical card",
-		Args:  cobra.ExactArgs(1),
+		Use:     "activate <cardId>",
+		Aliases: []string{"act"},
+		Short:   "Activate a physical card",
+		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			u := ui.FromContext(cmd.Context())
 			client, err := getClient(cmd.Context())
@@ -351,9 +357,10 @@ func newCardsDetailsCmd() *cobra.Command {
 	var showPAN bool
 
 	cmd := &cobra.Command{
-		Use:   "details <cardId>",
-		Short: "Get sensitive card details (PAN, CVV, expiry)",
-		Args:  cobra.ExactArgs(1),
+		Use:     "details <cardId>",
+		Aliases: []string{"det"},
+		Short:   "Get sensitive card details (PAN, CVV, expiry)",
+		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := getClient(cmd.Context())
 			if err != nil {
@@ -392,9 +399,10 @@ func newCardsDetailsCmd() *cobra.Command {
 
 func newCardsLimitsCmd() *cobra.Command {
 	return &cobra.Command{
-		Use:   "limits <cardId>",
-		Short: "Get card spending limits and remaining balance",
-		Args:  cobra.ExactArgs(1),
+		Use:     "limits <cardId>",
+		Aliases: []string{"lim"},
+		Short:   "Get card spending limits and remaining balance",
+		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := getClient(cmd.Context())
 			if err != nil {

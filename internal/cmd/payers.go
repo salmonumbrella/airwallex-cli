@@ -13,8 +13,9 @@ import (
 
 func newPayersCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "payers",
-		Short: "Payer management for payouts",
+		Use:     "payers",
+		Aliases: []string{"payer", "py"},
+		Short:   "Payer management for payouts",
 	}
 	cmd.AddCommand(newPayersListCmd())
 	cmd.AddCommand(newPayersGetCmd())
@@ -41,6 +42,7 @@ func newPayersListCmd() *cobra.Command {
 
 	cmd := NewListCommand(ListConfig[api.Payer]{
 		Use:          "list",
+		Aliases:      []string{"ls", "l"},
 		Short:        "List payers",
 		Headers:      []string{"PAYER_ID", "ENTITY_TYPE", "NAME", "STATUS"},
 		EmptyMessage: "No payers found",
@@ -82,8 +84,9 @@ func newPayersListCmd() *cobra.Command {
 
 func newPayersGetCmd() *cobra.Command {
 	return NewGetCommand(GetConfig[*api.Payer]{
-		Use:   "get <payerId>",
-		Short: "Get payer details",
+		Use:     "get <payerId>",
+		Aliases: []string{"g"},
+		Short:   "Get payer details",
 		Fetch: func(ctx context.Context, client *api.Client, id string) (*api.Payer, error) {
 			return client.GetPayer(ctx, id)
 		},
@@ -102,8 +105,9 @@ func newPayersGetCmd() *cobra.Command {
 
 func newPayersCreateCmd() *cobra.Command {
 	return NewPayloadCommand(PayloadCommandConfig[*api.Payer]{
-		Use:   "create",
-		Short: "Create a payer",
+		Use:     "create",
+		Aliases: []string{"cr"},
+		Short:   "Create a payer",
 		Long: `Create a payer using a JSON payload.
 
 Examples:
@@ -120,8 +124,9 @@ Examples:
 
 func newPayersUpdateCmd() *cobra.Command {
 	return NewPayloadCommand(PayloadCommandConfig[*api.Payer]{
-		Use:   "update <payerId>",
-		Short: "Update a payer",
+		Use:     "update <payerId>",
+		Aliases: []string{"up", "u"},
+		Short:   "Update a payer",
 		Long: `Update a payer using a JSON payload.
 
 Examples:
@@ -139,9 +144,10 @@ Examples:
 
 func newPayersDeleteCmd() *cobra.Command {
 	return &cobra.Command{
-		Use:   "delete <payerId>",
-		Short: "Delete a payer",
-		Args:  cobra.ExactArgs(1),
+		Use:     "delete <payerId>",
+		Aliases: []string{"del", "rm"},
+		Short:   "Delete a payer",
+		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			u := ui.FromContext(cmd.Context())
 			client, err := getClient(cmd.Context())
@@ -171,8 +177,9 @@ func newPayersDeleteCmd() *cobra.Command {
 
 func newPayersValidateCmd() *cobra.Command {
 	return NewPayloadCommand(PayloadCommandConfig[map[string]any]{
-		Use:   "validate",
-		Short: "Validate payer details",
+		Use:     "validate",
+		Aliases: []string{"val", "v"},
+		Short:   "Validate payer details",
 		Long: `Validate payer details using a JSON payload.
 
 Examples:

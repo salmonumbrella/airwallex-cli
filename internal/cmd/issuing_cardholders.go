@@ -14,8 +14,9 @@ import (
 
 func newCardholdersCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "cardholders",
-		Short: "Cardholder management",
+		Use:     "cardholders",
+		Aliases: []string{"cardholder", "ch"},
+		Short:   "Cardholder management",
 	}
 	cmd.AddCommand(newCardholdersListCmd())
 	cmd.AddCommand(newCardholdersGetCmd())
@@ -27,6 +28,7 @@ func newCardholdersCmd() *cobra.Command {
 func newCardholdersListCmd() *cobra.Command {
 	cmd := NewListCommand(ListConfig[api.Cardholder]{
 		Use:          "list",
+		Aliases:      []string{"ls", "l"},
 		Short:        "List cardholders",
 		Headers:      []string{"CARDHOLDER_ID", "TYPE", "NAME", "EMAIL", "STATUS"},
 		EmptyMessage: "No cardholders found",
@@ -51,8 +53,9 @@ func newCardholdersListCmd() *cobra.Command {
 
 func newCardholdersGetCmd() *cobra.Command {
 	return NewGetCommand(GetConfig[*api.Cardholder]{
-		Use:   "get <cardholderId>",
-		Short: "Get cardholder details",
+		Use:     "get <cardholderId>",
+		Aliases: []string{"g"},
+		Short:   "Get cardholder details",
 		Fetch: func(ctx context.Context, client *api.Client, id string) (*api.Cardholder, error) {
 			return client.GetCardholder(ctx, id)
 		},
@@ -78,8 +81,9 @@ func newCardholdersCreateCmd() *cobra.Command {
 	var lastName string
 
 	cmd := &cobra.Command{
-		Use:   "create",
-		Short: "Create a new cardholder",
+		Use:     "create",
+		Aliases: []string{"cr"},
+		Short:   "Create a new cardholder",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			u := ui.FromContext(cmd.Context())
 			client, err := getClient(cmd.Context())
@@ -122,9 +126,10 @@ func newCardholdersUpdateCmd() *cobra.Command {
 	var email string
 
 	cmd := &cobra.Command{
-		Use:   "update <cardholderId>",
-		Short: "Update cardholder",
-		Args:  cobra.ExactArgs(1),
+		Use:     "update <cardholderId>",
+		Aliases: []string{"up", "u"},
+		Short:   "Update cardholder",
+		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			u := ui.FromContext(cmd.Context())
 			client, err := getClient(cmd.Context())

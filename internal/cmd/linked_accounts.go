@@ -29,6 +29,7 @@ func newLinkedAccountsCmd() *cobra.Command {
 func newLinkedAccountsListCmd() *cobra.Command {
 	return NewListCommand(ListConfig[api.LinkedAccount]{
 		Use:          "list",
+		Aliases:      []string{"ls", "l"},
 		Short:        "List linked accounts",
 		Headers:      []string{"ID", "TYPE", "ACCOUNT_NAME", "BANK", "CURRENCY", "STATUS"},
 		EmptyMessage: "No linked accounts found",
@@ -51,8 +52,9 @@ func newLinkedAccountsListCmd() *cobra.Command {
 
 func newLinkedAccountsGetCmd() *cobra.Command {
 	return NewGetCommand(GetConfig[*api.LinkedAccount]{
-		Use:   "get <accountId>",
-		Short: "Get linked account details",
+		Use:     "get <accountId>",
+		Aliases: []string{"g"},
+		Short:   "Get linked account details",
 		Fetch: func(ctx context.Context, client *api.Client, id string) (*api.LinkedAccount, error) {
 			return client.GetLinkedAccount(ctx, id)
 		},
@@ -81,8 +83,9 @@ func newLinkedAccountsCreateCmd() *cobra.Command {
 	var bsb, routingNumber, accountNumber string
 
 	cmd := &cobra.Command{
-		Use:   "create",
-		Short: "Create a linked account",
+		Use:     "create",
+		Aliases: []string{"cr"},
+		Short:   "Create a linked account",
 		Long: `Link an external bank account for direct debits.
 
 Examples:
@@ -154,8 +157,9 @@ func newLinkedAccountsDepositCmd() *cobra.Command {
 	var currency string
 
 	cmd := &cobra.Command{
-		Use:   "deposit <accountId>",
-		Short: "Initiate a deposit from a linked account",
+		Use:     "deposit <accountId>",
+		Aliases: []string{"dep"},
+		Short:   "Initiate a deposit from a linked account",
 		Long: `Pull funds from a linked external bank account into your Airwallex wallet.
 
 Examples:

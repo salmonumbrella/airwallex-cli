@@ -21,8 +21,9 @@ import (
 
 func newAuthCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "auth",
-		Short: "Authentication and account management",
+		Use:     "auth",
+		Aliases: []string{"au"},
+		Short:   "Authentication and account management",
 	}
 	cmd.AddCommand(newAuthLoginCmd())
 	cmd.AddCommand(newAuthAddCmd())
@@ -35,8 +36,9 @@ func newAuthCmd() *cobra.Command {
 
 func newAuthLoginCmd() *cobra.Command {
 	return &cobra.Command{
-		Use:   "login",
-		Short: "Authenticate via browser",
+		Use:     "login",
+		Aliases: []string{"li"},
+		Short:   "Authenticate via browser",
 		Long: `Opens a browser window to configure API credentials interactively.
 
 This provides a guided setup experience with:
@@ -94,8 +96,9 @@ func newAuthAddCmd() *cobra.Command {
 	var accountID string
 
 	cmd := &cobra.Command{
-		Use:   "add <name>",
-		Short: "Add account credentials",
+		Use:     "add <name>",
+		Aliases: []string{"a"},
+		Short:   "Add account credentials",
 		Long: `Add account credentials for API authentication.
 
 The account-id flag is required when your API key has access to multiple accounts.
@@ -174,8 +177,9 @@ Examples:
 
 func newAuthListCmd() *cobra.Command {
 	return &cobra.Command{
-		Use:   "list",
-		Short: "List configured accounts",
+		Use:     "list",
+		Aliases: []string{"ls", "l"},
+		Short:   "List configured accounts",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			store, err := openSecretsStore()
 			if err != nil {
@@ -211,9 +215,10 @@ func newAuthListCmd() *cobra.Command {
 
 func newAuthRemoveCmd() *cobra.Command {
 	return &cobra.Command{
-		Use:   "remove <name>",
-		Short: "Remove account credentials",
-		Args:  cobra.ExactArgs(1),
+		Use:     "remove <name>",
+		Aliases: []string{"rm", "del"},
+		Short:   "Remove account credentials",
+		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			u := ui.FromContext(cmd.Context())
 			name := args[0]
@@ -235,8 +240,9 @@ func newAuthRemoveCmd() *cobra.Command {
 
 func newAuthRenameCmd() *cobra.Command {
 	return &cobra.Command{
-		Use:   "rename <old-name> <new-name>",
-		Short: "Rename an account",
+		Use:     "rename <old-name> <new-name>",
+		Aliases: []string{"mv"},
+		Short:   "Rename an account",
 		Long: `Rename an existing account to a new name.
 
 Examples:
@@ -295,8 +301,9 @@ Examples:
 
 func newAuthTestCmd() *cobra.Command {
 	return &cobra.Command{
-		Use:   "test",
-		Short: "Test account credentials",
+		Use:     "test",
+		Aliases: []string{"t"},
+		Short:   "Test account credentials",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			u := ui.FromContext(cmd.Context())
 			account, err := requireAccount(cmd.Context())

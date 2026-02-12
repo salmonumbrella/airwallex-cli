@@ -128,17 +128,17 @@ func NewRootCmd() *cobra.Command {
 	}
 
 	cmd.PersistentFlags().StringVar(&flags.Account, "account", os.Getenv("AWX_ACCOUNT"), "Account name (or AWX_ACCOUNT env)")
-	cmd.PersistentFlags().StringVar(&flags.Output, "output", getEnvOrDefault("AWX_OUTPUT", "text"), "Output format: text|json")
-	cmd.PersistentFlags().BoolVar(&flags.JSON, "json", false, "Shorthand for --output json")
+	cmd.PersistentFlags().StringVarP(&flags.Output, "output", "o", getEnvOrDefault("AWX_OUTPUT", "text"), "Output format: text|json")
+	cmd.PersistentFlags().BoolVarP(&flags.JSON, "json", "j", false, "Shorthand for --output json")
 	cmd.PersistentFlags().StringVar(&flags.Color, "color", getEnvOrDefault("AWX_COLOR", "auto"), "Color output: auto|always|never")
 	cmd.PersistentFlags().BoolVar(&flags.NoColor, "no-color", false, "Shorthand for --color never")
 	cmd.PersistentFlags().BoolVar(&flags.Agent, "agent", os.Getenv("AWX_AGENT") != "", "Agent mode: stable JSON, no color, no prompts (or AWX_AGENT env)")
-	cmd.PersistentFlags().BoolVar(&flags.Debug, "debug", false, "Enable debug output (shows API requests/responses)")
-	cmd.PersistentFlags().StringVar(&flags.Query, "query", "", "JQ filter expression for JSON output")
+	cmd.PersistentFlags().BoolVarP(&flags.Debug, "debug", "d", false, "Enable debug output (shows API requests/responses)")
+	cmd.PersistentFlags().StringVarP(&flags.Query, "query", "q", "", "JQ filter expression for JSON output")
 	cmd.PersistentFlags().StringVar(&flags.QueryFile, "query-file", "", "Read JQ filter expression from file (- for stdin)")
 	// Prefer --template (keep --format for backwards compatibility, but hide it to avoid
 	// ambiguity with subcommands that use --format for file formats).
-	cmd.PersistentFlags().StringVar(&flags.Template, "template", "", "Go template for custom output (e.g., '{{.ID}}: {{.Status}}')")
+	cmd.PersistentFlags().StringVarP(&flags.Template, "template", "t", "", "Go template for custom output (e.g., '{{.ID}}: {{.Status}}')")
 	cmd.PersistentFlags().StringVar(&flags.Template, "format", "", "DEPRECATED: use --template")
 	_ = cmd.PersistentFlags().MarkDeprecated("format", "use --template instead")
 	_ = cmd.PersistentFlags().MarkHidden("format")
