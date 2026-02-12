@@ -937,6 +937,9 @@ Examples:
 	flagAlias(cmd.Flags(), "clearing-system", "cs")
 	flagAlias(cmd.Flags(), "institution-number", "inst")
 	flagAlias(cmd.Flags(), "transit-number", "tn")
+	flagAlias(cmd.Flags(), "address-country", "adc")
+	flagAlias(cmd.Flags(), "address-city", "aci")
+	flagAlias(cmd.Flags(), "address-street", "ads")
 	return cmd
 }
 

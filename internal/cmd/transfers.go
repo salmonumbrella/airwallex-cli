@@ -409,6 +409,7 @@ Interac e-Transfer notes:
 	flagAlias(cmd.Flags(), "security-question", "sq")
 	flagAlias(cmd.Flags(), "security-answer", "ans")
 	flagAlias(cmd.Flags(), "dry-run", "dr")
+	flagAlias(cmd.Flags(), "reason", "rsn")
 	return cmd
 }
 
