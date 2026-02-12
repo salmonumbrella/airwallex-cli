@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"golang.org/x/term"
 
 	"github.com/salmonumbrella/airwallex-cli/internal/api"
@@ -296,4 +297,45 @@ func normalizePageSize(pageSize int) int {
 		return 100
 	}
 	return pageSize
+}
+
+// flagAlias registers a hidden alias for an existing flag.
+// Both flags share the same underlying Value, so setting either one sets both.
+func flagAlias(fs *pflag.FlagSet, name, alias string) {
+	f := fs.Lookup(name)
+	if f == nil {
+		panic(fmt.Sprintf("flagAlias: flag %q not found", name))
+	}
+	a := *f // shallow copy — shares the Value interface
+	a.Name = alias
+	a.Shorthand = ""
+	a.Usage = ""
+	a.Hidden = true
+	if a.Annotations == nil {
+		a.Annotations = map[string][]string{}
+	}
+	a.Annotations["alias-of"] = []string{name}
+	fs.AddFlag(&a)
+}
+
+// flagOrAliasChanged returns true if the named flag or any of its hidden aliases was explicitly set.
+func flagOrAliasChanged(cmd *cobra.Command, name string) bool {
+	if cmd.Flags().Changed(name) {
+		return true
+	}
+	if cmd.InheritedFlags().Changed(name) {
+		return true
+	}
+	found := false
+	cmd.Flags().VisitAll(func(f *pflag.Flag) {
+		if found {
+			return
+		}
+		if ann, ok := f.Annotations["alias-of"]; ok && len(ann) > 0 && ann[0] == name {
+			if cmd.Flags().Changed(f.Name) {
+				found = true
+			}
+		}
+	})
+	return found
 }
