@@ -28,6 +28,7 @@ type Transfer struct {
 	TransferCurrency string      `json:"transfer_currency"`
 	SourceAmount     json.Number `json:"source_amount"`
 	SourceCurrency   string      `json:"source_currency"`
+	PaymentMethod    string      `json:"payment_method"`
 	Status           string      `json:"status"`
 	Reference        string      `json:"reference"`
 	Reason           string      `json:"reason"`
@@ -39,17 +40,39 @@ type TransfersResponse struct {
 	HasMore bool       `json:"has_more"`
 }
 
+// BeneficiaryAddress contains the beneficiary's address information
+type BeneficiaryAddress struct {
+	City          string `json:"city,omitempty"`
+	CountryCode   string `json:"country_code,omitempty"`
+	Postcode      string `json:"postcode,omitempty"`
+	State         string `json:"state,omitempty"`
+	StreetAddress string `json:"street_address,omitempty"`
+}
+
+// BeneficiaryBankDetails contains the bank routing and account details
+type BeneficiaryBankDetails struct {
+	BankCountryCode      string `json:"bank_country_code"`
+	BankName             string `json:"bank_name"`
+	AccountName          string `json:"account_name"`
+	AccountNumber        string `json:"account_number,omitempty"`
+	AccountCurrency      string `json:"account_currency,omitempty"`
+	AccountRoutingType1  string `json:"account_routing_type1,omitempty"`
+	AccountRoutingValue1 string `json:"account_routing_value1,omitempty"`
+	AccountRoutingType2  string `json:"account_routing_type2,omitempty"`
+	AccountRoutingValue2 string `json:"account_routing_value2,omitempty"`
+	SwiftCode            string `json:"swift_code,omitempty"`
+	IBAN                 string `json:"iban,omitempty"`
+	LocalClearingSystem  string `json:"local_clearing_system,omitempty"`
+}
+
 // BeneficiaryDetails contains the nested beneficiary information
 type BeneficiaryDetails struct {
-	EntityType  string `json:"entity_type"`
-	CompanyName string `json:"company_name,omitempty"`
-	FirstName   string `json:"first_name,omitempty"`
-	LastName    string `json:"last_name,omitempty"`
-	BankDetails struct {
-		BankCountryCode string `json:"bank_country_code"`
-		BankName        string `json:"bank_name"`
-		AccountName     string `json:"account_name"`
-	} `json:"bank_details"`
+	EntityType  string                 `json:"entity_type"`
+	CompanyName string                 `json:"company_name,omitempty"`
+	FirstName   string                 `json:"first_name,omitempty"`
+	LastName    string                 `json:"last_name,omitempty"`
+	BankDetails BeneficiaryBankDetails `json:"bank_details"`
+	Address     *BeneficiaryAddress    `json:"address,omitempty"`
 }
 
 // Beneficiary represents a transfer beneficiary
@@ -57,6 +80,7 @@ type Beneficiary struct {
 	BeneficiaryID   string             `json:"id"`
 	Nickname        string             `json:"nickname"`
 	Beneficiary     BeneficiaryDetails `json:"beneficiary"`
+	PaymentMethods  []string           `json:"payment_methods"`
 	TransferMethods []string           `json:"transfer_methods"`
 }
 
@@ -99,6 +123,9 @@ func (c *Client) ListTransfers(ctx context.Context, status string, pageNum, page
 	var result TransfersResponse
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, err
+	}
+	if result.Items == nil {
+		result.Items = []Transfer{}
 	}
 	return &result, nil
 }
@@ -222,6 +249,12 @@ func (c *Client) ListBeneficiaries(ctx context.Context, pageNum, pageSize int) (
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, err
 	}
+	if result.Items == nil {
+		result.Items = []Beneficiary{}
+	}
+	for i := range result.Items {
+		nilGuardBeneficiary(&result.Items[i])
+	}
 	return &result, nil
 }
 
@@ -235,6 +268,7 @@ func (c *Client) GetBeneficiary(ctx context.Context, beneficiaryID string) (*Ben
 	if err := c.doJSON(ctx, http.MethodGet, path, nil, &b); err != nil {
 		return nil, err
 	}
+	nilGuardBeneficiary(&b)
 	return &b, nil
 }
 
@@ -283,6 +317,7 @@ func (c *Client) CreateBeneficiary(ctx context.Context, req map[string]interface
 	if err := json.NewDecoder(resp.Body).Decode(&b); err != nil {
 		return nil, err
 	}
+	nilGuardBeneficiary(&b)
 	return &b, nil
 }
 
@@ -308,6 +343,7 @@ func (c *Client) UpdateBeneficiary(ctx context.Context, beneficiaryID string, up
 	if err := json.NewDecoder(resp.Body).Decode(&b); err != nil {
 		return nil, err
 	}
+	nilGuardBeneficiary(&b)
 	return &b, nil
 }
 
@@ -374,4 +410,15 @@ func (c *Client) GetConfirmationLetter(ctx context.Context, transferID string, f
 	}
 
 	return pdfData, nil
+}
+
+// nilGuardBeneficiary ensures slice fields on a Beneficiary are never nil,
+// preventing Go's json.Marshal from serializing them as null instead of [].
+func nilGuardBeneficiary(b *Beneficiary) {
+	if b.PaymentMethods == nil {
+		b.PaymentMethods = []string{}
+	}
+	if b.TransferMethods == nil {
+		b.TransferMethods = []string{}
+	}
 }

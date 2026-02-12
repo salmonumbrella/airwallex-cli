@@ -142,7 +142,7 @@ func looksLikeSliceKey(key string) bool {
 	switch key {
 	case "items", "rates", "events", "errors", "fields", "limits",
 		"balances", "currencies", "transaction_types", "transfer_methods",
-		"enum":
+		"payment_methods", "enum":
 		return true
 	}
 	return false
