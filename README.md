@@ -699,30 +699,175 @@ awx fx cr --sell USD --buy EUR --sa 1000
 
 ### Multi-letter Flag Aliases
 
-Hidden aliases that don't appear in `--help` but work for agents and power users:
+Multi-letter shorthands shown in brackets in `--help` output (e.g., `[--nn]`). These are distinct from the single-letter shortcodes above.
+
+#### Global (all commands)
+
+| Flag | Alias |
+|------|-------|
+| `--account` | `--acc` |
+| `--output` | `--out` |
+| `--json` | `--j` |
+| `--query` | `--qr`, `--jq` |
+| `--query-file` | `--qf` |
+| `--template` | `--tmpl` |
+| `--no-color` | `--nc` |
+| `--output-limit` | `--ol` |
+| `--sort-by` | `--sb` |
+| `--items-only` | `--io` |
+| `--results-only` | `--ro` |
+
+#### List commands (all)
+
+| Flag | Alias |
+|------|-------|
+| `--after` | `--af` |
+| `--page-size` | `--ps` |
+
+#### Beneficiaries create (`ben cr`)
+
+| Flag | Alias |
+|------|-------|
+| `--entity-type` | `--et` |
+| `--bank-country` | `--bk` |
+| `--account-name` | `--an` |
+| `--account-number` | `--acn` |
+| `--account-currency` | `--ac` |
+| `--company-name` | `--cn` |
+| `--first-name` | `--fn` |
+| `--last-name` | `--ln` |
+| `--nickname` | `--nn` |
+| `--swift-code` | `--sw` |
+| `--routing-number` | `--rn` |
+| `--payment-method` | `--pm` |
+| `--clearing-system` | `--cs` |
+| `--institution-number` | `--inst` |
+| `--transit-number` | `--tn` |
+| `--address-country` | `--adc` |
+| `--address-city` | `--aci` |
+| `--address-street` | `--ads` |
+| `--validate` | `--val` |
+
+#### Beneficiaries update (`ben up`)
+
+| Flag | Alias |
+|------|-------|
+| `--nickname` | `--nn` |
+| `--company-name` | `--cn` |
+| `--first-name` | `--fn` |
+| `--last-name` | `--ln` |
+| `--address-country` | `--adc` |
+| `--address-street` | `--ads` |
+| `--address-city` | `--aci` |
+| `--address-state` | `--adst` |
+| `--address-postcode` | `--adp` |
+
+#### Transfers create (`tr cr`)
+
+| Flag | Alias |
+|------|-------|
+| `--beneficiary-id` | `--bid` |
+| `--transfer-amount` | `--ta` |
+| `--transfer-currency` | `--tc` |
+| `--source-amount` | `--sa` |
+| `--source-currency` | `--sc` |
+| `--method` | `--mt` |
+| `--clearing-system` | `--cs` |
+| `--reason` | `--rsn` |
+| `--security-question` | `--sq` |
+| `--security-answer` | `--ans` |
+| `--dry-run` | `--dr` |
+| `--timeout` | `--tmo` |
+
+#### Transfers batch-create (`tr bc`)
+
+| Flag | Alias |
+|------|-------|
+| `--from-file` | `--ff` |
+| `--continue-on-error` | `--ce` |
+
+#### Schemas beneficiary (`sc ben`)
+
+| Flag | Alias |
+|------|-------|
+| `--bank-country` | `--bk` |
+| `--entity-type` | `--et` |
+| `--payment-method` | `--pm` |
+
+#### Schemas transfer (`sc xfer`)
+
+| Flag | Alias |
+|------|-------|
+| `--source-currency` | `--sc` |
+| `--dest-currency` | `--dc` |
+| `--payment-method` | `--pm` |
+
+#### Reports (`rp stmt`, `rp settle`, `rp activity`, `rp recon`)
+
+| Flag | Alias | Notes |
+|------|-------|-------|
+| `--from-date` | `--fd` | |
+| `--to-date` | `--td` | |
+| `--format` | `--fmt` | |
+| `--currencies` | `--cur` | `stmt` only |
+| `--transaction-types` | `--tt` | `activity`, `recon` |
+| `--wait` | `--wt` | |
+| `--timeout` | `--tmo` | |
+
+#### Date-filtered commands (`b hist`, `dep ls`, `is tx ls`)
+
+| Flag | Alias | Notes |
+|------|-------|-------|
+| `--from` | `--fr` | |
+| `--currency` | `--cur` | `b hist` only |
+| `--card-id` | `--cid` | `is tx ls`, `is auth ls` |
+
+#### Cards create (`is cd cr`)
+
+| Flag | Alias |
+|------|-------|
+| `--cardholder-id` | `--chid` |
+| `--form-factor` | `--ff` |
+| `--limit-interval` | `--li` |
+| `--limit-currency` | `--lc` |
+| `--program-purpose` | `--pp` |
+| `--program-type` | `--pt` |
+| `--additional-cardholders` | `--ach` |
+
+#### Cards update / details (`is cd up`, `is cd det`)
+
+| Flag | Alias |
+|------|-------|
+| `--nickname` | `--nn` |
+| `--show-pan` | `--pan` |
+
+#### Issuing authorizations list (`is auth ls`)
+
+| Flag | Alias |
+|------|-------|
+| `--card-id` | `--cid` |
+| `--billing-currency` | `--bc` |
+| `--lifecycle-id` | `--lid` |
+| `--retrieval-ref` | `--rr` |
+
+#### FX conversions (`fx`)
+
+| Flag | Alias |
+|------|-------|
+| `--from` | `--fr` |
+| `--sell-currency` | `--sell` |
+| `--buy-currency` | `--buy` |
+| `--sell-amount` | `--sa` |
+| `--buy-amount` | `--ba` |
+| `--quote-id` | `--qid` |
+
+#### Other commands
 
 | Flag | Alias | Available on |
 |------|-------|-------------|
-| `--output` | `--out` | global |
-| `--query` | `--qr`, `--jq` | global |
-| `--query-file` | `--qf` | global |
-| `--template` | `--tmpl` | global |
-| `--no-color` | `--nc` | global |
-| `--output-limit` | `--ol` | global |
-| `--sort-by` | `--sb` | global |
-| `--page-size` | `--ps` | list commands |
-| `--items-only` | `--io` | list commands |
-| `--results-only` | `--ro` | list commands |
-| `--beneficiary-id` | `--bid` | transfers create |
-| `--transfer-currency` | `--tc` | transfers create |
-| `--source-currency` | `--sc` | transfers create |
-| `--dry-run` | `--dr` | transfers create |
-| `--cardholder-id` | `--chid` | cards list/create |
-| `--card-id` | `--cid` | transactions/authorizations list |
-| `--from-date` | `--fd` | reports |
-| `--to-date` | `--td` | reports |
-| `--events` | `--ev` | webhooks create |
-| `--entity-type` | `--et` | beneficiaries create |
+| `--description` | `--desc` | `payment-links create` |
+| `--expires-in` | `--exp` | `payment-links create` |
+| `--events` | `--ev` | `webhooks create` |
 
 ### Value Shorthands
 
