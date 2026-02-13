@@ -454,6 +454,15 @@ func flagAlias(fs *pflag.FlagSet, name, alias string) {
 	if f == nil {
 		panic(fmt.Sprintf("flagAlias: flag %q not found", name))
 	}
+
+	// Append alias hint to original flag's usage text
+	if strings.Contains(f.Usage, "[--") {
+		// Already has an alias shown, append to the bracket
+		f.Usage = strings.TrimSuffix(f.Usage, "]") + ", --" + alias + "]"
+	} else {
+		f.Usage += " [--" + alias + "]"
+	}
+
 	a := *f
 	a.Name = alias
 	a.Shorthand = ""
