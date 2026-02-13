@@ -89,6 +89,9 @@ Examples:
 	cmd.Flags().StringVar(&paymentMethod, "payment-method", "", "Payment method: LOCAL or SWIFT")
 	mustMarkRequired(cmd, "bank-country")
 	mustMarkRequired(cmd, "entity-type")
+	flagAlias(cmd.Flags(), "bank-country", "bk")
+	flagAlias(cmd.Flags(), "entity-type", "et")
+	flagAlias(cmd.Flags(), "payment-method", "pm")
 	return cmd
 }
 
@@ -148,5 +151,8 @@ Examples:
 	cmd.Flags().StringVar(&paymentMethod, "payment-method", "", "Payment method: LOCAL or SWIFT")
 	mustMarkRequired(cmd, "source-currency")
 	mustMarkRequired(cmd, "dest-currency")
+	flagAlias(cmd.Flags(), "source-currency", "sc")
+	flagAlias(cmd.Flags(), "dest-currency", "dc")
+	flagAlias(cmd.Flags(), "payment-method", "pm")
 	return cmd
 }

@@ -160,6 +160,7 @@ Examples:
 	cmd.Flags().StringVarP(&from, "from", "f", "", "Start date (YYYY-MM-DD)")
 	cmd.Flags().StringVar(&to, "to", "", "End date (YYYY-MM-DD)")
 	flagAlias(cmd.Flags(), "currency", "cur")
+	flagAlias(cmd.Flags(), "from", "fr")
 
 	return cmd
 }

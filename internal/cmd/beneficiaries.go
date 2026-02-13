@@ -886,6 +886,9 @@ Examples:
 	flagAlias(cmd.Flags(), "address-country", "adc")
 	flagAlias(cmd.Flags(), "address-city", "aci")
 	flagAlias(cmd.Flags(), "address-street", "ads")
+	flagAlias(cmd.Flags(), "first-name", "fn")
+	flagAlias(cmd.Flags(), "last-name", "ln")
+	flagAlias(cmd.Flags(), "validate", "val")
 	return cmd
 }
 
@@ -986,6 +989,14 @@ func newBeneficiariesUpdateCmd() *cobra.Command {
 	registerMappedFlags(cmd, updateFlagKeys, nil, nil)
 	cmd.Flags().StringArrayVar(&fieldOverrides, "field", nil, "Set raw field (path=value)")
 	flagAlias(cmd.Flags(), "nickname", "nn")
+	flagAlias(cmd.Flags(), "company-name", "cn")
+	flagAlias(cmd.Flags(), "first-name", "fn")
+	flagAlias(cmd.Flags(), "last-name", "ln")
+	flagAlias(cmd.Flags(), "address-country", "adc")
+	flagAlias(cmd.Flags(), "address-street", "ads")
+	flagAlias(cmd.Flags(), "address-city", "aci")
+	flagAlias(cmd.Flags(), "address-state", "adst")
+	flagAlias(cmd.Flags(), "address-postcode", "adp")
 	return cmd
 }
 

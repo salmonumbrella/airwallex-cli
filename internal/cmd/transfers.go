@@ -410,6 +410,8 @@ Interac e-Transfer notes:
 	flagAlias(cmd.Flags(), "security-answer", "ans")
 	flagAlias(cmd.Flags(), "dry-run", "dr")
 	flagAlias(cmd.Flags(), "reason", "rsn")
+	flagAlias(cmd.Flags(), "method", "mt")
+	flagAlias(cmd.Flags(), "timeout", "tmo")
 	return cmd
 }
 

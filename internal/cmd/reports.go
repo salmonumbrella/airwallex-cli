@@ -217,6 +217,8 @@ Examples:
 	flagAlias(cmd.Flags(), "from-date", "fd")
 	flagAlias(cmd.Flags(), "to-date", "td")
 	flagAlias(cmd.Flags(), "format", "fmt")
+	flagAlias(cmd.Flags(), "wait", "wt")
+	flagAlias(cmd.Flags(), "timeout", "tmo")
 
 	return cmd
 }
@@ -343,6 +345,8 @@ Note: Multi-currency requests return a ZIP file containing individual PDF statem
 	flagAlias(cmd.Flags(), "from-date", "fd")
 	flagAlias(cmd.Flags(), "to-date", "td")
 	flagAlias(cmd.Flags(), "currencies", "cur")
+	flagAlias(cmd.Flags(), "wait", "wt")
+	flagAlias(cmd.Flags(), "timeout", "tmo")
 
 	return cmd
 }
@@ -467,6 +471,8 @@ Examples:
 	flagAlias(cmd.Flags(), "to-date", "td")
 	flagAlias(cmd.Flags(), "format", "fmt")
 	flagAlias(cmd.Flags(), "transaction-types", "tt")
+	flagAlias(cmd.Flags(), "wait", "wt")
+	flagAlias(cmd.Flags(), "timeout", "tmo")
 
 	return cmd
 }
@@ -590,6 +596,8 @@ Examples:
 	flagAlias(cmd.Flags(), "to-date", "td")
 	flagAlias(cmd.Flags(), "format", "fmt")
 	flagAlias(cmd.Flags(), "transaction-types", "tt")
+	flagAlias(cmd.Flags(), "wait", "wt")
+	flagAlias(cmd.Flags(), "timeout", "tmo")
 
 	return cmd
 }
