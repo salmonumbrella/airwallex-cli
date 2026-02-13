@@ -33,6 +33,24 @@ func TestRootCmd_ContextInjection(t *testing.T) {
 			wantColorMode: "auto",
 		},
 		{
+			name:          "json output alias --j",
+			args:          []string{"--j"},
+			wantOutputFmt: "json",
+			wantColorMode: "auto",
+		},
+		{
+			name:          "jsonl output format",
+			args:          []string{"--output", "jsonl"},
+			wantOutputFmt: "jsonl",
+			wantColorMode: "auto",
+		},
+		{
+			name:          "ndjson output format normalizes to jsonl",
+			args:          []string{"--output", "ndjson"},
+			wantOutputFmt: "jsonl",
+			wantColorMode: "auto",
+		},
+		{
 			name:          "never color mode",
 			args:          []string{"--color", "never"},
 			wantOutputFmt: "text",
@@ -86,76 +104,94 @@ func TestRootCmd_ContextInjection(t *testing.T) {
 
 func TestRootCmd_AgentFlags(t *testing.T) {
 	tests := []struct {
-		name       string
-		args       []string
-		wantYes    bool
-		wantLimit  int
-		wantSortBy string
-		wantDesc   bool
+		name        string
+		args        []string
+		wantYes     bool
+		wantNoInput bool
+		wantLimit   int
+		wantSortBy  string
+		wantDesc    bool
 	}{
 		{
-			name:       "default values",
-			args:       []string{},
-			wantYes:    false,
-			wantLimit:  0,
-			wantSortBy: "",
-			wantDesc:   false,
+			name:        "default values",
+			args:        []string{},
+			wantYes:     false,
+			wantNoInput: false,
+			wantLimit:   0,
+			wantSortBy:  "",
+			wantDesc:    false,
 		},
 		{
-			name:       "yes flag",
-			args:       []string{"--yes"},
-			wantYes:    true,
-			wantLimit:  0,
-			wantSortBy: "",
-			wantDesc:   false,
+			name:        "yes flag",
+			args:        []string{"--yes"},
+			wantYes:     true,
+			wantNoInput: true,
+			wantLimit:   0,
+			wantSortBy:  "",
+			wantDesc:    false,
 		},
 		{
-			name:       "yes flag short form",
-			args:       []string{"-y"},
-			wantYes:    true,
-			wantLimit:  0,
-			wantSortBy: "",
-			wantDesc:   false,
+			name:        "yes flag short form",
+			args:        []string{"-y"},
+			wantYes:     true,
+			wantNoInput: true,
+			wantLimit:   0,
+			wantSortBy:  "",
+			wantDesc:    false,
 		},
 		{
-			name:       "force flag (alias for yes)",
-			args:       []string{"--force"},
-			wantYes:    true,
-			wantLimit:  0,
-			wantSortBy: "",
-			wantDesc:   false,
+			name:        "force flag (alias for yes)",
+			args:        []string{"--force"},
+			wantYes:     true,
+			wantNoInput: true,
+			wantLimit:   0,
+			wantSortBy:  "",
+			wantDesc:    false,
 		},
 		{
-			name:       "limit flag",
-			args:       []string{"--output-limit", "10"},
-			wantYes:    false,
-			wantLimit:  10,
-			wantSortBy: "",
-			wantDesc:   false,
+			name:        "no-input flag",
+			args:        []string{"--no-input"},
+			wantYes:     false,
+			wantNoInput: true,
+			wantLimit:   0,
+			wantSortBy:  "",
+			wantDesc:    false,
 		},
 		{
-			name:       "sort-by flag",
-			args:       []string{"--sort-by", "created_at"},
-			wantYes:    false,
-			wantLimit:  0,
-			wantSortBy: "created_at",
-			wantDesc:   false,
+			name:        "limit flag",
+			args:        []string{"--output-limit", "10"},
+			wantYes:     false,
+			wantNoInput: false,
+			wantLimit:   10,
+			wantSortBy:  "",
+			wantDesc:    false,
 		},
 		{
-			name:       "sort-by with desc",
-			args:       []string{"--sort-by", "created_at", "--desc"},
-			wantYes:    false,
-			wantLimit:  0,
-			wantSortBy: "created_at",
-			wantDesc:   true,
+			name:        "sort-by flag",
+			args:        []string{"--sort-by", "created_at"},
+			wantYes:     false,
+			wantNoInput: false,
+			wantLimit:   0,
+			wantSortBy:  "created_at",
+			wantDesc:    false,
 		},
 		{
-			name:       "all agent flags combined",
-			args:       []string{"--yes", "--output-limit", "5", "--sort-by", "amount", "--desc"},
-			wantYes:    true,
-			wantLimit:  5,
-			wantSortBy: "amount",
-			wantDesc:   true,
+			name:        "sort-by with desc",
+			args:        []string{"--sort-by", "created_at", "--desc"},
+			wantYes:     false,
+			wantNoInput: false,
+			wantLimit:   0,
+			wantSortBy:  "created_at",
+			wantDesc:    true,
+		},
+		{
+			name:        "all agent flags combined",
+			args:        []string{"--yes", "--output-limit", "5", "--sort-by", "amount", "--desc"},
+			wantYes:     true,
+			wantNoInput: true,
+			wantLimit:   5,
+			wantSortBy:  "amount",
+			wantDesc:    true,
 		},
 	}
 
@@ -186,6 +222,9 @@ func TestRootCmd_AgentFlags(t *testing.T) {
 			if got := outfmt.GetYes(capturedCtx); got != tt.wantYes {
 				t.Errorf("yes = %v, want %v", got, tt.wantYes)
 			}
+			if got := outfmt.GetNoInput(capturedCtx); got != tt.wantNoInput {
+				t.Errorf("noInput = %v, want %v", got, tt.wantNoInput)
+			}
 			if got := outfmt.GetLimit(capturedCtx); got != tt.wantLimit {
 				t.Errorf("limit = %v, want %v", got, tt.wantLimit)
 			}
@@ -194,6 +233,45 @@ func TestRootCmd_AgentFlags(t *testing.T) {
 			}
 			if got := outfmt.GetDesc(capturedCtx); got != tt.wantDesc {
 				t.Errorf("desc = %v, want %v", got, tt.wantDesc)
+			}
+		})
+	}
+}
+
+func TestRootCmd_ResultSelectorFlags(t *testing.T) {
+	tests := []struct {
+		name     string
+		args     []string
+		wantOnly bool
+	}{
+		{name: "default", args: []string{}, wantOnly: false},
+		{name: "items-only", args: []string{"--items-only"}, wantOnly: true},
+		{name: "results-only", args: []string{"--results-only"}, wantOnly: true},
+		{name: "items-only alias io", args: []string{"--io"}, wantOnly: true},
+		{name: "results-only alias ro", args: []string{"--ro"}, wantOnly: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var capturedCtx context.Context
+
+			cmd := NewRootCmd()
+			testCmd := &cobra.Command{
+				Use: "test",
+				RunE: func(cmd *cobra.Command, args []string) error {
+					capturedCtx = cmd.Context()
+					return nil
+				},
+			}
+			cmd.AddCommand(testCmd)
+			cmd.SetArgs(append(tt.args, "test"))
+
+			if err := cmd.Execute(); err != nil {
+				t.Fatalf("Execute() error = %v", err)
+			}
+
+			if got := outfmt.GetItemsOnly(capturedCtx); got != tt.wantOnly {
+				t.Errorf("itemsOnly = %v, want %v", got, tt.wantOnly)
 			}
 		})
 	}
@@ -273,6 +351,36 @@ func TestRootCmd_QueryFile(t *testing.T) {
 	}
 	cmd.AddCommand(testCmd)
 	cmd.SetArgs([]string{"--query-file", path, "test"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("Execute() error = %v", err)
+	}
+
+	got := outfmt.GetQuery(capturedCtx)
+	if got != ".items[] | .id" {
+		t.Errorf("query = %q, want %q", got, ".items[] | .id")
+	}
+}
+
+func TestRootCmd_QueryFileAlias(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "query.jq")
+	if err := os.WriteFile(path, []byte(".items[] | .id"), 0o600); err != nil {
+		t.Fatalf("WriteFile() error = %v", err)
+	}
+
+	var capturedCtx context.Context
+
+	cmd := NewRootCmd()
+	testCmd := &cobra.Command{
+		Use: "test",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			capturedCtx = cmd.Context()
+			return nil
+		},
+	}
+	cmd.AddCommand(testCmd)
+	cmd.SetArgs([]string{"--qf", path, "test"})
 
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("Execute() error = %v", err)

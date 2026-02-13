@@ -2,8 +2,8 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"os"
 	"regexp"
 	"sort"
 	"strings"
@@ -825,71 +825,16 @@ Examples:
 				req = reqbuilder.MergeRequest(req, reqbuilder.BuildNestedMap(overrideFields))
 			}
 
-			// Optional: Fetch schema and validate
+			provided := buildBeneficiaryProvidedFields(entityType, bankCountry, paymentMethod, fields, overrideFields)
+			if err := validateBeneficiarySchema(cmd.Context(), client, bankCountry, entityType, paymentMethod, provided, validateOnly); err != nil {
+				return err
+			}
+
 			if validateOnly {
-				schema, err := client.GetBeneficiarySchema(cmd.Context(), bankCountry, entityType, paymentMethod)
-				if err != nil {
-					return fmt.Errorf("failed to fetch schema: %w", err)
-				}
-
-				// Build provided fields map for validation using flagmap + overrides
-				provided := make(map[string]string)
-				addProvided := func(flagName, value string) {
-					if value == "" {
-						return
-					}
-					if m, ok := flagmap.GetMapping(flagName); ok {
-						provided[m.SchemaPath] = value
-					}
-				}
-
-				addProvided("entity-type", entityType)
-				addProvided("bank-country", bankCountry)
-				addProvided("payment-method", paymentMethod)
-
-				for path, value := range fields {
-					if value == "" {
-						continue
-					}
-					provided[path] = value
-				}
-
-				for path, value := range overrideFields {
-					if value == "" {
-						continue
-					}
-					provided[path] = value
-				}
-
-				// Validate using schemavalidator package
-				missing, err := schemavalidator.Validate(schema, provided)
-				if err != nil {
-					return fmt.Errorf("validation error: %w", err)
-				}
-
-				if len(missing) > 0 {
-					return fmt.Errorf("%s", schemavalidator.FormatMissingFields(missing))
-				}
-
-				for _, field := range schema.Fields {
-					if field.Rule.Pattern == "" {
-						continue
-					}
-					path := field.Path
-					if path == "" {
-						path = field.Key
-					}
-					if value, ok := provided[path]; ok && value != "" {
-						if err := schemavalidator.ValidatePattern(value, field.Rule.Pattern); err != nil {
-							return fmt.Errorf("field %s: %w", field.Key, err)
-						}
-					}
-				}
-
 				// Show what would be sent
 				u.Success("Schema validation passed")
 				if outfmt.IsJSON(cmd.Context()) {
-					return outfmt.WriteJSON(os.Stdout, req)
+					return writeJSONOutput(cmd, req)
 				}
 				u.Info(fmt.Sprintf("Would create beneficiary in %s with %s routing", bankCountry, paymentMethod))
 				return nil
@@ -897,11 +842,11 @@ Examples:
 
 			b, err := client.CreateBeneficiary(cmd.Context(), req)
 			if err != nil {
-				return err
+				return enrichBeneficiaryCreateError(err)
 			}
 
 			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, b)
+				return writeJSONOutput(cmd, b)
 			}
 
 			u.Success(fmt.Sprintf("Created beneficiary: %s", b.BeneficiaryID))
@@ -937,6 +882,7 @@ Examples:
 	flagAlias(cmd.Flags(), "clearing-system", "cs")
 	flagAlias(cmd.Flags(), "institution-number", "inst")
 	flagAlias(cmd.Flags(), "transit-number", "tn")
+	flagAlias(cmd.Flags(), "nickname", "nn")
 	flagAlias(cmd.Flags(), "address-country", "adc")
 	flagAlias(cmd.Flags(), "address-city", "aci")
 	flagAlias(cmd.Flags(), "address-street", "ads")
@@ -1029,7 +975,7 @@ func newBeneficiariesUpdateCmd() *cobra.Command {
 			}
 
 			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, b)
+				return writeJSONOutput(cmd, b)
 			}
 
 			u.Success(fmt.Sprintf("Updated beneficiary: %s", b.BeneficiaryID))
@@ -1039,6 +985,7 @@ func newBeneficiariesUpdateCmd() *cobra.Command {
 
 	registerMappedFlags(cmd, updateFlagKeys, nil, nil)
 	cmd.Flags().StringArrayVar(&fieldOverrides, "field", nil, "Set raw field (path=value)")
+	flagAlias(cmd.Flags(), "nickname", "nn")
 	return cmd
 }
 
@@ -1204,4 +1151,144 @@ func hasRoutingOverrideField(overrides map[string]string) bool {
 		}
 	}
 	return false
+}
+
+func buildBeneficiaryProvidedFields(entityType, bankCountry, paymentMethod string, fields, overrideFields map[string]string) map[string]string {
+	provided := make(map[string]string, len(fields)+len(overrideFields)+3)
+	if mapping, ok := flagmap.GetMapping("entity-type"); ok && entityType != "" {
+		provided[mapping.SchemaPath] = entityType
+	}
+	if mapping, ok := flagmap.GetMapping("bank-country"); ok && bankCountry != "" {
+		provided[mapping.SchemaPath] = bankCountry
+	}
+	if mapping, ok := flagmap.GetMapping("payment-method"); ok && paymentMethod != "" {
+		provided[mapping.SchemaPath] = paymentMethod
+	}
+	for path, value := range fields {
+		if value == "" {
+			continue
+		}
+		provided[path] = value
+	}
+	for path, value := range overrideFields {
+		if value == "" {
+			continue
+		}
+		provided[path] = value
+	}
+	return provided
+}
+
+func validateBeneficiarySchema(ctx context.Context, client *api.Client, bankCountry, entityType, paymentMethod string, provided map[string]string, strict bool) error {
+	schema, err := client.GetBeneficiarySchema(ctx, bankCountry, entityType, paymentMethod)
+	if err != nil {
+		if strict {
+			return fmt.Errorf("failed to fetch schema: %w", err)
+		}
+		return nil
+	}
+
+	missing, err := schemavalidator.Validate(schema, provided)
+	if err != nil {
+		return fmt.Errorf("validation error: %w", err)
+	}
+	if len(missing) > 0 {
+		return fmt.Errorf("%s", formatMissingFieldsWithHints(missing))
+	}
+
+	for _, field := range schema.Fields {
+		if field.Rule.Pattern == "" {
+			continue
+		}
+		path := field.Path
+		if path == "" {
+			path = field.Key
+		}
+		if value, ok := provided[path]; ok && value != "" {
+			if err := schemavalidator.ValidatePattern(value, field.Rule.Pattern); err != nil {
+				return fmt.Errorf("field %s: %w", field.Key, err)
+			}
+		}
+	}
+
+	return nil
+}
+
+func formatMissingFieldsWithHints(missing []schemavalidator.MissingField) string {
+	msg := strings.TrimSpace(schemavalidator.FormatMissingFields(missing))
+	if msg == "" {
+		return msg
+	}
+
+	hints := missingFieldFlagHints(missing)
+	if len(hints) == 0 {
+		return msg
+	}
+	return fmt.Sprintf("%s\nHint: add %s", msg, strings.Join(hints, ", "))
+}
+
+func missingFieldFlagHints(missing []schemavalidator.MissingField) []string {
+	flags := make(map[string]struct{})
+	for _, m := range missing {
+		paths := []string{m.Path, m.Key}
+		for _, path := range paths {
+			if flagName := schemaPathToFlag(path); flagName != "" {
+				flags["--"+flagName] = struct{}{}
+			}
+		}
+	}
+
+	out := make([]string, 0, len(flags))
+	for flagName := range flags {
+		out = append(out, flagName)
+	}
+	sort.Strings(out)
+	return out
+}
+
+func schemaPathToFlag(path string) string {
+	path = strings.TrimSpace(path)
+	if path == "" {
+		return ""
+	}
+	for _, mapping := range flagmap.AllMappings() {
+		if mapping.SchemaPath == path {
+			return mapping.Flag
+		}
+	}
+	return ""
+}
+
+func enrichBeneficiaryCreateError(err error) error {
+	if err == nil {
+		return nil
+	}
+
+	var apiErr *api.APIError
+	if !errors.As(err, &apiErr) {
+		return err
+	}
+
+	fieldErrors := apiErr.Errors
+	if len(fieldErrors) == 0 && apiErr.Details != nil {
+		fieldErrors = apiErr.Details.Errors
+	}
+	if len(fieldErrors) == 0 {
+		return err
+	}
+
+	missing := make([]schemavalidator.MissingField, 0, len(fieldErrors))
+	for _, fe := range fieldErrors {
+		source := strings.TrimSpace(fe.Source)
+		if source == "" {
+			continue
+		}
+		missing = append(missing, schemavalidator.MissingField{Path: source, Key: source})
+	}
+	hints := missingFieldFlagHints(missing)
+	if len(hints) == 0 {
+		return err
+	}
+
+	return fmt.Errorf("%w\nHint: provide %s", err, strings.Join(hints, ", "))
 }

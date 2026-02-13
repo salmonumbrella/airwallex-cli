@@ -5,6 +5,8 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"reflect"
+	"strings"
 
 	"github.com/salmonumbrella/airwallex-cli/internal/filter"
 )
@@ -12,17 +14,19 @@ import (
 type contextKey string
 
 const (
-	formatKey   contextKey = "output_format"
-	queryKey    contextKey = "query_filter"
-	templateKey contextKey = "template_format"
-	yesKey      contextKey = "yes_flag"
-	limitKey    contextKey = "limit_flag"
-	sortByKey   contextKey = "sort_by_flag"
-	descKey     contextKey = "desc_flag"
+	formatKey    contextKey = "output_format"
+	queryKey     contextKey = "query_filter"
+	templateKey  contextKey = "template_format"
+	yesKey       contextKey = "yes_flag"
+	noInputKey   contextKey = "no_input_flag"
+	itemsOnlyKey contextKey = "items_only_flag"
+	limitKey     contextKey = "limit_flag"
+	sortByKey    contextKey = "sort_by_flag"
+	descKey      contextKey = "desc_flag"
 )
 
 func WithFormat(ctx context.Context, format string) context.Context {
-	return context.WithValue(ctx, formatKey, format)
+	return context.WithValue(ctx, formatKey, NormalizeFormat(format))
 }
 
 func GetFormat(ctx context.Context) string {
@@ -33,7 +37,26 @@ func GetFormat(ctx context.Context) string {
 }
 
 func IsJSON(ctx context.Context) bool {
-	return GetFormat(ctx) == "json"
+	switch NormalizeFormat(GetFormat(ctx)) {
+	case "json", "jsonl":
+		return true
+	default:
+		return false
+	}
+}
+
+// NormalizeFormat canonicalizes output format strings.
+// "ndjson" is treated as an alias of "jsonl".
+func NormalizeFormat(format string) string {
+	normalized := strings.ToLower(strings.TrimSpace(format))
+	switch normalized {
+	case "":
+		return "text"
+	case "ndjson":
+		return "jsonl"
+	default:
+		return normalized
+	}
 }
 
 func WithQuery(ctx context.Context, query string) context.Context {
@@ -59,20 +82,25 @@ func GetTemplate(ctx context.Context) string {
 }
 
 func WriteJSON(w io.Writer, v interface{}) error {
-	// Round-trip through JSON to normalize nil slices to [] instead of null.
-	// Go's json.Marshal produces null for nil slices, which breaks jq filters
-	// like .items[] with "cannot iterate over: null".
-	data, err := normalizeJSON(v)
-	if err != nil {
-		return err
-	}
-	enc := json.NewEncoder(w)
-	enc.SetIndent("", "  ")
-	return enc.Encode(data)
+	return writeJSONWithFormatAndQuery(w, v, "json", "")
 }
 
 // WriteJSONFiltered writes JSON with optional filtering
 func WriteJSONFiltered(w io.Writer, v interface{}, query string) error {
+	return writeJSONWithFormatAndQuery(w, v, "json", query)
+}
+
+// WriteJSONForContext writes JSON according to output settings in context.
+// Supported formats:
+//   - json: pretty-printed JSON
+//   - jsonl: compact newline-delimited JSON (one value per line, arrays split per item)
+func WriteJSONForContext(ctx context.Context, w io.Writer, v interface{}) error {
+	format := NormalizeFormat(GetFormat(ctx))
+	query := GetQuery(ctx)
+	return writeJSONWithFormatAndQuery(w, v, format, query)
+}
+
+func writeJSONWithFormatAndQuery(w io.Writer, v interface{}, format, query string) error {
 	// Convert typed struct to generic interface{} for gojq compatibility.
 	// gojq cannot traverse Go structs directly - it needs map[string]interface{}.
 	// Also normalizes nil slices to [] to prevent jq "cannot iterate over: null".
@@ -81,20 +109,77 @@ func WriteJSONFiltered(w io.Writer, v interface{}, query string) error {
 		return err
 	}
 
-	if query == "" {
-		enc := json.NewEncoder(w)
-		enc.SetIndent("", "  ")
-		return enc.Encode(data)
+	if query != "" {
+		data, err = filter.Apply(data, query)
+		if err != nil {
+			return err
+		}
 	}
 
-	result, err := filter.Apply(data, query)
+	if NormalizeFormat(format) == "jsonl" {
+		return writeJSONLines(w, data)
+	}
+	return writeJSONPretty(w, data)
+}
+
+func writeJSONPretty(w io.Writer, v interface{}) error {
+	enc := json.NewEncoder(w)
+	enc.SetIndent("", "  ")
+	return enc.Encode(v)
+}
+
+func writeJSONLines(w io.Writer, v interface{}) error {
+	values, isArray := jsonlValues(v)
+	if !isArray {
+		return writeJSONLine(w, v)
+	}
+	for _, value := range values {
+		if err := writeJSONLine(w, value); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func jsonlValues(v interface{}) ([]interface{}, bool) {
+	rv := reflect.ValueOf(v)
+	if !rv.IsValid() {
+		return nil, false
+	}
+
+	for rv.Kind() == reflect.Interface || rv.Kind() == reflect.Ptr {
+		if rv.IsNil() {
+			return nil, false
+		}
+		rv = rv.Elem()
+	}
+
+	if rv.Kind() != reflect.Slice && rv.Kind() != reflect.Array {
+		return nil, false
+	}
+
+	// Preserve []byte semantics as a single JSON value.
+	if rv.Kind() == reflect.Slice && rv.Type().Elem().Kind() == reflect.Uint8 {
+		return nil, false
+	}
+
+	values := make([]interface{}, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		values[i] = rv.Index(i).Interface()
+	}
+	return values, true
+}
+
+func writeJSONLine(w io.Writer, v interface{}) error {
+	b, err := json.Marshal(v)
 	if err != nil {
 		return err
 	}
-
-	enc := json.NewEncoder(w)
-	enc.SetIndent("", "  ")
-	return enc.Encode(result)
+	if _, err := w.Write(b); err != nil {
+		return err
+	}
+	_, err = w.Write([]byte("\n"))
+	return err
 }
 
 // normalizeJSON marshals v to JSON and re-decodes it, converting null values
@@ -156,6 +241,28 @@ func WithYes(ctx context.Context, yes bool) context.Context {
 
 func GetYes(ctx context.Context) bool {
 	if v, ok := ctx.Value(yesKey).(bool); ok {
+		return v
+	}
+	return false
+}
+
+func WithNoInput(ctx context.Context, noInput bool) context.Context {
+	return context.WithValue(ctx, noInputKey, noInput)
+}
+
+func GetNoInput(ctx context.Context) bool {
+	if v, ok := ctx.Value(noInputKey).(bool); ok {
+		return v
+	}
+	return false
+}
+
+func WithItemsOnly(ctx context.Context, itemsOnly bool) context.Context {
+	return context.WithValue(ctx, itemsOnlyKey, itemsOnly)
+}
+
+func GetItemsOnly(ctx context.Context) bool {
+	if v, ok := ctx.Value(itemsOnlyKey).(bool); ok {
 		return v
 	}
 	return false

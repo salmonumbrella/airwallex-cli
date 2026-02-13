@@ -426,6 +426,39 @@ func TestVersionCommand_JSONOutput(t *testing.T) {
 	}
 }
 
+func TestVersionCommand_JSONLQueryOutput(t *testing.T) {
+	origVersion := Version
+	origCommit := Commit
+	origBuildDate := BuildDate
+	defer func() {
+		Version = origVersion
+		Commit = origCommit
+		BuildDate = origBuildDate
+	}()
+
+	Version = "1.2.3"
+	Commit = "abc123"
+	BuildDate = "2024-01-15"
+
+	cmd := newVersionCmd()
+	ctx := outfmt.WithFormat(context.Background(), "jsonl")
+	ctx = outfmt.WithQuery(ctx, ".version")
+	cmd.SetContext(ctx)
+
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+	cmd.SetErr(&buf)
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("Execute() error = %v", err)
+	}
+
+	want := "\"1.2.3\"\n"
+	if got := buf.String(); got != want {
+		t.Errorf("version jsonl query output = %q, want %q", got, want)
+	}
+}
+
 func TestVersionCommand_TextVsJSONOutput(t *testing.T) {
 	// Store original values
 	origVersion := Version

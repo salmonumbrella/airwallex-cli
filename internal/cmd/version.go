@@ -54,7 +54,7 @@ func newVersionCmdWithFactory(f *factory.Factory) *cobra.Command {
 					info.LatestVersion = updateResult.LatestVersion
 					info.UpdateAvailable = updateResult.UpdateAvailable
 				}
-				return outfmt.WriteJSON(out, info)
+				return writeJSONOutputTo(cmd.Context(), out, info)
 			}
 
 			_, _ = fmt.Fprintf(out, "airwallex-cli %s\n", Version)

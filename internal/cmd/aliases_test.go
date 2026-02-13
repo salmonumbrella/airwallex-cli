@@ -38,6 +38,22 @@ func hasAlias(cmd *cobra.Command, alias string) bool {
 	return false
 }
 
+func hasSiblingNameOrAlias(cmd *cobra.Command, alias string) bool {
+	parent := cmd.Parent()
+	if parent == nil {
+		return false
+	}
+	for _, sibling := range parent.Commands() {
+		if sibling == cmd {
+			continue
+		}
+		if sibling.Name() == alias || hasAlias(sibling, alias) {
+			return true
+		}
+	}
+	return false
+}
+
 func TestParentCommandAliases(t *testing.T) {
 	root := NewRootCmd()
 
@@ -160,7 +176,7 @@ func TestSubcommandAliases(t *testing.T) {
 		{"fx conversions create", []string{"fx", "conversions", "create"}, []string{"cr"}},
 
 		// billing sub-groups
-		{"billing customers", []string{"billing", "customers"}, []string{"cust", "cu"}},
+		{"billing customers", []string{"billing", "customers"}, []string{"cust", "cu", "contacts", "contact"}},
 		{"billing products", []string{"billing", "products"}, []string{"prod", "pr"}},
 		{"billing prices", []string{"billing", "prices"}, []string{"price", "pc"}},
 		{"billing invoices", []string{"billing", "invoices"}, []string{"inv"}},
@@ -286,6 +302,7 @@ func TestPerCommandFlagShortcodes(t *testing.T) {
 		{"transfers create --method", []string{"transfers", "create"}, "method", "m"},
 		{"transfers create --reference", []string{"transfers", "create"}, "reference", "r"},
 		{"transfers create --wait", []string{"transfers", "create"}, "wait", "w"},
+		{"transfers confirmation --output", []string{"transfers", "confirmation"}, "output", "o"},
 
 		// deposits
 		{"deposits list --status", []string{"deposits", "list"}, "status", "s"},
@@ -358,8 +375,12 @@ func TestMultiLetterFlagAliases(t *testing.T) {
 	}{
 		// Global persistent
 		{"global --output/--out", nil, "output", "out"},
+		{"global --json/--j", nil, "json", "j"},
 		{"global --query/--qr", nil, "query", "qr"},
+		{"global --query-file/--qf", nil, "query-file", "qf"},
 		{"global --template/--tmpl", nil, "template", "tmpl"},
+		{"global --items-only/--io", nil, "items-only", "io"},
+		{"global --results-only/--ro", nil, "results-only", "ro"},
 
 		// Per-command
 		{"transfers create --beneficiary-id/--bid", []string{"transfers", "create"}, "beneficiary-id", "bid"},
@@ -370,6 +391,7 @@ func TestMultiLetterFlagAliases(t *testing.T) {
 		{"transactions list --card-id/--cid", []string{"transactions", "list"}, "card-id", "cid"},
 		{"webhooks create --events/--ev", []string{"webhooks", "create"}, "events", "ev"},
 		{"beneficiaries create --entity-type/--et", []string{"beneficiaries", "create"}, "entity-type", "et"},
+		{"beneficiaries create --nickname/--nn", []string{"beneficiaries", "create"}, "nickname", "nn"},
 		{"fx conversions create --sell-currency/--sell", []string{"fx", "conversions", "create"}, "sell-currency", "sell"},
 		{"global --query/--jq", nil, "query", "jq"},
 	}
@@ -403,6 +425,24 @@ func TestMultiLetterFlagAliases(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCanonicalVerbAliases(t *testing.T) {
+	root := NewRootCmd()
+
+	var walk func(*cobra.Command)
+	walk = func(cmd *cobra.Command) {
+		verb := commandVerb(cmd.Use)
+		alias, ok := canonicalVerbAliases[verb]
+		if ok && !hasSiblingNameOrAlias(cmd, alias) && cmd.Name() != alias && !hasAlias(cmd, alias) {
+			t.Errorf("command %q missing canonical alias %q for verb %q (aliases: %v)", cmd.CommandPath(), alias, verb, cmd.Aliases)
+		}
+		for _, child := range cmd.Commands() {
+			walk(child)
+		}
+	}
+
+	walk(root)
 }
 
 func TestJQAutoEnablesJSON(t *testing.T) {

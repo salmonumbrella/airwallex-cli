@@ -5,6 +5,9 @@ import (
 	"testing"
 
 	"github.com/spf13/cobra"
+
+	"github.com/salmonumbrella/airwallex-cli/internal/api"
+	"github.com/salmonumbrella/airwallex-cli/internal/schemavalidator"
 )
 
 func TestBeneficiariesCreateValidation(t *testing.T) {
@@ -401,6 +404,58 @@ func TestBeneficiariesCreateValidation(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestBeneficiariesCreateNicknameAlias(t *testing.T) {
+	cmd := newBeneficiariesCreateCmd()
+	if err := cmd.Flags().Parse([]string{"--nn", "Clo Wang"}); err != nil {
+		t.Fatalf("expected --nn alias to parse, got error: %v", err)
+	}
+
+	got, err := cmd.Flags().GetString("nickname")
+	if err != nil {
+		t.Fatalf("failed to read nickname: %v", err)
+	}
+	if got != "Clo Wang" {
+		t.Fatalf("nickname = %q, want %q", got, "Clo Wang")
+	}
+}
+
+func TestFormatMissingFieldsWithHints_AddressFields(t *testing.T) {
+	missing := []schemavalidator.MissingField{
+		{Path: "beneficiary.address.state", Key: "beneficiary.address.state"},
+		{Path: "beneficiary.address.postcode", Key: "beneficiary.address.postcode"},
+	}
+	msg := formatMissingFieldsWithHints(missing)
+	if !strings.Contains(msg, "--address-state") {
+		t.Fatalf("expected hint for --address-state, got: %s", msg)
+	}
+	if !strings.Contains(msg, "--address-postcode") {
+		t.Fatalf("expected hint for --address-postcode, got: %s", msg)
+	}
+}
+
+func TestEnrichBeneficiaryCreateError_AddressHints(t *testing.T) {
+	err := &api.APIError{
+		Code:    "validation_failed",
+		Message: "schema validation failed",
+		Errors: []api.FieldError{
+			{Source: "beneficiary.address.state", Code: "001"},
+			{Source: "beneficiary.address.postcode", Code: "001"},
+		},
+	}
+
+	got := enrichBeneficiaryCreateError(err)
+	if got == nil {
+		t.Fatal("expected non-nil error")
+	}
+	text := got.Error()
+	if !strings.Contains(text, "--address-state") {
+		t.Fatalf("expected --address-state hint, got: %s", text)
+	}
+	if !strings.Contains(text, "--address-postcode") {
+		t.Fatalf("expected --address-postcode hint, got: %s", text)
 	}
 }
 

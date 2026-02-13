@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"github.com/spf13/cobra"
 
@@ -131,7 +130,7 @@ Account types: AU_BANK, US_BANK, CA_BANK, GB_BANK, SG_BANK, HK_BANK`,
 			}
 
 			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, la)
+				return writeJSONOutput(cmd, la)
 			}
 
 			u.Success(fmt.Sprintf("Created linked account: %s", la.ID))
@@ -187,7 +186,7 @@ Examples:
 			}
 
 			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, di)
+				return writeJSONOutput(cmd, di)
 			}
 
 			u.Success(fmt.Sprintf("Deposit initiated: %s (%s %s)", di.ID, outfmt.FormatMoney(di.Amount), di.Currency))

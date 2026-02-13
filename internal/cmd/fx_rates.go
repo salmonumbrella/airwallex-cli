@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/spf13/cobra"
 
@@ -47,7 +46,7 @@ Examples:
 			}
 
 			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, result)
+				return writeJSONOutput(cmd, result)
 			}
 
 			f := outfmt.FromContext(cmd.Context())

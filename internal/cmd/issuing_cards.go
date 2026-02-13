@@ -218,7 +218,7 @@ Program types: PREPAID, DEBIT, CREDIT, DEFERRED_DEBIT`,
 
 			io := iocontext.GetIO(cmd.Context())
 			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(io.Out, card)
+				return writeJSONOutput(cmd, card)
 			}
 
 			limitInfo := ""
@@ -322,9 +322,8 @@ func newCardsUpdateCmd() *cobra.Command {
 				return err
 			}
 
-			io := iocontext.GetIO(cmd.Context())
 			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(io.Out, card)
+				return writeJSONOutput(cmd, card)
 			}
 
 			u.Success(fmt.Sprintf("Updated card: %s", card.CardID))
@@ -357,9 +356,8 @@ func newCardsActivateCmd() *cobra.Command {
 				return err
 			}
 
-			io := iocontext.GetIO(cmd.Context())
 			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(io.Out, card)
+				return writeJSONOutput(cmd, card)
 			}
 
 			u.Success(fmt.Sprintf("Activated card: %s", card.CardID))
@@ -391,7 +389,7 @@ func newCardsDetailsCmd() *cobra.Command {
 
 			io := iocontext.GetIO(cmd.Context())
 			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(io.Out, details)
+				return writeJSONOutput(cmd, details)
 			}
 
 			cardNumber := details.MaskedPAN()
@@ -433,7 +431,7 @@ func newCardsLimitsCmd() *cobra.Command {
 
 			io := iocontext.GetIO(cmd.Context())
 			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(io.Out, limits)
+				return writeJSONOutput(cmd, limits)
 			}
 
 			f := outfmt.FromContext(cmd.Context())

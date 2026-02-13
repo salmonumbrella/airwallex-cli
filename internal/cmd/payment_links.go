@@ -140,7 +140,7 @@ Examples:
 			}
 
 			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, pl)
+				return writeJSONOutput(cmd, pl)
 			}
 
 			u.Success(fmt.Sprintf("Created payment link: %s", pl.ID))

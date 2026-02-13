@@ -134,6 +134,52 @@ func TestTransfersCreateCmd_AmountValidation(t *testing.T) {
 	}
 }
 
+func TestTransfersCreateRequiredFlagsWithAliases(t *testing.T) {
+	cleanup := setupTestEnvironment(t)
+	defer cleanup()
+
+	root := NewRootCmd()
+	root.SetArgs([]string{
+		"transfers", "create",
+		"--bid", "ben_test_123",
+		"--ta", "10",
+		"--tc", "USD",
+		"--sc", "USD",
+		"--reference", "INV-123",
+		"--rsn", "payment_to_supplier",
+		"--dry-run",
+	})
+
+	err := root.Execute()
+	if err == nil {
+		return
+	}
+	if strings.Contains(err.Error(), `required flag(s)`) {
+		t.Fatalf("aliases should satisfy required flags, got: %v", err)
+	}
+	if strings.Contains(err.Error(), "unknown flag") {
+		t.Fatalf("expected aliases to parse, got: %v", err)
+	}
+	if !isExpectedTestError(err) {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestTransfersConfirmationOutputShorthand(t *testing.T) {
+	cmd := newTransfersConfirmationCmd()
+	if err := cmd.Flags().Parse([]string{"-o", "/tmp/confirmation.pdf"}); err != nil {
+		t.Fatalf("expected -o to parse, got: %v", err)
+	}
+
+	output, err := cmd.Flags().GetString("output")
+	if err != nil {
+		t.Fatalf("failed to read output flag: %v", err)
+	}
+	if output != "/tmp/confirmation.pdf" {
+		t.Fatalf("output = %q, want %q", output, "/tmp/confirmation.pdf")
+	}
+}
+
 func TestTransfersCreateCmd_SecurityQAPairing(t *testing.T) {
 	tests := []struct {
 		name             string

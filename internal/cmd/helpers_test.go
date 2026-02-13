@@ -379,6 +379,23 @@ func TestConfirmOrYes_NonTTYReturnsError(t *testing.T) {
 	}
 }
 
+func TestConfirmOrYes_NoInputReturnsError(t *testing.T) {
+	origIsTerminal := isTerminal
+	defer func() { isTerminal = origIsTerminal }()
+	isTerminal = func() bool { return true }
+
+	ctx := context.Background()
+	ctx = outfmt.WithNoInput(ctx, true)
+
+	_, err := ConfirmOrYes(ctx, "Delete everything?")
+	if err == nil {
+		t.Fatal("expected error when --no-input is set and --yes is not set")
+	}
+	if !strings.Contains(err.Error(), "--no-input") {
+		t.Errorf("expected error to mention --no-input, got: %v", err)
+	}
+}
+
 func TestConfirmOrYes_PromptsToStderr(t *testing.T) {
 	// Save and restore original
 	origIsTerminal := isTerminal

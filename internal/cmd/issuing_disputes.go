@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"github.com/spf13/cobra"
 
@@ -192,7 +191,7 @@ func newDisputesSubmitCmd() *cobra.Command {
 			}
 
 			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, dispute)
+				return writeJSONOutput(cmd, dispute)
 			}
 
 			u.Success(fmt.Sprintf("Submitted dispute: %s", disputeID(*dispute)))
@@ -221,7 +220,7 @@ func newDisputesCancelCmd() *cobra.Command {
 			}
 
 			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, dispute)
+				return writeJSONOutput(cmd, dispute)
 			}
 
 			u.Success(fmt.Sprintf("Cancelled dispute: %s", disputeID(*dispute)))

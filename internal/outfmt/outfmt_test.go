@@ -21,6 +21,16 @@ func TestIsJSON(t *testing.T) {
 	if IsJSON(ctx) {
 		t.Error("IsJSON(text ctx) = true, want false")
 	}
+
+	ctx = WithFormat(ctx, "jsonl")
+	if !IsJSON(ctx) {
+		t.Error("IsJSON(jsonl ctx) = false, want true")
+	}
+
+	ctx = WithFormat(ctx, "ndjson")
+	if !IsJSON(ctx) {
+		t.Error("IsJSON(ndjson ctx) = false, want true")
+	}
 }
 
 func TestGetFormat(t *testing.T) {
@@ -32,6 +42,53 @@ func TestGetFormat(t *testing.T) {
 	ctx = WithFormat(ctx, "json")
 	if got := GetFormat(ctx); got != "json" {
 		t.Errorf("GetFormat(json ctx) = %q, want 'json'", got)
+	}
+
+	ctx = WithFormat(ctx, "ndjson")
+	if got := GetFormat(ctx); got != "jsonl" {
+		t.Errorf("GetFormat(ndjson ctx) = %q, want 'jsonl'", got)
+	}
+}
+
+func TestNormalizeFormat(t *testing.T) {
+	tests := []struct {
+		in   string
+		want string
+	}{
+		{"", "text"},
+		{"text", "text"},
+		{"json", "json"},
+		{"jsonl", "jsonl"},
+		{"ndjson", "jsonl"},
+		{"  NDJSON ", "jsonl"},
+		{"custom", "custom"},
+	}
+
+	for _, tt := range tests {
+		if got := NormalizeFormat(tt.in); got != tt.want {
+			t.Errorf("NormalizeFormat(%q) = %q, want %q", tt.in, got, tt.want)
+		}
+	}
+}
+
+func TestNoInputAndItemsOnlyContext(t *testing.T) {
+	ctx := context.Background()
+
+	if GetNoInput(ctx) {
+		t.Error("GetNoInput(empty ctx) = true, want false")
+	}
+	if GetItemsOnly(ctx) {
+		t.Error("GetItemsOnly(empty ctx) = true, want false")
+	}
+
+	ctx = WithNoInput(ctx, true)
+	ctx = WithItemsOnly(ctx, true)
+
+	if !GetNoInput(ctx) {
+		t.Error("GetNoInput(ctx) = false, want true")
+	}
+	if !GetItemsOnly(ctx) {
+		t.Error("GetItemsOnly(ctx) = false, want true")
 	}
 }
 
@@ -103,5 +160,65 @@ func TestWriteJSONFiltered_WithoutQuery(t *testing.T) {
 `
 	if got := buf.String(); got != want {
 		t.Errorf("WriteJSONFiltered = %q, want %q", got, want)
+	}
+}
+
+func TestWriteJSONForContext_JSONMode_PrettyPrinted(t *testing.T) {
+	ctx := WithFormat(context.Background(), "json")
+	var buf bytes.Buffer
+	data := map[string]string{"key": "value"}
+
+	if err := WriteJSONForContext(ctx, &buf, data); err != nil {
+		t.Fatalf("WriteJSONForContext error: %v", err)
+	}
+
+	want := "{\n  \"key\": \"value\"\n}\n"
+	if got := buf.String(); got != want {
+		t.Errorf("WriteJSONForContext(json) = %q, want %q", got, want)
+	}
+}
+
+func TestWriteJSONForContext_JSONLMode_ArrayAsLines(t *testing.T) {
+	type item struct {
+		ID   int    `json:"id"`
+		Name string `json:"name"`
+	}
+
+	ctx := WithFormat(context.Background(), "jsonl")
+	var buf bytes.Buffer
+	data := []item{
+		{ID: 1, Name: "one"},
+		{ID: 2, Name: "two"},
+	}
+
+	if err := WriteJSONForContext(ctx, &buf, data); err != nil {
+		t.Fatalf("WriteJSONForContext error: %v", err)
+	}
+
+	want := "{\"id\":1,\"name\":\"one\"}\n{\"id\":2,\"name\":\"two\"}\n"
+	if got := buf.String(); got != want {
+		t.Errorf("WriteJSONForContext(jsonl array) = %q, want %q", got, want)
+	}
+}
+
+func TestWriteJSONForContext_JSONLMode_QueryResultsAsLines(t *testing.T) {
+	ctx := WithFormat(context.Background(), "jsonl")
+	ctx = WithQuery(ctx, ".items[] | .id")
+
+	var buf bytes.Buffer
+	data := map[string]interface{}{
+		"items": []map[string]interface{}{
+			{"id": "a"},
+			{"id": "b"},
+		},
+	}
+
+	if err := WriteJSONForContext(ctx, &buf, data); err != nil {
+		t.Fatalf("WriteJSONForContext error: %v", err)
+	}
+
+	want := "\"a\"\n\"b\"\n"
+	if got := buf.String(); got != want {
+		t.Errorf("WriteJSONForContext(jsonl query) = %q, want %q", got, want)
 	}
 }

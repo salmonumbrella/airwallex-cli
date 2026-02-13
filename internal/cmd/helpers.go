@@ -176,6 +176,9 @@ func ConfirmOrYes(ctx context.Context, prompt string) (bool, error) {
 	if outfmt.GetYes(ctx) {
 		return true, nil
 	}
+	if outfmt.GetNoInput(ctx) {
+		return false, fmt.Errorf("cannot prompt for confirmation: input disabled by --no-input (use --yes to skip)")
+	}
 
 	// Check if stdin is a terminal
 	if !isTerminal() {
@@ -326,6 +329,123 @@ func normalizeEnumValue(input string, validValues []string) string {
 	return input
 }
 
+var canonicalVerbAliases = map[string]string{
+	"list":   "ls",
+	"get":    "g",
+	"show":   "g",
+	"create": "mk",
+	"update": "up",
+	"edit":   "up",
+	"delete": "rm",
+	"remove": "rm",
+	"search": "q",
+	"query":  "q",
+	"find":   "q",
+}
+
+func commandVerb(use string) string {
+	parts := strings.Fields(strings.TrimSpace(use))
+	if len(parts) == 0 {
+		return ""
+	}
+	return strings.ToLower(parts[0])
+}
+
+func containsAlias(aliases []string, alias string) bool {
+	for _, existing := range aliases {
+		if existing == alias {
+			return true
+		}
+	}
+	return false
+}
+
+// addCanonicalVerbAliases appends canonical short aliases for common verb commands
+// (list/get/create/update/delete/remove/search/query/find) when there is no sibling conflict.
+func addCanonicalVerbAliases(cmd *cobra.Command) {
+	if cmd == nil {
+		return
+	}
+
+	if alias, ok := canonicalVerbAliases[commandVerb(cmd.Use)]; ok {
+		addCommandAliasIfSafe(cmd, alias)
+	}
+
+	for _, sub := range cmd.Commands() {
+		addCanonicalVerbAliases(sub)
+	}
+}
+
+// addCommandAliasIfSafe appends alias to cmd when it does not already exist and
+// does not conflict with sibling command names/aliases.
+func addCommandAliasIfSafe(cmd *cobra.Command, alias string) bool {
+	if cmd == nil || alias == "" {
+		return false
+	}
+	if cmd.Name() == alias || containsAlias(cmd.Aliases, alias) {
+		return false
+	}
+
+	parent := cmd.Parent()
+	if parent != nil {
+		for _, sibling := range parent.Commands() {
+			if sibling == cmd {
+				continue
+			}
+			if sibling.Name() == alias || containsAlias(sibling.Aliases, alias) {
+				return false
+			}
+		}
+	}
+
+	cmd.Aliases = append(cmd.Aliases, alias)
+	return true
+}
+
+type aliasFlagValue struct {
+	target *pflag.Flag
+}
+
+type flagValueGetter interface {
+	Get() interface{}
+}
+
+func (a *aliasFlagValue) String() string {
+	if a == nil || a.target == nil || a.target.Value == nil {
+		return ""
+	}
+	return a.target.Value.String()
+}
+
+func (a *aliasFlagValue) Set(value string) error {
+	if a == nil || a.target == nil || a.target.Value == nil {
+		return fmt.Errorf("alias target is not configured")
+	}
+	if err := a.target.Value.Set(value); err != nil {
+		return err
+	}
+	// Ensure Cobra required-flag checks pass when alias is used.
+	a.target.Changed = true
+	return nil
+}
+
+func (a *aliasFlagValue) Type() string {
+	if a == nil || a.target == nil || a.target.Value == nil {
+		return ""
+	}
+	return a.target.Value.Type()
+}
+
+func (a *aliasFlagValue) Get() interface{} {
+	if a == nil || a.target == nil || a.target.Value == nil {
+		return nil
+	}
+	if getter, ok := a.target.Value.(flagValueGetter); ok {
+		return getter.Get()
+	}
+	return a.target.Value.String()
+}
+
 // flagAlias registers a hidden alias for an existing flag.
 // Both flags share the same underlying Value, so setting either one sets both.
 func flagAlias(fs *pflag.FlagSet, name, alias string) {
@@ -333,11 +453,12 @@ func flagAlias(fs *pflag.FlagSet, name, alias string) {
 	if f == nil {
 		panic(fmt.Sprintf("flagAlias: flag %q not found", name))
 	}
-	a := *f // shallow copy — shares the Value interface
+	a := *f
 	a.Name = alias
 	a.Shorthand = ""
 	a.Usage = ""
 	a.Hidden = true
+	a.Value = &aliasFlagValue{target: f}
 	// Build a fresh annotations map so we don't inherit cobra's
 	// "required" annotation from the original flag.
 	a.Annotations = map[string][]string{

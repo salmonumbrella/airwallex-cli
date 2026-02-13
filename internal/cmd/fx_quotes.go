@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"github.com/google/uuid"
 	"github.com/spf13/cobra"
@@ -126,7 +125,7 @@ Validity periods: 1m, 5m, 15m, 30m, 1h, 2h, 4h, 12h, 24h`,
 			}
 
 			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, quote)
+				return writeJSONOutput(cmd, quote)
 			}
 
 			u.Success(fmt.Sprintf("Created quote: %s (expires: %s)", quote.ID, quote.RateExpiry))

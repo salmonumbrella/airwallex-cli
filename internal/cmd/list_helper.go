@@ -78,7 +78,7 @@ func NewListCommand[T any](cfg ListConfig[T], getClient func(context.Context) (*
 	var after string
 	var page int
 	var pageSize int
-	var itemsOnly bool
+	var itemsOnlyFlag bool
 	var fetchAll bool
 
 	cmd := &cobra.Command{
@@ -185,6 +185,7 @@ func NewListCommand[T any](cfg ListConfig[T], getClient func(context.Context) (*
 			}
 
 			f := outfmt.FromContext(cmd.Context())
+			itemsOnly := itemsOnlyFlag || outfmt.GetItemsOnly(cmd.Context())
 
 			// Handle empty results
 			if len(result.Items) == 0 {
@@ -321,8 +322,8 @@ func NewListCommand[T any](cfg ListConfig[T], getClient func(context.Context) (*
 		panic(fmt.Sprintf("unsupported pagination mode %q", mode))
 	}
 	cmd.Flags().BoolVarP(&fetchAll, "all", "a", false, "Fetch all pages (auto-paginate)")
-	cmd.Flags().BoolVarP(&itemsOnly, "items-only", "i", false, "Output items array only (JSON mode)")
-	cmd.Flags().BoolVar(&itemsOnly, "results-only", false, "Alias for --items-only")
+	cmd.Flags().BoolVarP(&itemsOnlyFlag, "items-only", "i", false, "Output only the items/results array when present (JSON output)")
+	cmd.Flags().BoolVar(&itemsOnlyFlag, "results-only", false, "Alias for --items-only")
 	flagAlias(cmd.Flags(), "items-only", "io")
 	flagAlias(cmd.Flags(), "results-only", "ro")
 

@@ -156,10 +156,10 @@ Examples:
 			// Output response body
 			out := cmd.OutOrStdout()
 			if outfmt.IsJSON(cmd.Context()) || isJSONResponse(resp) {
-				// Pretty-print JSON
+				// Emit JSON according to context format/query (json or jsonl).
 				var prettyJSON interface{}
 				if err := json.Unmarshal(respBody, &prettyJSON); err == nil {
-					if writeErr := outfmt.WriteJSONFiltered(out, prettyJSON, outfmt.GetQuery(cmd.Context())); writeErr != nil {
+					if writeErr := writeJSONOutputTo(cmd.Context(), out, prettyJSON); writeErr != nil {
 						return writeErr
 					}
 				} else {

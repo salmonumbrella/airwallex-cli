@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 
@@ -69,7 +68,7 @@ func parseOptionalBool(value string) (*bool, error) {
 func newBillingCustomersCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "customers",
-		Aliases: []string{"cust", "cu"},
+		Aliases: []string{"cust", "cu", "contacts", "contact"},
 		Short:   "Billing customer management",
 	}
 	cmd.AddCommand(newBillingCustomersListCmd())
@@ -589,7 +588,7 @@ Examples:
 			}
 
 			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, preview)
+				return writeJSONOutput(cmd, preview)
 			}
 
 			rows := []outfmt.KV{
@@ -675,7 +674,7 @@ func newBillingInvoiceItemsGetCmd() *cobra.Command {
 			}
 
 			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, item)
+				return writeJSONOutput(cmd, item)
 			}
 
 			rows := []outfmt.KV{
@@ -911,7 +910,7 @@ func newBillingSubscriptionItemsGetCmd() *cobra.Command {
 			}
 
 			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, item)
+				return writeJSONOutput(cmd, item)
 			}
 
 			rows := []outfmt.KV{

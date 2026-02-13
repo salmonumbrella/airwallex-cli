@@ -51,6 +51,97 @@ func TestFormatter_Output_JSONWithQuery(t *testing.T) {
 	}
 }
 
+func TestFormatter_Output_JSONLArrayOneLinePerItem(t *testing.T) {
+	ctx := WithFormat(context.Background(), "jsonl")
+	var buf bytes.Buffer
+	f := FromContext(ctx, WithWriter(&buf))
+
+	data := []struct {
+		ID int `json:"id"`
+	}{
+		{ID: 1},
+		{ID: 2},
+	}
+
+	if err := f.Output(data); err != nil {
+		t.Fatalf("Output() error = %v", err)
+	}
+
+	want := "{\"id\":1}\n{\"id\":2}\n"
+	if got := buf.String(); got != want {
+		t.Errorf("Output() jsonl array = %q, want %q", got, want)
+	}
+}
+
+func TestFormatter_Output_JSONLWithQueryOneLinePerResult(t *testing.T) {
+	ctx := WithFormat(context.Background(), "jsonl")
+	ctx = WithQuery(ctx, ".[] | .id")
+	var buf bytes.Buffer
+	f := FromContext(ctx, WithWriter(&buf))
+
+	data := []interface{}{
+		map[string]interface{}{"id": "one"},
+		map[string]interface{}{"id": "two"},
+	}
+
+	if err := f.Output(data); err != nil {
+		t.Fatalf("Output() error = %v", err)
+	}
+
+	want := "\"one\"\n\"two\"\n"
+	if got := buf.String(); got != want {
+		t.Errorf("Output() jsonl query = %q, want %q", got, want)
+	}
+}
+
+func TestFormatter_Output_JSONItemsOnlySelector_UsesItems(t *testing.T) {
+	ctx := WithFormat(context.Background(), "json")
+	ctx = WithItemsOnly(ctx, true)
+	var buf bytes.Buffer
+	f := FromContext(ctx, WithWriter(&buf))
+
+	data := map[string]any{
+		"items":    []any{map[string]any{"id": "a"}, map[string]any{"id": "b"}},
+		"has_more": false,
+	}
+
+	if err := f.Output(data); err != nil {
+		t.Fatalf("Output() error = %v", err)
+	}
+
+	var decoded any
+	if err := json.Unmarshal(buf.Bytes(), &decoded); err != nil {
+		t.Fatalf("failed to decode JSON: %v", err)
+	}
+	if _, ok := decoded.([]any); !ok {
+		t.Fatalf("expected array output when selector is enabled, got %T", decoded)
+	}
+}
+
+func TestFormatter_Output_JSONItemsOnlySelector_UsesResults(t *testing.T) {
+	ctx := WithFormat(context.Background(), "json")
+	ctx = WithItemsOnly(ctx, true)
+	var buf bytes.Buffer
+	f := FromContext(ctx, WithWriter(&buf))
+
+	data := map[string]any{
+		"results": []any{map[string]any{"id": "a"}},
+		"count":   1,
+	}
+
+	if err := f.Output(data); err != nil {
+		t.Fatalf("Output() error = %v", err)
+	}
+
+	var decoded any
+	if err := json.Unmarshal(buf.Bytes(), &decoded); err != nil {
+		t.Fatalf("failed to decode JSON: %v", err)
+	}
+	if _, ok := decoded.([]any); !ok {
+		t.Fatalf("expected array output when selector is enabled, got %T", decoded)
+	}
+}
+
 func TestFormatter_StartTable_TextMode(t *testing.T) {
 	ctx := WithFormat(context.Background(), "text")
 	var buf bytes.Buffer

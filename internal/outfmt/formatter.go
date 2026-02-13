@@ -69,13 +69,77 @@ func FromContext(ctx context.Context, opts ...OutputOption) *Formatter {
 // Priority: template > JSON > text (default nil).
 // For JSON mode, applies JQ filtering if a query is present.
 func (f *Formatter) Output(data any) error {
+	if IsJSON(f.ctx) && GetItemsOnly(f.ctx) {
+		data = selectItemsOrResults(data)
+	}
 	if tmpl := GetTemplate(f.ctx); tmpl != "" {
 		return f.OutputWithTemplate(data, tmpl)
 	}
 	if IsJSON(f.ctx) {
-		return WriteJSONFiltered(f.out, data, GetQuery(f.ctx))
+		return WriteJSONForContext(f.ctx, f.out, data)
 	}
 	return nil
+}
+
+func selectItemsOrResults(data any) any {
+	switch v := data.(type) {
+	case AnnotatedOutput:
+		data = v.Data
+	case *AnnotatedOutput:
+		if v != nil {
+			data = v.Data
+		}
+	}
+
+	if selected, ok := selectMapField(data, "items"); ok {
+		return selected
+	}
+	if selected, ok := selectMapField(data, "results"); ok {
+		return selected
+	}
+	if selected, ok := selectStructField(data, "Items"); ok {
+		return selected
+	}
+	if selected, ok := selectStructField(data, "Results"); ok {
+		return selected
+	}
+	return data
+}
+
+func selectMapField(data any, key string) (any, bool) {
+	rv := reflect.ValueOf(data)
+	for rv.Kind() == reflect.Ptr {
+		if rv.IsNil() {
+			return nil, false
+		}
+		rv = rv.Elem()
+	}
+	if rv.Kind() != reflect.Map || rv.Type().Key().Kind() != reflect.String {
+		return nil, false
+	}
+	value := rv.MapIndex(reflect.ValueOf(key))
+	if !value.IsValid() {
+		return nil, false
+	}
+	return value.Interface(), true
+}
+
+func selectStructField(data any, fieldName string) (any, bool) {
+	rv := reflect.ValueOf(data)
+	for rv.Kind() == reflect.Ptr {
+		if rv.IsNil() {
+			return nil, false
+		}
+		rv = rv.Elem()
+	}
+	if rv.Kind() != reflect.Struct {
+		return nil, false
+	}
+	field := rv.FieldByName(fieldName)
+	if !field.IsValid() || !field.CanInterface() {
+		return nil, false
+	}
+	return field.Interface(), true
 }
 
 // OutputWithTemplate applies a Go template to data.

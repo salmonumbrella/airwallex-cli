@@ -44,6 +44,9 @@ func TestFlagAlias(t *testing.T) {
 		if !flagOrAliasChanged(cmd, "status") {
 			t.Error("flagOrAliasChanged should detect alias")
 		}
+		if !cmd.Flags().Lookup("status").Changed {
+			t.Error("alias should mark canonical flag as changed")
+		}
 	})
 
 	t.Run("flagOrAliasChanged detects original", func(t *testing.T) {
@@ -76,5 +79,26 @@ func TestFlagAlias(t *testing.T) {
 			}
 		}()
 		flagAlias(fs, "nonexistent", "ne")
+	})
+
+	t.Run("required flag satisfied via alias", func(t *testing.T) {
+		cmd := &cobra.Command{
+			Use: "test",
+			RunE: func(cmd *cobra.Command, args []string) error {
+				return nil
+			},
+		}
+		var status string
+		cmd.Flags().StringVar(&status, "status", "", "")
+		mustMarkRequired(cmd, "status")
+		flagAlias(cmd.Flags(), "status", "st")
+		cmd.SetArgs([]string{"--st", "PAID"})
+
+		if err := cmd.Execute(); err != nil {
+			t.Fatalf("expected alias to satisfy required flag, got error: %v", err)
+		}
+		if status != "PAID" {
+			t.Errorf("expected status to be set via alias, got %q", status)
+		}
 	})
 }

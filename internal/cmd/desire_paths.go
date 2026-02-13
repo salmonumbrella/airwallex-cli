@@ -128,6 +128,7 @@ func listResourceMap() map[string][]string {
 
 		// Billing convenience (noun-only routes to billing namespace).
 		"customers":     {"billing", "customers", "list"},
+		"contacts":      {"billing", "customers", "list"},
 		"products":      {"billing", "products", "list"},
 		"prices":        {"billing", "prices", "list"},
 		"invoices":      {"billing", "invoices", "list"},
@@ -158,6 +159,8 @@ func createResourceMap() map[string][]string {
 
 		// Billing convenience.
 		"customer":     {"billing", "customers", "create"},
+		"contact":      {"billing", "customers", "create"},
+		"contacts":     {"billing", "customers", "create"},
 		"product":      {"billing", "products", "create"},
 		"price":        {"billing", "prices", "create"},
 		"invoice":      {"billing", "invoices", "create"},

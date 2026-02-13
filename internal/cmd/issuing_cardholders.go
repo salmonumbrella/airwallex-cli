@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"github.com/spf13/cobra"
 
@@ -104,7 +103,7 @@ func newCardholdersCreateCmd() *cobra.Command {
 			}
 
 			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, ch)
+				return writeJSONOutput(cmd, ch)
 			}
 
 			u.Success(fmt.Sprintf("Created cardholder: %s", ch.CardholderID))
@@ -153,7 +152,7 @@ func newCardholdersUpdateCmd() *cobra.Command {
 			}
 
 			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, ch)
+				return writeJSONOutput(cmd, ch)
 			}
 
 			u.Success(fmt.Sprintf("Updated cardholder: %s", ch.CardholderID))

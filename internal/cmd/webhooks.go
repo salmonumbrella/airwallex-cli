@@ -219,7 +219,7 @@ Common events:
 			}
 
 			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, wh)
+				return writeJSONOutput(cmd, wh)
 			}
 
 			u.Success(fmt.Sprintf("Created webhook: %s", wh.ID))
@@ -268,7 +268,7 @@ func newWebhooksDeleteCmd() *cobra.Command {
 			}
 
 			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, map[string]string{
+				return writeJSONOutput(cmd, map[string]string{
 					"id":     webhookID,
 					"status": "deleted",
 				})

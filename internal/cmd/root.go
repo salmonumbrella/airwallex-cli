@@ -32,6 +32,8 @@ type rootFlags struct {
 	Agent     bool   // agent mode: stable JSON, no colors, no prompts, structured errors
 	// Agent-friendly flags
 	Yes         bool   // skip confirmation prompts
+	NoInput     bool   // disable interactive prompts
+	ItemsOnly   bool   // output items/results array only when present
 	OutputLimit int    // limit number of results in output (0 = no limit)
 	SortBy      string // field name to sort by
 	Desc        bool   // sort descending (only valid with --sort-by)
@@ -91,6 +93,12 @@ func NewRootCmd() *cobra.Command {
 				flags.Color = "never"
 			}
 
+			if flags.Yes {
+				flags.NoInput = true
+			}
+
+			flags.Output = outfmt.NormalizeFormat(flags.Output)
+
 			// Auto-enable JSON output when --query/--jq/--query-file is set.
 			// JQ filtering only makes sense with JSON output.
 			if (flagOrAliasChanged(cmd, "query") || flagOrAliasChanged(cmd, "query-file")) && !flagOrAliasChanged(cmd, "output") && !flags.JSON {
@@ -131,6 +139,8 @@ func NewRootCmd() *cobra.Command {
 
 			// Inject agent-friendly flags
 			ctx = outfmt.WithYes(ctx, flags.Yes)
+			ctx = outfmt.WithNoInput(ctx, flags.NoInput)
+			ctx = outfmt.WithItemsOnly(ctx, flags.ItemsOnly)
 			ctx = outfmt.WithLimit(ctx, flags.OutputLimit)
 			ctx = outfmt.WithSortBy(ctx, flags.SortBy)
 			ctx = outfmt.WithDesc(ctx, flags.Desc)
@@ -142,14 +152,14 @@ func NewRootCmd() *cobra.Command {
 	}
 
 	cmd.PersistentFlags().StringVar(&flags.Account, "account", os.Getenv("AWX_ACCOUNT"), "Account name (or AWX_ACCOUNT env)")
-	cmd.PersistentFlags().StringVarP(&flags.Output, "output", "o", getEnvOrDefault("AWX_OUTPUT", "text"), "Output format: text|json")
+	cmd.PersistentFlags().StringVarP(&flags.Output, "output", "o", getEnvOrDefault("AWX_OUTPUT", "text"), "Output format: text|json|jsonl|ndjson (env AWX_OUTPUT)")
 	cmd.PersistentFlags().BoolVarP(&flags.JSON, "json", "j", false, "Shorthand for --output json")
 	cmd.PersistentFlags().StringVar(&flags.Color, "color", getEnvOrDefault("AWX_COLOR", "auto"), "Color output: auto|always|never")
 	cmd.PersistentFlags().BoolVar(&flags.NoColor, "no-color", false, "Shorthand for --color never")
 	cmd.PersistentFlags().BoolVar(&flags.Agent, "agent", os.Getenv("AWX_AGENT") != "", "Agent mode: stable JSON, no color, no prompts (or AWX_AGENT env)")
 	cmd.PersistentFlags().BoolVarP(&flags.Debug, "debug", "d", false, "Enable debug output (shows API requests/responses)")
-	cmd.PersistentFlags().StringVarP(&flags.Query, "query", "q", "", "JQ filter expression for JSON output")
-	cmd.PersistentFlags().StringVar(&flags.QueryFile, "query-file", "", "Read JQ filter expression from file (- for stdin)")
+	cmd.PersistentFlags().StringVarP(&flags.Query, "query", "q", "", "JQ expression to filter JSON output")
+	cmd.PersistentFlags().StringVar(&flags.QueryFile, "query-file", "", "Read JQ expression from file ('-' for stdin)")
 	// Prefer --template (keep --format for backwards compatibility, but hide it to avoid
 	// ambiguity with subcommands that use --format for file formats).
 	cmd.PersistentFlags().StringVarP(&flags.Template, "template", "t", "", "Go template for custom output (e.g., '{{.ID}}: {{.Status}}')")
@@ -159,10 +169,13 @@ func NewRootCmd() *cobra.Command {
 
 	// Agent-friendly flags
 	cmd.PersistentFlags().BoolVarP(&flags.Yes, "yes", "y", false, "Skip confirmation prompts")
-	cmd.PersistentFlags().BoolVar(&flags.Yes, "force", false, "Skip confirmation prompts (alias for --yes)")
+	cmd.PersistentFlags().BoolVar(&flags.NoInput, "no-input", false, "Disable interactive prompts")
+	cmd.PersistentFlags().BoolVar(&flags.Yes, "force", false, "Alias for --yes")
+	cmd.PersistentFlags().BoolVar(&flags.ItemsOnly, "items-only", false, "Output only the items/results array when present (JSON output)")
+	cmd.PersistentFlags().BoolVar(&flags.ItemsOnly, "results-only", false, "Alias for --items-only")
 	cmd.PersistentFlags().IntVar(&flags.OutputLimit, "output-limit", 0, "Limit number of results in output (0 = no limit)")
-	cmd.PersistentFlags().StringVar(&flags.SortBy, "sort-by", "", "Field name to sort results by")
-	cmd.PersistentFlags().BoolVar(&flags.Desc, "desc", false, "Sort descending (requires --sort-by)")
+	cmd.PersistentFlags().StringVar(&flags.SortBy, "sort-by", "", "Sort results by field")
+	cmd.PersistentFlags().BoolVar(&flags.Desc, "desc", false, "Sort in descending order")
 
 	// Multi-letter hidden flag aliases.
 	flagAlias(cmd.PersistentFlags(), "output", "out")
@@ -173,7 +186,10 @@ func NewRootCmd() *cobra.Command {
 	flagAlias(cmd.PersistentFlags(), "output-limit", "ol")
 	flagAlias(cmd.PersistentFlags(), "sort-by", "sb")
 	flagAlias(cmd.PersistentFlags(), "account", "acc")
+	flagAlias(cmd.PersistentFlags(), "json", "j")
 	flagAlias(cmd.PersistentFlags(), "query", "jq")
+	flagAlias(cmd.PersistentFlags(), "items-only", "io")
+	flagAlias(cmd.PersistentFlags(), "results-only", "ro")
 
 	cmd.AddCommand(newAPICmd())
 	cmd.AddCommand(newAuthCmd())
@@ -206,6 +222,7 @@ func NewRootCmd() *cobra.Command {
 	cmd.AddCommand(newListRouterCmd())
 	cmd.AddCommand(newCreateRouterCmd())
 	cmd.AddCommand(newCancelRouterCmd())
+	addCanonicalVerbAliases(cmd)
 
 	return cmd
 }

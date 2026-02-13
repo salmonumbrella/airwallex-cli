@@ -440,6 +440,54 @@ func TestNewListCommand_JSONItemsOnly(t *testing.T) {
 	}
 }
 
+func TestNewListCommand_JSONItemsOnly_FromGlobalContext(t *testing.T) {
+	cfg := ListConfig[testItem]{
+		Use:          "test",
+		Short:        "Test list command",
+		Headers:      []string{"ID", "NAME"},
+		EmptyMessage: "No items",
+		RowFunc: func(item testItem) []string {
+			return []string{item.ID, item.Name}
+		},
+		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[testItem], error) {
+			return ListResult[testItem]{
+				Items: []testItem{
+					{ID: "1", Name: "Item 1"},
+				},
+				HasMore: true,
+			}, nil
+		},
+	}
+
+	cmd := NewListCommand(cfg, func(ctx context.Context) (*api.Client, error) {
+		return &api.Client{}, nil
+	})
+
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+	ctx := outfmt.WithFormat(context.Background(), "json")
+	ctx = outfmt.WithItemsOnly(ctx, true)
+	ctx = iocontext.WithIO(ctx, &iocontext.IO{
+		Out:    &out,
+		ErrOut: &errOut,
+		In:     bytes.NewBuffer(nil),
+	})
+	cmd.SetContext(ctx)
+	cmd.SetArgs([]string{})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	var decoded any
+	if err := json.Unmarshal(out.Bytes(), &decoded); err != nil {
+		t.Fatalf("failed to decode JSON output: %v", err)
+	}
+	if _, ok := decoded.([]any); !ok {
+		t.Fatalf("expected array output when global selector is enabled, got %T", decoded)
+	}
+}
+
 func TestNewListCommand_JSONItemsOnlyEmpty(t *testing.T) {
 	cfg := ListConfig[testItem]{
 		Use:          "test",

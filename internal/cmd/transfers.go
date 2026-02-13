@@ -360,7 +360,7 @@ Interac e-Transfer notes:
 			}
 
 			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, t)
+				return writeJSONOutput(cmd, t)
 			}
 
 			u.Success(fmt.Sprintf("Created transfer: %s", t.TransferID))
@@ -488,7 +488,7 @@ Examples:
 			}
 
 			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, map[string]interface{}{
+				return writeJSONOutput(cmd, map[string]interface{}{
 					"results": results,
 					"summary": summary,
 				})
@@ -550,7 +550,7 @@ func newTransfersCancelCmd() *cobra.Command {
 			}
 
 			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, t)
+				return writeJSONOutput(cmd, t)
 			}
 
 			u.Success(fmt.Sprintf("Cancelled transfer: %s", t.TransferID))
@@ -610,7 +610,7 @@ Format options:
 	}
 
 	cmd.Flags().StringVar(&format, "format", "STANDARD", "Format type (STANDARD or NO_FEE_DISPLAY)")
-	cmd.Flags().StringVar(&output, "output", "", "Output filename (required)")
+	cmd.Flags().StringVarP(&output, "output", "o", "", "Output filename (required)")
 	mustMarkRequired(cmd, "output")
 	return cmd
 }

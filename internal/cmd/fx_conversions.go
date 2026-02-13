@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"github.com/google/uuid"
 	"github.com/spf13/cobra"
@@ -171,7 +170,7 @@ Examples:
 			}
 
 			if outfmt.IsJSON(cmd.Context()) {
-				return outfmt.WriteJSON(os.Stdout, conv)
+				return writeJSONOutput(cmd, conv)
 			}
 
 			u.Success(fmt.Sprintf("Conversion executed: %s", conv.ID))
