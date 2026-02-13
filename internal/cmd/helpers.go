@@ -447,7 +447,8 @@ func (a *aliasFlagValue) Get() interface{} {
 }
 
 // flagAlias registers a hidden alias for an existing flag.
-// Both flags share the same underlying Value, so setting either one sets both.
+// The alias delegates to the original flag's Value and marks it as Changed,
+// so Cobra's required-flag checks pass when the alias is used.
 func flagAlias(fs *pflag.FlagSet, name, alias string) {
 	f := fs.Lookup(name)
 	if f == nil {
