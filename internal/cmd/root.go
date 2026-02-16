@@ -54,7 +54,7 @@ func binaryName() string {
 	if len(os.Args) > 0 {
 		return filepath.Base(os.Args[0])
 	}
-	return "airwallex"
+	return "awx"
 }
 
 func NewRootCmd() *cobra.Command {

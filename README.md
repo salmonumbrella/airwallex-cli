@@ -168,7 +168,7 @@ airwallex transfers list [--status <status>]
 airwallex transfers get <transferId>
 airwallex transfers create --beneficiary-id <id> --transfer-amount <n> --transfer-currency <c> ...
 airwallex transfers cancel <transferId>
-airwallex transfers confirmation <transferId> --output <file.pdf>  # Download wire transfer confirmation letter
+airwallex transfers confirmation <transferId> --file <file.pdf>  # Download wire transfer confirmation letter
 ```
 
 ### Beneficiaries
@@ -693,9 +693,8 @@ awx fx cr --sell USD --buy EUR --sa 1000
 | `--events` | `-e` | webhooks create |
 | `--nickname` | `-N` | cards update |
 | `--from-file` | `-F` | transfers batch-create, payload commands |
-| `--data` | `-D` | disputes create/update, payers create/update/validate |
+| `--data` | `-d` | disputes create/update, payers create/update/validate |
 | `--amount` | `-A` | payment-links create |
-| `--description` | `-D` | payment-links create |
 
 ### Multi-letter Flag Aliases
 

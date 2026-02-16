@@ -333,7 +333,6 @@ var canonicalVerbAliases = map[string]string{
 	"list":   "ls",
 	"get":    "g",
 	"show":   "g",
-	"create": "mk",
 	"update": "up",
 	"edit":   "up",
 	"delete": "rm",

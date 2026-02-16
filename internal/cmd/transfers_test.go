@@ -165,18 +165,18 @@ func TestTransfersCreateRequiredFlagsWithAliases(t *testing.T) {
 	}
 }
 
-func TestTransfersConfirmationOutputShorthand(t *testing.T) {
+func TestTransfersConfirmationFileShorthand(t *testing.T) {
 	cmd := newTransfersConfirmationCmd()
-	if err := cmd.Flags().Parse([]string{"-o", "/tmp/confirmation.pdf"}); err != nil {
-		t.Fatalf("expected -o to parse, got: %v", err)
+	if err := cmd.Flags().Parse([]string{"-f", "/tmp/confirmation.pdf"}); err != nil {
+		t.Fatalf("expected -f to parse, got: %v", err)
 	}
 
-	output, err := cmd.Flags().GetString("output")
+	output, err := cmd.Flags().GetString("file")
 	if err != nil {
-		t.Fatalf("failed to read output flag: %v", err)
+		t.Fatalf("failed to read file flag: %v", err)
 	}
 	if output != "/tmp/confirmation.pdf" {
-		t.Fatalf("output = %q, want %q", output, "/tmp/confirmation.pdf")
+		t.Fatalf("file = %q, want %q", output, "/tmp/confirmation.pdf")
 	}
 }
 

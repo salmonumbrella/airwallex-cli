@@ -152,7 +152,7 @@ Examples:
 	cmd.Flags().Float64VarP(&amount, "amount", "A", 0, "Amount to collect (required)")
 	cmd.Flags().StringVarP(&currency, "currency", "c", "", "Currency (required)")
 	cmd.Flags().StringVar(&title, "title", "", "Title for the payment link (defaults to description or auto-generated)")
-	cmd.Flags().StringVarP(&description, "description", "D", "", "Description")
+	cmd.Flags().StringVar(&description, "description", "", "Description")
 	cmd.Flags().BoolVar(&reusable, "reusable", false, "Allow the link to be used multiple times")
 	cmd.Flags().StringVar(&expiresIn, "expires-in", "", "Expiration period (e.g., 7d, 24h)")
 	mustMarkRequired(cmd, "amount")

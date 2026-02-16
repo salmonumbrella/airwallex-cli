@@ -302,7 +302,7 @@ func TestPerCommandFlagShortcodes(t *testing.T) {
 		{"transfers create --method", []string{"transfers", "create"}, "method", "m"},
 		{"transfers create --reference", []string{"transfers", "create"}, "reference", "r"},
 		{"transfers create --wait", []string{"transfers", "create"}, "wait", "w"},
-		{"transfers confirmation --output", []string{"transfers", "confirmation"}, "output", "o"},
+		{"transfers confirmation --file", []string{"transfers", "confirmation"}, "file", "f"},
 
 		// deposits
 		{"deposits list --status", []string{"deposits", "list"}, "status", "s"},

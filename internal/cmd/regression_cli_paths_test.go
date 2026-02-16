@@ -50,7 +50,7 @@ func TestRegressionUserPath_TransferCreateAliases(t *testing.T) {
 	}
 }
 
-func TestRegressionUserPath_TransferConfirmationOutputShortFlag(t *testing.T) {
+func TestRegressionUserPath_TransferConfirmationFileShortFlag(t *testing.T) {
 	cleanup := setupTestEnvironment(t)
 	defer cleanup()
 
@@ -58,13 +58,13 @@ func TestRegressionUserPath_TransferConfirmationOutputShortFlag(t *testing.T) {
 	root.SetArgs([]string{
 		"tr", "conf", "54d05727-ae79-4a1a-88e8-9a33de04bb4e",
 		"--account", "dm",
-		"-o", "/tmp/wire-confirmation-clo-wang.pdf",
+		"-f", "/tmp/wire-confirmation-clo-wang.pdf",
 		"--help",
 	})
 
 	if err := root.Execute(); err != nil {
-		if strings.Contains(err.Error(), "unknown shorthand flag: 'o'") {
-			t.Fatalf("expected -o shorthand to be accepted, got: %v", err)
+		if strings.Contains(err.Error(), "unknown shorthand flag: 'f'") {
+			t.Fatalf("expected -f shorthand to be accepted, got: %v", err)
 		}
 		t.Fatalf("unexpected error: %v", err)
 	}

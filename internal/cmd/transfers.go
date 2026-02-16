@@ -575,10 +575,10 @@ func newTransfersConfirmationCmd() *cobra.Command {
 
 Examples:
   # Download with standard format (includes fees)
-  airwallex transfers confirmation tfr_xxx --output confirmation.pdf
+  airwallex transfers confirmation tfr_xxx --file confirmation.pdf
 
   # Download without fee display
-  airwallex transfers confirmation tfr_xxx --output confirmation.pdf --format NO_FEE_DISPLAY
+  airwallex transfers confirmation tfr_xxx --file confirmation.pdf --format NO_FEE_DISPLAY
 
 Format options:
   STANDARD         - Includes transfer fees in the confirmation letter (default)
@@ -612,7 +612,7 @@ Format options:
 	}
 
 	cmd.Flags().StringVar(&format, "format", "STANDARD", "Format type (STANDARD or NO_FEE_DISPLAY)")
-	cmd.Flags().StringVarP(&output, "output", "o", "", "Output filename (required)")
-	mustMarkRequired(cmd, "output")
+	cmd.Flags().StringVarP(&output, "file", "f", "", "Output filename (required)")
+	mustMarkRequired(cmd, "file")
 	return cmd
 }
