@@ -436,6 +436,47 @@ func TestFormatMissingFieldsWithHints_AddressFields(t *testing.T) {
 	}
 }
 
+func TestBuildBeneficiaryProvidedFields_TransferMethodCompatibility(t *testing.T) {
+	provided := buildBeneficiaryProvidedFields(
+		"PERSONAL",
+		"CA",
+		"LOCAL",
+		map[string]string{
+			"beneficiary.bank_details.account_name": "John Doe",
+		},
+		nil,
+	)
+
+	if provided["entity_type"] != "PERSONAL" {
+		t.Fatalf("entity_type = %q, want PERSONAL", provided["entity_type"])
+	}
+	if provided["bank_country_code"] != "CA" {
+		t.Fatalf("bank_country_code = %q, want CA", provided["bank_country_code"])
+	}
+	if provided["payment_method"] != "LOCAL" {
+		t.Fatalf("payment_method = %q, want LOCAL", provided["payment_method"])
+	}
+	if provided["transfer_method"] != "LOCAL" {
+		t.Fatalf("transfer_method = %q, want LOCAL", provided["transfer_method"])
+	}
+	if provided["payment_methods"] != "LOCAL" {
+		t.Fatalf("payment_methods = %q, want LOCAL", provided["payment_methods"])
+	}
+	if provided["transfer_methods"] != "LOCAL" {
+		t.Fatalf("transfer_methods = %q, want LOCAL", provided["transfer_methods"])
+	}
+}
+
+func TestFormatMissingFieldsWithHints_TransferMethodField(t *testing.T) {
+	missing := []schemavalidator.MissingField{
+		{Path: "transfer_method", Key: "transfer_method"},
+	}
+	msg := formatMissingFieldsWithHints(missing)
+	if !strings.Contains(msg, "--payment-method") {
+		t.Fatalf("expected hint for --payment-method, got: %s", msg)
+	}
+}
+
 func TestEnrichBeneficiaryCreateError_AddressHints(t *testing.T) {
 	err := &api.APIError{
 		Code:    "validation_failed",

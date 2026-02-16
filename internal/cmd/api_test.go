@@ -20,7 +20,7 @@ func TestAPICommand_Flags(t *testing.T) {
 		shorthand string
 	}{
 		{"method", "X"},
-		{"data", "d"},
+		{"data", "D"},
 		{"data-file", ""},
 		{"header", "H"},
 		{"query", "q"},
@@ -37,6 +37,28 @@ func TestAPICommand_Flags(t *testing.T) {
 		if ef.shorthand != "" && flag.Shorthand != ef.shorthand {
 			t.Errorf("flag --%s expected shorthand -%s, got -%s", ef.name, ef.shorthand, flag.Shorthand)
 		}
+	}
+}
+
+func TestAPICommand_NoShorthandCollisionWithGlobalDebug(t *testing.T) {
+	cleanup := setupTestEnvironment(t)
+	defer cleanup()
+
+	root := NewRootCmd()
+	root.SetArgs([]string{"api", "/api/v1/balances/current"})
+
+	defer func() {
+		if r := recover(); r != nil {
+			t.Fatalf("unexpected panic executing api command: %v", r)
+		}
+	}()
+
+	err := root.Execute()
+	if err == nil {
+		t.Fatal("expected non-nil error from mock API")
+	}
+	if strings.Contains(err.Error(), "unable to redefine") {
+		t.Fatalf("expected no shorthand collision error, got: %v", err)
 	}
 }
 

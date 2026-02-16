@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -94,6 +95,17 @@ func TestGetBeneficiarySchema_WithPaymentMethod(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/api/v1/beneficiary_api_schemas/generate" {
 			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+
+		var req map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			t.Fatalf("failed to decode request: %v", err)
+		}
+		if got := req["payment_method"]; got != "SWIFT" {
+			t.Errorf("payment_method = %v, want SWIFT", got)
+		}
+		if got := req["transfer_method"]; got != "SWIFT" {
+			t.Errorf("transfer_method = %v, want SWIFT", got)
 		}
 
 		w.Header().Set("Content-Type", "application/json")

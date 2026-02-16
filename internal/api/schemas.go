@@ -67,6 +67,7 @@ func (c *Client) GetBeneficiarySchema(ctx context.Context, bankCountry, entityTy
 	}
 	if paymentMethod != "" {
 		req["payment_method"] = paymentMethod
+		req["transfer_method"] = paymentMethod
 	}
 
 	path := "/api/v1/beneficiary_api_schemas/generate"

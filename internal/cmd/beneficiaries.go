@@ -818,6 +818,8 @@ Examples:
 
 			req := reqbuilder.BuildNestedMap(fields)
 			req = reqbuilder.MergeRequest(req, map[string]interface{}{
+				"transfer_method":  paymentMethod,
+				"payment_method":   paymentMethod,
 				"transfer_methods": []string{paymentMethod},
 				"payment_methods":  []string{paymentMethod},
 			})
@@ -1165,15 +1167,22 @@ func hasRoutingOverrideField(overrides map[string]string) bool {
 }
 
 func buildBeneficiaryProvidedFields(entityType, bankCountry, paymentMethod string, fields, overrideFields map[string]string) map[string]string {
-	provided := make(map[string]string, len(fields)+len(overrideFields)+3)
+	provided := make(map[string]string, len(fields)+len(overrideFields)+6)
 	if mapping, ok := flagmap.GetMapping("entity-type"); ok && entityType != "" {
 		provided[mapping.SchemaPath] = entityType
 	}
 	if mapping, ok := flagmap.GetMapping("bank-country"); ok && bankCountry != "" {
 		provided[mapping.SchemaPath] = bankCountry
 	}
-	if mapping, ok := flagmap.GetMapping("payment-method"); ok && paymentMethod != "" {
-		provided[mapping.SchemaPath] = paymentMethod
+	if paymentMethod != "" {
+		if mapping, ok := flagmap.GetMapping("payment-method"); ok {
+			provided[mapping.SchemaPath] = paymentMethod
+		}
+		// Airwallex schema responses may require either singular or plural
+		// payment/transfer method keys depending on API version.
+		provided["transfer_method"] = paymentMethod
+		provided["payment_methods"] = paymentMethod
+		provided["transfer_methods"] = paymentMethod
 	}
 	for path, value := range fields {
 		if value == "" {
@@ -1261,6 +1270,10 @@ func schemaPathToFlag(path string) string {
 	path = strings.TrimSpace(path)
 	if path == "" {
 		return ""
+	}
+	switch path {
+	case "transfer_method", "transfer_methods", "payment_method", "payment_methods":
+		return "payment-method"
 	}
 	for _, mapping := range flagmap.AllMappings() {
 		if mapping.SchemaPath == path {
