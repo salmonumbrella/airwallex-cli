@@ -237,7 +237,7 @@ func TestGlobalFlagShortcodes(t *testing.T) {
 	}{
 		{"output", "o"},
 		{"json", "j"},
-		{"debug", "d"},
+		{"debug", ""},
 		{"query", "q"},
 		{"template", "t"},
 		{"yes", "y"},

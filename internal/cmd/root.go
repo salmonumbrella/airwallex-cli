@@ -157,7 +157,7 @@ func NewRootCmd() *cobra.Command {
 	cmd.PersistentFlags().StringVar(&flags.Color, "color", getEnvOrDefault("AWX_COLOR", "auto"), "Color output: auto|always|never")
 	cmd.PersistentFlags().BoolVar(&flags.NoColor, "no-color", false, "Shorthand for --color never")
 	cmd.PersistentFlags().BoolVar(&flags.Agent, "agent", os.Getenv("AWX_AGENT") != "", "Agent mode: stable JSON, no color, no prompts (or AWX_AGENT env)")
-	cmd.PersistentFlags().BoolVarP(&flags.Debug, "debug", "d", false, "Enable debug output (shows API requests/responses)")
+	cmd.PersistentFlags().BoolVar(&flags.Debug, "debug", false, "Enable debug output (shows API requests/responses)")
 	cmd.PersistentFlags().StringVarP(&flags.Query, "query", "q", "", "JQ expression to filter JSON output")
 	cmd.PersistentFlags().StringVar(&flags.QueryFile, "query-file", "", "Read JQ expression from file ('-' for stdin)")
 	// Prefer --template (keep --format for backwards compatibility, but hide it to avoid

@@ -75,7 +75,7 @@ func NewPayloadCommand[T any](cfg PayloadCommandConfig[T], getClient func(contex
 		},
 	}
 
-	cmd.Flags().StringVarP(&data, "data", "D", "", "Inline JSON payload")
+	cmd.Flags().StringVarP(&data, "data", "d", "", "Inline JSON payload")
 	cmd.Flags().StringVarP(&fromFile, "from-file", "F", "", "Path to JSON payload file (- for stdin)")
 
 	return cmd

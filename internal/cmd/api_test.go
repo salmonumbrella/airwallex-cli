@@ -20,7 +20,7 @@ func TestAPICommand_Flags(t *testing.T) {
 		shorthand string
 	}{
 		{"method", "X"},
-		{"data", "D"},
+		{"data", "d"},
 		{"data-file", ""},
 		{"header", "H"},
 		{"query", "q"},

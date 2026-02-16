@@ -51,10 +51,10 @@ Examples:
   airwallex api get /api/v1/financial_transactions from_created_at=2025-06-01T00:00:00+0000 to_created_at=2025-06-30T23:59:59+0000 page_size=100
 
   # POST with inline JSON
-  airwallex api post /api/v1/beneficiaries -D '{"beneficiary": {...}}'
+  airwallex api post /api/v1/beneficiaries -d '{"beneficiary": {...}}'
 
   # POST with -X flag
-  airwallex api /api/v1/beneficiaries -X POST -D '{"beneficiary": {...}}'
+  airwallex api /api/v1/beneficiaries -X POST -d '{"beneficiary": {...}}'
 
   # POST with file
   airwallex api post /api/v1/transfers --data-file transfer.json
@@ -180,7 +180,7 @@ Examples:
 	}
 
 	cmd.Flags().StringVarP(&method, "method", "X", "GET", "HTTP method")
-	cmd.Flags().StringVarP(&data, "data", "D", "", "Request body (JSON)")
+	cmd.Flags().StringVarP(&data, "data", "d", "", "Request body (JSON)")
 	cmd.Flags().StringVar(&dataFile, "data-file", "", "Read request body from file (- for stdin)")
 	cmd.Flags().StringArrayVarP(&headers, "header", "H", nil, "Custom headers (key: value)")
 	cmd.Flags().StringArrayVarP(&queryParams, "query", "q", nil, "Query parameters (key=value)")
