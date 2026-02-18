@@ -64,6 +64,10 @@ type ListConfig[T any] struct {
 	// If nil, next cursor hint won't be shown
 	IDFunc func(T) string
 
+	// LightFunc converts an item to a lightweight representation for --light mode.
+	// When set, a --light/--li flag is registered on the command.
+	LightFunc func(T) any
+
 	// MoreHint overrides the default "next page" hint when HasMore is true.
 	MoreHint string
 
@@ -80,6 +84,7 @@ func NewListCommand[T any](cfg ListConfig[T], getClient func(context.Context) (*
 	var pageSize int
 	var itemsOnlyFlag bool
 	var fetchAll bool
+	var lightFlag bool
 
 	cmd := &cobra.Command{
 		Use:     cfg.Use,
@@ -211,6 +216,10 @@ func NewListCommand[T any](cfg ListConfig[T], getClient func(context.Context) (*
 				itemsOut := make([]any, 0, len(result.Items))
 				itemGetPath := deriveSiblingGetPath(cmd)
 				for _, it := range result.Items {
+					var item any = it
+					if lightFlag && cfg.LightFunc != nil {
+						item = cfg.LightFunc(it)
+					}
 					links := map[string]string{}
 					if cfg.IDFunc != nil && itemGetPath != "" {
 						id := cfg.IDFunc(it)
@@ -219,9 +228,9 @@ func NewListCommand[T any](cfg ListConfig[T], getClient func(context.Context) (*
 						}
 					}
 					if len(links) > 0 {
-						itemsOut = append(itemsOut, outfmt.AnnotatedOutput{Data: it, Links: links})
+						itemsOut = append(itemsOut, outfmt.AnnotatedOutput{Data: item, Links: links})
 					} else {
-						itemsOut = append(itemsOut, it)
+						itemsOut = append(itemsOut, item)
 					}
 				}
 
@@ -326,6 +335,11 @@ func NewListCommand[T any](cfg ListConfig[T], getClient func(context.Context) (*
 	cmd.Flags().BoolVar(&itemsOnlyFlag, "results-only", false, "Alias for --items-only")
 	flagAlias(cmd.Flags(), "items-only", "io")
 	flagAlias(cmd.Flags(), "results-only", "ro")
+
+	if cfg.LightFunc != nil {
+		cmd.Flags().BoolVar(&lightFlag, "light", false, "Minimal JSON payload (saves tokens)")
+		flagAlias(cmd.Flags(), "light", "li")
+	}
 
 	return cmd
 }

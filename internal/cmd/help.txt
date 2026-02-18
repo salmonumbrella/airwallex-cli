@@ -1,0 +1,241 @@
+awx — Airwallex CLI
+
+ALIASES (shown once, usable everywhere):
+  accounts    acc, ac           beneficiaries  ben
+  billing     bill, bi          cards          cd
+  cardholders ch                deposits       dep
+  disputes    di                issuing        iss, is
+  linked-accounts la            payment-links  pl
+  payers      py                reports        rp
+  schemas     sc                transfers      tfr, tr
+  transactions tx               authorizations az
+  webhooks    wh
+
+  Subcommand verbs:
+  list   ls, l    get     g     create  cr
+  update up, u    delete  del, rm
+  cancel x
+
+GLOBALS (every command inherits these):
+  -o, --output text|json|jsonl    -j, --json          -t, --template
+  -q, --query '.expr'             --query-file FILE    -y, --yes
+  --agent                         --account NAME       --debug
+  --no-color                      --items-only         --output-limit N
+  --sort-by FIELD                 --desc
+
+────────────────────────────────────────────────────────
+
+TRANSFERS & PAYOUTS
+
+  awx transfers ls                          list all transfers
+  awx tr ls -s pending --page-size 5        filter by status, paginate
+  awx tr ls --light                         minimal output per item
+  awx tr g tfr_abc123                       get one transfer
+  awx tr create -b ben_xyz \                create a transfer
+    --transfer-amount 500 --tc USD --sc USD
+  awx tr create -b ben_xyz \                create with --wait
+    --transfer-amount 500 --tc USD --sc USD --wait
+  awx tr cancel tfr_abc123                  cancel a transfer
+  awx tr confirmation tfr_abc123            download confirmation letter
+  awx tr confirmation tfr_abc123 -f out.pdf save to file
+  awx tr batch-create -i batch.json         batch create transfers
+
+BENEFICIARIES
+
+  awx ben ls                                list all beneficiaries
+  awx ben ls --light                        minimal output per item
+  awx ben g ben_abc123                      get one beneficiary
+  awx ben cr --data '{"beneficiary":...}'   create from JSON
+  awx ben cr --entity-type company \        create with flags
+    --company-name Acme --bank-country AU \
+    --account-name "Acme Corp" --account-number 123456
+  awx ben up ben_abc123 --data '{...}'      update a beneficiary
+  awx ben del ben_abc123                    delete a beneficiary
+  awx ben val --data '{"beneficiary":...}'  validate without creating
+
+ACCOUNTS
+
+  awx acc ls                                list global accounts
+  awx acc g ga_abc123                       get one account
+
+BALANCES
+
+  awx bal                                   show current balances
+  awx bal history -c USD --from 2024-01-01  balance history
+
+DEPOSITS
+
+  awx dep ls                                list deposits
+  awx dep ls --status succeeded --from 2024-01-01
+  awx dep g dep_abc123                      get one deposit
+
+────────────────────────────────────────────────────────
+
+CARDS & ISSUING
+
+  awx cards ls                              list all cards
+  awx cd ls -s active --page-size 10        filter by status
+  awx cd g card_abc123                      get one card
+  awx cd create --data '{"form_factor":"VIRTUAL",...}'
+  awx cd up card_abc123 --data '{...}'      update a card
+  awx cd activate card_abc123               activate a physical card
+  awx cd details card_abc123                show PAN, CVV, expiry
+  awx cd limits card_abc123                 show spending limits
+
+CARDHOLDERS
+
+  awx ch ls                                 list cardholders
+  awx ch g ch_abc123                        get one cardholder
+  awx ch cr --data '{"type":"INDIVIDUAL",...}'
+  awx ch up ch_abc123 --data '{...}'        update cardholder
+
+ISSUING TRANSACTIONS
+
+  awx tx ls                                 list issuing transactions
+  awx tx ls --light                         minimal output per item
+  awx tx ls --card-id card_abc --from 2024-01-01
+  awx tx g txn_abc123                       get one transaction
+
+AUTHORIZATIONS
+
+  awx az ls                                 list authorizations
+  awx az ls --light                         minimal output per item
+  awx az ls --status approved --card-id card_abc
+  awx az g auth_abc123                      get one authorization
+
+DISPUTES
+
+  awx di ls                                 list disputes
+  awx di ls --status open
+  awx di g disp_abc123                      get one dispute
+  awx di create --data '{"transaction_id":"txn_abc",...}'
+  awx di cancel disp_abc123                 cancel a dispute
+
+────────────────────────────────────────────────────────
+
+FX (FOREIGN EXCHANGE)
+
+  awx fx rates USD AUD                      get FX rate
+  awx fx quotes cr --sell USD --buy AUD \   create a quote
+    --sell-amount 1000
+  awx fx quotes g quote_abc123              get a quote
+  awx fx conv ls                            list conversions
+  awx fx conv ls --light                    minimal output per item
+  awx fx conv g conv_abc123                 get a conversion
+  awx fx conv cr --sell USD --buy AUD \     create a conversion
+    --sell-amount 1000
+
+────────────────────────────────────────────────────────
+
+BILLING (PAYMENT ACCEPTANCE)
+
+  Customers:
+  awx bill cu ls                            list customers
+  awx bill cu g cus_abc123                  get one customer
+  awx bill cu cr --data '{...}'             create customer
+  awx bill cu up cus_abc123 --data '{...}'  update customer
+
+  Products:
+  awx bill pr ls                            list products
+  awx bill pr g prod_abc123                 get one product
+  awx bill pr cr --data '{...}'             create product
+  awx bill pr up prod_abc123 --data '{...}' update product
+
+  Prices:
+  awx bill pc ls                            list prices
+  awx bill pc ls --light                    minimal output per item
+  awx bill pc g price_abc123                get one price
+  awx bill pc cr --data '{...}'             create price
+  awx bill pc up price_abc123 --data '{...}'
+
+  Invoices:
+  awx bill inv ls                           list invoices
+  awx bill inv ls --light                   minimal output per item
+  awx bill inv g inv_abc123                 get one invoice
+  awx bill inv cr --data '{...}'            create invoice
+
+  Subscriptions:
+  awx bill su ls                            list subscriptions
+  awx bill su ls --light                    minimal output per item
+  awx bill su g sub_abc123                  get one subscription
+  awx bill su cr --data '{...}'             create subscription
+  awx bill su up sub_abc123 --data '{...}'  update subscription
+  awx bill su cancel sub_abc123             cancel subscription
+
+────────────────────────────────────────────────────────
+
+LINKED ACCOUNTS
+
+  awx la ls                                 list linked accounts
+  awx la g la_abc123                        get one linked account
+  awx la create --data '{...}'              create linked account
+  awx la deposit la_abc123 \                initiate deposit
+    --amount 1000 --currency USD
+
+PAYMENT LINKS
+
+  awx pl ls                                 list payment links
+  awx pl g pl_abc123                        get one payment link
+  awx pl cr --data '{...}'                  create payment link
+
+PAYERS
+
+  awx py ls                                 list payers
+  awx py g payer_abc123                     get one payer
+  awx py cr --data '{...}'                  create payer
+
+WEBHOOKS
+
+  awx wh ls                                 list webhooks
+  awx wh g wh_abc123                        get one webhook
+  awx wh cr -u https://example.com/hook \   create webhook
+    -e transfer.completed,transfer.failed
+  awx wh del wh_abc123                      delete webhook
+
+REPORTS
+
+  awx rp ls                                 list reports
+  awx rp ls --light                         minimal output per item
+  awx rp g rpt_abc123                       get one report
+  awx rp create --type ACCOUNT_STATEMENT_REPORT \
+    --from-date 2024-01-01 --to-date 2024-01-31 \
+    --file-format CSV
+
+────────────────────────────────────────────────────────
+
+SCHEMAS
+
+  awx sc beneficiary --entity-type company  get beneficiary schema
+  awx sc beneficiary --entity-type company --country AU
+
+────────────────────────────────────────────────────────
+
+DESIRE PATHS (verb-first shortcuts)
+
+  awx list transfers                        same as: awx tr ls
+  awx list cards --status active            same as: awx cd ls -s active
+  awx create transfer -b ben_xyz ...        same as: awx tr cr ...
+  awx cancel tfr_abc123                     auto-routes by ID prefix
+  awx get tfr_abc123                        auto-routes by ID prefix
+
+RAW API
+
+  awx api GET /api/v1/transfers             raw API call
+  awx api POST /api/v1/transfers -b '{...}' POST with inline JSON
+  awx api POST /path -i body.json           POST with file body
+  awx api GET /api/v1/transfers -q '.items[0]'
+
+AUTH
+
+  awx auth login                            browser-based login
+  awx auth add prod --client-id xxx         add credentials
+  awx auth ls                               list accounts
+  awx auth test                             verify credentials
+  awx auth rm old-account                   remove account
+  awx auth rename old new                   rename account
+
+MISC
+
+  awx version                               show version
+  awx upgrade                               self-update
+  awx completion bash|zsh|fish              shell completions

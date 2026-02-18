@@ -75,6 +75,7 @@ Examples:
 		IDFunc: func(txn api.Transaction) string {
 			return txn.TransactionID
 		},
+		LightFunc: func(txn api.Transaction) any { return toLightTransaction(txn) },
 		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[api.Transaction], error) {
 			fromRFC3339, toRFC3339, err := parseDateRangeRFC3339(from, to, "--from", "--to", false)
 			if err != nil {

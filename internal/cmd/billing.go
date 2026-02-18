@@ -338,6 +338,7 @@ func newBillingPricesListCmd() *cobra.Command {
 		IDFunc: func(p api.BillingPrice) string {
 			return billingPriceID(p)
 		},
+		LightFunc: func(p api.BillingPrice) any { return toLightPrice(p) },
 		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[api.BillingPrice], error) {
 			activeVal, err := parseOptionalBool(active)
 			if err != nil {
@@ -479,6 +480,7 @@ func newBillingInvoicesListCmd() *cobra.Command {
 		IDFunc: func(i api.BillingInvoice) string {
 			return billingInvoiceID(i)
 		},
+		LightFunc: func(i api.BillingInvoice) any { return toLightInvoice(i) },
 		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[api.BillingInvoice], error) {
 			fromRFC3339, toRFC3339, err := parseDateRangeRFC3339(from, to, "--from", "--to", true)
 			if err != nil {
@@ -725,6 +727,7 @@ func newBillingSubscriptionsListCmd() *cobra.Command {
 		IDFunc: func(s api.BillingSubscription) string {
 			return billingSubscriptionID(s)
 		},
+		LightFunc: func(s api.BillingSubscription) any { return toLightSubscription(s) },
 		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[api.BillingSubscription], error) {
 			fromRFC3339, toRFC3339, err := parseDateRangeRFC3339(from, to, "--from", "--to", true)
 			if err != nil {

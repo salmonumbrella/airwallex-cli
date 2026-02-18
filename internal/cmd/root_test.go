@@ -392,6 +392,101 @@ func TestRootCmd_QueryFileAlias(t *testing.T) {
 	}
 }
 
+func TestRootHelp_ShowsStaticText(t *testing.T) {
+	cmd := NewRootCmd()
+	var buf strings.Builder
+	cmd.SetOut(&buf)
+	cmd.SetArgs([]string{"--help"})
+
+	// Execute triggers the help func
+	_ = cmd.Execute()
+
+	output := buf.String()
+	if !strings.Contains(output, "awx — Airwallex CLI") {
+		t.Errorf("root help should show static help text, got:\n%s", output[:min(len(output), 200)])
+	}
+	if !strings.Contains(output, "TRANSFERS & PAYOUTS") {
+		t.Error("root help missing TRANSFERS section")
+	}
+	if !strings.Contains(output, "DESIRE PATHS") {
+		t.Error("root help missing DESIRE PATHS section")
+	}
+}
+
+func TestSubcommandHelp_UsesCobraDefault(t *testing.T) {
+	cmd := NewRootCmd()
+	var buf strings.Builder
+	cmd.SetOut(&buf)
+	cmd.SetArgs([]string{"transfers", "--help"})
+
+	_ = cmd.Execute()
+
+	output := buf.String()
+	// Cobra's default help contains "Usage:" or "Available Commands:"
+	if !strings.Contains(output, "Usage:") && !strings.Contains(output, "Available Commands:") {
+		t.Errorf("subcommand help should use Cobra default, got:\n%s", output[:min(len(output), 200)])
+	}
+	// Should NOT contain the static help text header
+	if strings.Contains(output, "awx — Airwallex CLI") {
+		t.Error("subcommand help should not show the root static help text")
+	}
+}
+
+func TestLightFlagOnExpectedCommands(t *testing.T) {
+	root := NewRootCmd()
+
+	wantLight := [][]string{
+		{"transfers", "list"},
+		{"beneficiaries", "list"},
+		{"transactions", "list"},
+		{"authorizations", "list"},
+		{"reports", "list"},
+	}
+
+	for _, path := range wantLight {
+		cmd := findSubcmd(root, path)
+		if cmd == nil {
+			t.Errorf("command %v not found", path)
+			continue
+		}
+		if f := cmd.Flags().Lookup("light"); f == nil {
+			t.Errorf("command %v should have --light flag", path)
+		}
+		if f := cmd.Flags().Lookup("li"); f == nil {
+			t.Errorf("command %v should have --li alias", path)
+		}
+	}
+
+	noLight := [][]string{
+		{"accounts", "list"},
+		{"deposits", "list"},
+		{"cards", "list"},
+		{"cardholders", "list"},
+		{"webhooks", "list"},
+		{"payers", "list"},
+	}
+
+	for _, path := range noLight {
+		cmd := findSubcmd(root, path)
+		if cmd == nil {
+			t.Errorf("command %v not found", path)
+			continue
+		}
+		if f := cmd.Flags().Lookup("light"); f != nil {
+			t.Errorf("command %v should NOT have --light flag", path)
+		}
+	}
+}
+
+func TestRootHelp_HelpTextEmbedded(t *testing.T) {
+	if helpText == "" {
+		t.Fatal("helpText is empty — go:embed failed")
+	}
+	if !strings.HasPrefix(helpText, "awx") {
+		t.Errorf("helpText should start with 'awx', got: %q", helpText[:min(len(helpText), 20)])
+	}
+}
+
 func TestRootCmd_QueryFileConflict(t *testing.T) {
 	cmd := NewRootCmd()
 	testCmd := &cobra.Command{

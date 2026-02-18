@@ -95,6 +95,7 @@ Examples:
 		IDFunc: func(b api.Beneficiary) string {
 			return b.BeneficiaryID
 		},
+		LightFunc: func(b api.Beneficiary) any { return toLightBeneficiary(b) },
 		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[api.Beneficiary], error) {
 			result, err := client.ListBeneficiaries(ctx, opts.Page, opts.Limit)
 			if err != nil {

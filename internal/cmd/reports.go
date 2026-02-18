@@ -50,7 +50,8 @@ func newReportsListCmd() *cobra.Command {
 			}
 			return []string{r.ID, r.Type, r.Status, dateRange, r.FileFormat, expiresAt}
 		},
-		MoreHint: "# More results available",
+		MoreHint:  "# More results available",
+		LightFunc: func(r api.FinancialReport) any { return toLightReport(r) },
 		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[api.FinancialReport], error) {
 			result, err := client.ListFinancialReports(ctx, opts.Page, normalizePageSize(opts.Limit))
 			if err != nil {

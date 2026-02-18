@@ -125,6 +125,7 @@ Examples:
 		IDFunc: func(t api.Transfer) string {
 			return t.TransferID
 		},
+		LightFunc: func(t api.Transfer) any { return toLightTransfer(t) },
 		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[api.Transfer], error) {
 			status = normalizeEnumValue(status, []string{"PAID", "PENDING", "FAILED", "CANCELLED", "REFUNDED"})
 			// Note: API uses page-based pagination internally

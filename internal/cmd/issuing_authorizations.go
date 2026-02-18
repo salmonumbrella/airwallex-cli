@@ -52,7 +52,8 @@ func newAuthorizationsListCmd() *cobra.Command {
 			}
 			return []string{authorizationID(a), a.TransactionID, a.CardID, a.Status, amount, a.Currency, a.Merchant.Name}
 		},
-		MoreHint: "# More results available",
+		MoreHint:  "# More results available",
+		LightFunc: func(a api.Authorization) any { return toLightAuthorization(a) },
 		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[api.Authorization], error) {
 			status = normalizeEnumValue(status, []string{"APPROVED", "DECLINED", "PENDING", "REVERSED"})
 			fromRFC3339, toRFC3339, err := parseDateRangeRFC3339(from, to, "--from", "--to", false)

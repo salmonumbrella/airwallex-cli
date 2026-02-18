@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	_ "embed"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -18,6 +19,9 @@ import (
 	"github.com/salmonumbrella/airwallex-cli/internal/outfmt"
 	"github.com/salmonumbrella/airwallex-cli/internal/ui"
 )
+
+//go:embed help.txt
+var helpText string
 
 type rootFlags struct {
 	Account   string
@@ -223,6 +227,15 @@ func NewRootCmd() *cobra.Command {
 	cmd.AddCommand(newCreateRouterCmd())
 	cmd.AddCommand(newCancelRouterCmd())
 	addCanonicalVerbAliases(cmd)
+
+	defaultHelp := cmd.HelpFunc()
+	cmd.SetHelpFunc(func(c *cobra.Command, args []string) {
+		if c.Name() == cmd.Name() && !c.HasParent() {
+			_, _ = fmt.Fprint(c.OutOrStdout(), helpText)
+			return
+		}
+		defaultHelp(c, args)
+	})
 
 	return cmd
 }

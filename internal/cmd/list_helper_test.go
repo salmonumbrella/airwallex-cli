@@ -698,6 +698,110 @@ func TestNewListCommand_TextTableOutput(t *testing.T) {
 	}
 }
 
+func TestNewListCommand_LightFlag(t *testing.T) {
+	type lightItem struct {
+		ID string `json:"id"`
+	}
+
+	cfg := ListConfig[testItem]{
+		Use:          "test",
+		Short:        "Test list command",
+		Headers:      []string{"ID", "NAME"},
+		EmptyMessage: "No items",
+		RowFunc: func(item testItem) []string {
+			return []string{item.ID, item.Name}
+		},
+		IDFunc: func(item testItem) string { return item.ID },
+		LightFunc: func(item testItem) any {
+			return lightItem{ID: item.ID}
+		},
+		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[testItem], error) {
+			return ListResult[testItem]{
+				Items:   []testItem{{ID: "1", Name: "FullName"}},
+				HasMore: false,
+			}, nil
+		},
+	}
+
+	cmd := NewListCommand(cfg, func(ctx context.Context) (*api.Client, error) {
+		return &api.Client{}, nil
+	})
+
+	// Verify --light flag exists
+	f := cmd.Flags().Lookup("light")
+	if f == nil {
+		t.Fatal("--light flag not registered")
+	}
+
+	// Verify --li alias exists
+	li := cmd.Flags().Lookup("li")
+	if li == nil {
+		t.Fatal("--li alias not registered")
+	}
+
+	// Test that --light outputs light struct
+	var buf bytes.Buffer
+	ctx := outfmt.WithFormat(context.Background(), "json")
+	ctx = iocontext.WithIO(ctx, &iocontext.IO{In: nil, Out: &buf, ErrOut: &buf})
+	cmd.SetContext(ctx)
+	cmd.SetOut(&buf)
+	cmd.SetArgs([]string{"--light"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	output := buf.String()
+	// Light output should contain "id" but NOT "Name" (which is only in the full struct)
+	var parsed map[string]json.RawMessage
+	if err := json.Unmarshal([]byte(output), &parsed); err != nil {
+		t.Fatalf("failed to parse JSON: %v\noutput: %s", err, output)
+	}
+
+	var items []map[string]interface{}
+	if err := json.Unmarshal(parsed["items"], &items); err != nil {
+		t.Fatalf("failed to parse items: %v", err)
+	}
+
+	if len(items) != 1 {
+		t.Fatalf("expected 1 item, got %d", len(items))
+	}
+
+	item := items[0]
+	if item["id"] != "1" {
+		t.Errorf("expected id=1, got %v", item["id"])
+	}
+	if _, hasName := item["Name"]; hasName {
+		t.Error("light output should not contain 'Name' field")
+	}
+	if _, hasName := item["name"]; hasName {
+		t.Error("light output should not contain 'name' field")
+	}
+}
+
+func TestNewListCommand_LightFlagNotRegisteredWithoutLightFunc(t *testing.T) {
+	cfg := ListConfig[testItem]{
+		Use:          "test",
+		Short:        "Test list command",
+		Headers:      []string{"ID", "NAME"},
+		EmptyMessage: "No items",
+		RowFunc: func(item testItem) []string {
+			return []string{item.ID, item.Name}
+		},
+		Fetch: func(ctx context.Context, client *api.Client, opts ListOptions) (ListResult[testItem], error) {
+			return ListResult[testItem]{}, nil
+		},
+	}
+
+	cmd := NewListCommand(cfg, func(ctx context.Context) (*api.Client, error) {
+		return &api.Client{}, nil
+	})
+
+	if f := cmd.Flags().Lookup("light"); f != nil {
+		t.Error("--light flag should not be registered without LightFunc")
+	}
+}
+
 func TestNewListCommand_CustomFlagsCapture(t *testing.T) {
 	// Simulate the pattern used in deposits.go and other migrated commands
 	// where custom flags are captured by the Fetch closure
