@@ -18,13 +18,22 @@ linters:
     gosec:
       excludes:
         - G104 # Duplicates errcheck
+        - G115 # Integer overflow uintptr->int (safe: Fd() always fits int)
+        - G117 # Struct field matches secret pattern (expected: API key fields)
+        - G204 # Subprocess with variable (expected: browser open)
         - G304 # File path from variable (expected in CLI)
+        - G704 # SSRF via taint (expected: CLI makes user-specified API calls)
+        - G705 # XSS via taint (CLI output, not web)
+        - G706 # Log injection via taint (slog structured logging, not injectable)
   exclusions:
     rules:
       - path: _test\.go
         linters:
           - errcheck
           - gosec
+      - linters:
+          - staticcheck
+        text: "QF1012" # WriteString(Sprintf) vs Fprintf - style preference
 
 run:
   timeout: 5m
