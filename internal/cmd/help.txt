@@ -29,7 +29,7 @@ TRANSFERS & PAYOUTS
 
   awx transfers ls                          list all transfers
   awx tr ls -s pending --page-size 5        filter by status, paginate
-  awx tr ls --light                         minimal output per item
+  awx tr ls --li                             minimal output per item
   awx tr g tfr_abc123                       get one transfer
   awx tr create -b ben_xyz \                create a transfer
     --transfer-amount 500 --tc USD --sc USD
@@ -43,7 +43,7 @@ TRANSFERS & PAYOUTS
 BENEFICIARIES
 
   awx ben ls                                list all beneficiaries
-  awx ben ls --light                        minimal output per item
+  awx ben ls --li                        minimal output per item
   awx ben g ben_abc123                      get one beneficiary
   awx ben cr --data '{"beneficiary":...}'   create from JSON
   awx ben cr --entity-type company \        create with flags
@@ -92,14 +92,14 @@ CARDHOLDERS
 ISSUING TRANSACTIONS
 
   awx tx ls                                 list issuing transactions
-  awx tx ls --light                         minimal output per item
+  awx tx ls --li                         minimal output per item
   awx tx ls --card-id card_abc --from 2024-01-01
   awx tx g txn_abc123                       get one transaction
 
 AUTHORIZATIONS
 
   awx az ls                                 list authorizations
-  awx az ls --light                         minimal output per item
+  awx az ls --li                         minimal output per item
   awx az ls --status approved --card-id card_abc
   awx az g auth_abc123                      get one authorization
 
@@ -120,7 +120,7 @@ FX (FOREIGN EXCHANGE)
     --sell-amount 1000
   awx fx quotes g quote_abc123              get a quote
   awx fx conv ls                            list conversions
-  awx fx conv ls --light                    minimal output per item
+  awx fx conv ls --li                    minimal output per item
   awx fx conv g conv_abc123                 get a conversion
   awx fx conv cr --sell USD --buy AUD \     create a conversion
     --sell-amount 1000
@@ -143,20 +143,20 @@ BILLING (PAYMENT ACCEPTANCE)
 
   Prices:
   awx bill pc ls                            list prices
-  awx bill pc ls --light                    minimal output per item
+  awx bill pc ls --li                    minimal output per item
   awx bill pc g price_abc123                get one price
   awx bill pc cr --data '{...}'             create price
   awx bill pc up price_abc123 --data '{...}'
 
   Invoices:
   awx bill inv ls                           list invoices
-  awx bill inv ls --light                   minimal output per item
+  awx bill inv ls --li                   minimal output per item
   awx bill inv g inv_abc123                 get one invoice
   awx bill inv cr --data '{...}'            create invoice
 
   Subscriptions:
   awx bill su ls                            list subscriptions
-  awx bill su ls --light                    minimal output per item
+  awx bill su ls --li                    minimal output per item
   awx bill su g sub_abc123                  get one subscription
   awx bill su cr --data '{...}'             create subscription
   awx bill su up sub_abc123 --data '{...}'  update subscription
@@ -195,7 +195,7 @@ WEBHOOKS
 REPORTS
 
   awx rp ls                                 list reports
-  awx rp ls --light                         minimal output per item
+  awx rp ls --li                         minimal output per item
   awx rp g rpt_abc123                       get one report
   awx rp create --type ACCOUNT_STATEMENT_REPORT \
     --from-date 2024-01-01 --to-date 2024-01-31 \
@@ -233,6 +233,26 @@ AUTH
   awx auth test                             verify credentials
   awx auth rm old-account                   remove account
   awx auth rename old new                   rename account
+
+ENVIRONMENT VARIABLES
+
+  AWX_ACCOUNT    Default account name (same as --account)
+  AWX_OUTPUT     Default output format: text|json|jsonl (same as -o)
+  AWX_COLOR      Color output: auto|always|never (same as --color)
+  AWX_AGENT      Non-empty enables agent mode (same as --agent)
+
+EXIT CODES
+
+  0   Success
+  1   Generic error
+  4   Authentication required or expired
+  5   Resource not found
+  6   Validation error (bad input)
+  7   Rate limit exceeded
+  8   Resource conflict
+  9   Server-side error (5xx)
+
+────────────────────────────────────────────────────────
 
 MISC
 
