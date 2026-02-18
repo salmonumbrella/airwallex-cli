@@ -2,9 +2,20 @@ package cmd
 
 import (
 	"encoding/json"
+	"strings"
+	"unicode/utf8"
 
 	"github.com/salmonumbrella/airwallex-cli/internal/api"
 )
+
+// truncateRunes truncates s to maxRunes runes, appending "..." if truncated.
+func truncateRunes(s string, maxRunes int) string {
+	if utf8.RuneCountInString(s) <= maxRunes {
+		return s
+	}
+	runes := []rune(s)
+	return string(runes[:maxRunes]) + "..."
+}
 
 // Light structs for commands that produce >10 lines of JSON per item.
 // Each keeps 3-7 essential fields so agent context stays small.
@@ -41,13 +52,13 @@ type lightBeneficiary struct {
 func toLightBeneficiary(b api.Beneficiary) lightBeneficiary {
 	name := b.Beneficiary.CompanyName
 	if name == "" {
-		name = b.Beneficiary.FirstName + " " + b.Beneficiary.LastName
+		name = strings.TrimSpace(b.Beneficiary.FirstName + " " + b.Beneficiary.LastName)
 	}
 	return lightBeneficiary{
 		ID:         b.BeneficiaryID,
 		Nickname:   b.Nickname,
 		EntityType: b.Beneficiary.EntityType,
-		Name:       name,
+		Name:       truncateRunes(name, 80),
 		BankName:   b.Beneficiary.BankDetails.BankName,
 		Country:    b.Beneficiary.BankDetails.BankCountryCode,
 	}
@@ -70,7 +81,7 @@ func toLightTransaction(t api.Transaction) lightTransaction {
 		Type:     t.TransactionType,
 		Amount:   t.Amount,
 		Currency: t.Currency,
-		Merchant: t.Merchant.Name,
+		Merchant: truncateRunes(t.Merchant.Name, 80),
 		Status:   t.Status,
 	}
 }
